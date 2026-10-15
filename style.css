@@ -24,7 +24,6 @@ nav a:hover::after, nav a.active::after{transform:scaleX(1)}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--n);font-size:15px;transition:all .2s ease}
 .brand img{height:54px;width:auto;border-radius:50%;object-fit:cover;display:block;box-shadow:0 0 0 2px rgba(255,255,255,.4)}
 .brand span{white-space:nowrap}
-.support-btn{margin-inline-start:auto}
 .nav-toggle{display:none;position:relative;width:42px;height:42px;border:0;border-radius:50%;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:5px;cursor:pointer;box-shadow:0 0 0 1px rgba(18,62,115,.08)}
 .nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:var(--n)}
 
@@ -93,7 +92,6 @@ h1{
   nav.open{display:flex}
   nav a{padding:8px 0;width:100%}
   .brand span{display:none}
-  .support-btn{display:none}
   .hd-in{gap:10px}
 }
 @media (max-width:640px){
@@ -162,3 +160,45 @@ footer p{margin-bottom:6px}.f1{color:#fff;font-weight:700;font-size:18px}.ad{mar
 .cc{transition:opacity .7s,transform .7s}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.js .reveal:not(.in){opacity:1;transform:none}}
 .flogo{height:84px;width:auto;margin:0 auto 18px;padding:8px 14px;background:#fff;border-radius:18px}
+
+/* --- إضافات تصميم الصفحة --- */
+body{
+  background:#f8fafc;
+}
+main{
+  display:block;
+}
+.hero-cover .wrap,
+.hero-inner,
+.hi,
+.hd-in,
+.wrap,
+.grid,
+.row,
+.phones,
+.fs{
+  max-width:100%;
+}
+.hero-cover .wrap{
+  width:100%;
+}
+.hero-cover .hi{
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.18));
+}
+.card,
+.stat-box,
+.tile,
+.flogo,
+.cc,
+.about-content{
+  border:1px solid rgba(18,62,115,.06);
+}
+@media (max-width:640px){
+  .brand img{height:46px}
+  .header .wrap,
+  .hd-in{padding-inline:8px}
+  .hero-cover{min-height:72svh}
+  .hi h1{letter-spacing:0}
+  .phones{grid-template-columns:1fr}
+  .tile{justify-content:center}
+}
