@@ -31,21 +31,28 @@
 <symbol id="i-farm" viewBox="0 0 24 24"><path d="M12 22V12M12 12c0-4-3-6-7-6 0 4 3 6 7 6zM12 14c0-3 2-5 6-5 0 3-2 5-6 5z"/></symbol>
 <symbol id="i-fish" viewBox="0 0 24 24"><path d="M2 12c3-5 9-6 13-3l3 3-3 3c-4 3-10 2-13-3zM18 12l4-3v6z"/></symbol>
 <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></symbol>
+<symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8M22 21v-2a4 4 0 0 0-3-3.9"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
 </svg>
 
 <header class="hd">
   <div class="wrap hd-in">
     <a class="brand" href="#home" aria-label="دار الإحسان">
-      <img src="logo.png" alt="Dar El Ihssan">
+      <img src="logo-sq.png" alt="Dar El Ihsan">
       <span data-i18n="brand">دار الإحسان</span>
     </a>
 
     <nav class="main-nav" aria-label="القائمة الرئيسية">
-      <a href="#home" class="active" data-i18n="navHome">الرئيسية</a>
-      <a href="#about" data-i18n="navAbout">من نحن</a>
-      <a href="#centers" data-i18n="navCenters">مراكزنا</a>
-      <a href="#news" data-i18n="navNews">أخبارنا</a>
-      <a href="#contact" data-i18n="navContact">اتصل بنا</a>
+      <a href="#home" class="active" data-i18n="navHome"></a>
+      <a href="#about" data-i18n="navAbout"></a>
+      <a href="#services" data-i18n="navServices"></a>
+      <a href="#annexes" data-i18n="navAnnexes"></a>
+      <a href="#goals" data-i18n="navGoals"></a>
+      <a href="#contact" data-i18n="navContact"></a>
     </nav>
 
     <button id="lang" class="lang" type="button" aria-label="Switch language">
@@ -71,93 +78,61 @@
   <section id="about" class="sec">
     <div class="wrap">
       <h2 data-i18n="aboutTitle">من نحن؟</h2>
-      <div class="about-content">
-        <p data-i18n="aboutText">جمعية أولياء الأطفال المعاقين ذهنياً هي جمعية ذات طابع اجتماعي وتضامني تأسست عام 1990 بمدينة العطف. نهدف إلى تقديم الدعم النفسي والبيداغوجي للأطفال ذوي الاحتياجات الخاصة، ومساعدة عائلاتهم في تخطي الصعاب ودمج أبنائهم في المجتمع.</p>
+      <div class="about-content hist">
+        <h3 class="sub" data-i18n="histTitle">تاريخنا</h3>
+        <p data-i18n="histText">تأسست جمعية أولياء الأطفال المعاقين ذهنياً سنة 1990 بمبادرة من مجموعة من الأولياء والخيرين من بلدية العطف بولاية غرداية. تم اعتمادها بموجب القرار رقم 90/320 بتاريخ 30/06/1990 من طرف والي غرداية، وكانت أول جمعية غير ربحية في الجنوب الجزائري. وفي 20 ديسمبر 2016 تم تجديد الاعتماد تحت رقم 06/2016 تحت اسم: المركز النفسي البيداغوجي دار الإحسان.</p>
         <div class="stats-row">
-          <div class="stat-box"><span class="stat-num" data-i18n="statYearsValue">+30</span><span class="stat-txt" data-i18n="statYears">سنة من العطاء</span></div>
-          <div class="stat-box"><span class="stat-num" data-i18n="statCentersValue">3</span><span class="stat-txt" data-i18n="statCenters">مراكز متخصصة</span></div>
-          <div class="stat-box"><span class="stat-num" data-i18n="statBeneficiariesValue">مئات</span><span class="stat-txt" data-i18n="statBeneficiaries">الأطفال المستفيدين</span></div>
+          <div class="stat-box"><span class="stat-num" data-i18n="statYearsValue">+35</span><span class="stat-txt" data-i18n="statYears">سنة من العطاء</span></div>
+          <div class="stat-box"><span class="stat-num" data-i18n="statServicesValue">4</span><span class="stat-txt" data-i18n="statServices">خدمات متخصصة</span></div>
+          <div class="stat-box"><span class="stat-num" data-i18n="statBeneficiariesValue">+100</span><span class="stat-txt" data-i18n="statBeneficiaries">الأطفال المستفيدين</span></div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section id="centers" class="sec alt">
-    <div class="wrap">
-      <h2 data-i18n="centersTitle">مراكزنا</h2>
-      <div class="grid">
-        <article class="card reveal">
-          <div class="ph"><img src="main-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
-          <div class="body">
-            <span class="ic"><i data-i="center"></i></span>
-            <h3 data-i18n="c1n">المركز النفسي البيداغوجي دار الإحسان</h3>
-            <p data-i18n="c1d">يقدم خدمات نفسية وبيداغوجية متخصصة للأطفال لتطوير قدراتهم.</p>
-            <a class="btn" href="https://maps.app.goo.gl/t6nTLCWQ8NMMDG4A9" target="_blank" rel="noopener">
-              <i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i>
-            </a>
-          </div>
-        </article>
-
-        <article class="card reveal">
-          <div class="ph"><img src="work-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
-          <div class="body">
-            <span class="ic"><i data-i="work"></i></span>
-            <h3 data-i18n="c2n">مركز المساعدة على العمل</h3>
-            <p data-i18n="c2d">يهتم بتأهيل الشباب من ذوي الاحتياجات الخاصة مهنياً لدمجهم في سوق العمل.</p>
-            <a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" target="_blank" rel="noopener">
-              <i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i>
-            </a>
-          </div>
-        </article>
-
-        <article class="card reveal">
-          <div class="ph"><img src="farm-hydroponic.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
-          <div class="body">
-            <span class="ic"><i data-i="farm"></i><i data-i="fish"></i></span>
-            <h3 data-i18n="c3n">المزرعة البيداغوجية والزراعة المائية</h3>
-            <p data-i18n="c3d">بيئة طبيعية توفر نشاطات زراعية وترفيهية علاجية للأطفال.</p>
-            <a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" target="_blank" rel="noopener">
-              <i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i>
-            </a>
-          </div>
-        </article>
+      <div class="mv">
+        <article class="mvc reveal"><span class="ic"><i data-i="target"></i></span><h3 data-i18n="missionTitle">رسالتنا</h3><p data-i18n="missionText">التكفل المتعدد التخصصات بالأطفال والمراهقين والشباب ذوي الإعاقة الذهنية، اضطراب طيف التوحد، والتأخر الذهني، من خلال فريق متخصص يضع خطة علاجية وبيداغوجية فردية لكل حالة.</p></article>
+        <article class="mvc vis reveal"><span class="ic"><i data-i="eye"></i></span><h3 data-i18n="visionTitle">رؤيتنا</h3><p data-i18n="visionText">مجتمع شامل يؤمن بقدرات كل طفل ويعمل على إدماجه اجتماعياً ومهنياً، مع دعم مستمر للأسر وتعزيز البحث العلمي في مجال الاحتياجات الخاصة.</p></article>
       </div>
+      <div class="chips reveal"><span class="chip"><span data-i18n="v1">الرعاية الإنسانية</span></span><span class="chip"><span data-i18n="v2">التعليم المتخصص</span></span><span class="chip"><span data-i18n="v3">الدعم العائلي</span></span><span class="chip"><span data-i18n="v4">تمكين الطفل</span></span><span class="chip"><span data-i18n="v5">الاندماج الكامل</span></span><span class="chip"><span data-i18n="v6">الأمل والمستقبل</span></span></div>
     </div>
   </section>
 
-  <section id="news" class="sec">
+  <section id="services" class="sec alt">
     <div class="wrap">
-      <h2 data-i18n="newsTitle">آخر الأخبار والنشاطات</h2>
-      <div class="grid" id="newsGrid"></div>
+      <h2 data-i18n="servicesTitle">خدماتنا</h2>
+      <p class="lead" data-i18n="servicesSub">رعاية متكاملة لكل طفل</p>
+      <div class="svcs"><article class="svc reveal"><span class="ic"><i data-i="mic"></i></span><h3 data-i18n="s1a">تقويم النطق واللغة</h3><p data-i18n="s1d">علاج النطق واللغة المتخصص للأطفال ذوي الاحتياجات الخاصة.</p><span class="fr" dir="ltr">Orthophonie</span></article><article class="svc reveal"><span class="ic"><i data-i="award"></i></span><h3 data-i18n="s2a">التقييم والدعم النفسي</h3><p data-i18n="s2d">التقييم النفسي والدعم العاطفي للطفل والأسرة.</p><span class="fr" dir="ltr">Psychologie</span></article><article class="svc reveal"><span class="ic"><i data-i="users"></i></span><h3 data-i18n="s3a">ورش عمل وأنشطة بيداغوجية</h3><p data-i18n="s3d">ورش عمل تعليمية وأنشطة حسية وحركية.</p><span class="fr" dir="ltr">Ateliers éducatifs</span></article><article class="svc reveal"><span class="ic"><i data-i="heart"></i></span><h3 data-i18n="s4a">دعم وتدريب الأسر</h3><p data-i18n="s4d">تدريب ودعم مستمر للآباء والأمهات.</p><span class="fr" dir="ltr">Suivi parental</span></article></div>
     </div>
   </section>
 
-  <section id="contact" class="sec alt">
+  <section id="center" class="sec">
     <div class="wrap">
-      <div class="cc reveal">
-        <h2 data-i18n="contactTitle">اتصل بنا</h2>
-        <div class="phones">
-          <a class="tile" href="tel:0664421444"><i data-i="phone"></i><span dir="ltr">0664 42 14 44</span></a>
-          <a class="tile" href="tel:0550540211"><i data-i="phone"></i><span dir="ltr">0550 54 02 11</span></a>
-          <a class="tile" href="tel:0668034147"><i data-i="phone"></i><span dir="ltr">0668 03 41 47</span></a>
-          <a class="tile" href="tel:044444843"><i data-i="phone"></i><span dir="ltr">044 44 48 43</span></a>
+      <h2 data-i18n="centerTitle"></h2>
+      <article class="card center-card reveal">
+        <div class="ph"><img src="main-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <div class="body">
+          <span class="ic"><i data-i="center"></i></span>
+          <h3 data-i18n="cn"></h3>
+          <p data-i18n="cd"></p>
+          <a class="btn" href="https://maps.app.goo.gl/t6nTLCWQ8NMMDG4A9" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map"></span><i data-i="arrow" class="arr"></i></a>
         </div>
-
-        <div class="row">
-          <a class="btn gold" href="https://wa.me/213668034147" target="_blank" rel="noopener">
-            <i data-i="wa"></i><span data-i18n="waText">تواصل عبر واتساب</span>
-          </a>
-          <a class="lnk" href="mailto:Cppdarelihcen@gmail.com"><i data-i="mail"></i><span dir="ltr">Cppdarelihcen@gmail.com</span></a>
-        </div>
-
-        <div class="row soc">
-          <a class="lnk" href="https://www.facebook.com/apehme" target="_blank" rel="noopener"><i data-i="fb"></i><span dir="ltr">Association des Parents d'Enfants Handicapés Mentaux</span></a>
-          <a class="lnk" href="https://www.instagram.com/cpp_1990" target="_blank" rel="noopener"><i data-i="ig"></i><span dir="ltr">CPP Dar El Ihssan</span></a>
-        </div>
-      </div>
+      </article>
     </div>
   </section>
-</main>
+
+  <section id="annexes" class="sec alt">
+    <div class="wrap">
+      <h2 data-i18n="annexTitle">الملاحقات</h2>
+      <div class="grid two"><article class="card reveal"><div class="ph"><img src="farm-hydroponic.jpg" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="farm"></i></span><h3 data-i18n="nA1n"></h3><p data-i18n="nA1d"></p><a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article><article class="card reveal"><div class="ph"><img src="work-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="work"></i></span><h3 data-i18n="nA2n"></h3><p data-i18n="nA2d"></p><a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article></div>
+    </div>
+  </section>
+
+  <section id="goals" class="sec">
+    <div class="wrap">
+      <h2 data-i18n="goalsTitle">أهدافنا</h2>
+      <ul class="goals"><li class="reveal"><i data-i="check"></i><span data-i18n="g1">التدخل المبكر لحفظ استقلالية الطفل</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g2">إعادة التأهيل والإدماج الاجتماعي والمهني</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g3">تشجيع البحث العلمي المتخصص</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g4">توفير تكوين مستمر للفريق</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g5">التكفل المتعدد التخصصات للحالات</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g6">تنمية القدرات الفطرية والمكتسبة</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g7">دعم الأسر وتوعية المجتمع</span></li><li class="reveal"><i data-i="check"></i><span data-i18n="g8">بناء شراكات فعالة مع المؤسسات</span></li></ul>
+    </div>
+  </section>
+
+  </main>
 
 <a class="fab" href="https://wa.me/213668034147" target="_blank" rel="noopener" aria-label="WhatsApp">
   <i data-i="wa"></i><span data-i18n="waText">واتساب</span>
@@ -165,17 +140,23 @@
 
 <footer>
   <div class="wrap">
-    <img class="flogo" src="logo.png" alt="Dar El Ihssan">
-    <p class="f1" data-i18n="f1">جمعية أولياء الأطفال المعاقين ذهنيًا</p>
-    <p data-i18n="f2">المركز النفسي البيداغوجي دار الإحسان</p>
-    <p class="ad">بلدية العطف – ولاية غرداية – الجزائر<br>El Atteuf – Ghardaïa – Algeria</p>
-    <p dir="ltr"><a href="mailto:Cppdarelihcen@gmail.com">Cppdarelihcen@gmail.com</a></p>
-    <div class="fs">
-      <a href="https://www.facebook.com/apehme" target="_blank" rel="noopener" aria-label="Facebook"><i data-i="fb"></i></a>
-      <a href="https://www.instagram.com/cpp_1990" target="_blank" rel="noopener" aria-label="Instagram"><i data-i="ig"></i></a>
-      <a href="https://wa.me/213668034147" target="_blank" rel="noopener" aria-label="WhatsApp"><i data-i="wa"></i></a>
+    <img class="flogo" src="logo-sq.png" alt="Dar El Ihsan">
+    <p class="f1" data-i18n="f1"></p>
+    <p data-i18n="f2"></p>
+    <div id="contact" class="fbox">
+      <h3 data-i18n="contactTitle"></h3>
+      <div class="fgrid">
+        <div class="fi"><i data-i="pin"></i><p>بلدية العطف – ولاية غرداية – الجزائر<br><span dir="ltr">El Atteuf – Ghardaïa – Algeria</span></p></div>
+        <div class="fi"><i data-i="mail"></i><h4 data-i18n="mailT"></h4><p dir="ltr"><a href="mailto:cppdarelihcen@gmail.com">cppdarelihcen@gmail.com</a><br><a href="mailto:contact@darelihsan.com">contact@darelihsan.com</a></p></div>
+        <div class="fi"><i data-i="phone"></i><h4 data-i18n="phoneT"></h4><p dir="ltr">Tel/Fax: <a href="tel:044444834">044 44 48 34</a><br><a href="tel:0664421444">0664 42 14 44</a><br><a href="tel:0540817775">0540 81 77 75</a><br><a href="tel:0668034147">0668 03 41 47</a></p></div>
+      </div>
+      <a class="btn gold" href="https://wa.me/213668034147" target="_blank" rel="noopener"><i data-i="wa"></i><span data-i18n="waText"></span></a>
     </div>
-    <p class="copy" dir="ltr">© Association des Parents d'Enfants Handicapés Mentaux – Dar El Ihssan</p>
+    <div class="fs">
+      <a href="https://www.facebook.com/apehme" target="_blank" rel="noopener"><i data-i="fb"></i><span data-i18n="fb"></span></a>
+      <a href="https://www.instagram.com/cpp_1990" target="_blank" rel="noopener"><i data-i="ig"></i><span data-i18n="ig"></span></a>
+    </div>
+    <p class="copy" dir="ltr">© Association des Parents d'Enfants Handicapés Mentaux – Dar El Ihsan</p>
   </div>
 </footer>
 <script src="script.js"></script>
