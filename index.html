@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="cms.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -99,7 +100,7 @@
     <div class="wrap">
       <h2 data-i18n="servicesTitle">خدماتنا</h2>
       <p class="lead" data-i18n="servicesSub">رعاية متكاملة لكل طفل</p>
-      <div class="svcs"><article class="svc reveal"><span class="ic"><i data-i="mic"></i></span><h3 data-i18n="s1a">تقويم النطق واللغة</h3><p data-i18n="s1d">علاج النطق واللغة المتخصص للأطفال ذوي الاحتياجات الخاصة.</p><span class="fr" dir="ltr">Orthophonie</span></article><article class="svc reveal"><span class="ic"><i data-i="award"></i></span><h3 data-i18n="s2a">التقييم والدعم النفسي</h3><p data-i18n="s2d">التقييم النفسي والدعم العاطفي للطفل والأسرة.</p><span class="fr" dir="ltr">Psychologie</span></article><article class="svc reveal"><span class="ic"><i data-i="users"></i></span><h3 data-i18n="s3a">ورش عمل وأنشطة بيداغوجية</h3><p data-i18n="s3d">ورش عمل تعليمية وأنشطة حسية وحركية.</p><span class="fr" dir="ltr">Ateliers éducatifs</span></article><article class="svc reveal"><span class="ic"><i data-i="heart"></i></span><h3 data-i18n="s4a">دعم وتدريب الأسر</h3><p data-i18n="s4d">تدريب ودعم مستمر للآباء والأمهات.</p><span class="fr" dir="ltr">Suivi parental</span></article></div>
+      <div class="svcs"><article class="svc reveal"><span class="ic"><i data-i="mic"></i></span><h3 data-i18n="s1a">تقويم النطق واللغة</h3><p data-i18n="s1d">علاج النطق واللغة المتخصص للأطفال ذوي الاحتياجات الخاصة.</p><span class="fr" dir="ltr" data-i18n="s1n">Orthophonie</span></article><article class="svc reveal"><span class="ic"><i data-i="award"></i></span><h3 data-i18n="s2a">التقييم والدعم النفسي</h3><p data-i18n="s2d">التقييم النفسي والدعم العاطفي للطفل والأسرة.</p><span class="fr" dir="ltr" data-i18n="s2n">Psychologie</span></article><article class="svc reveal"><span class="ic"><i data-i="users"></i></span><h3 data-i18n="s3a">ورش عمل وأنشطة بيداغوجية</h3><p data-i18n="s3d">ورش عمل تعليمية وأنشطة حسية وحركية.</p><span class="fr" dir="ltr" data-i18n="s3n">Ateliers éducatifs</span></article><article class="svc reveal"><span class="ic"><i data-i="heart"></i></span><h3 data-i18n="s4a">دعم وتدريب الأسر</h3><p data-i18n="s4d">تدريب ودعم مستمر للآباء والأمهات.</p><span class="fr" dir="ltr" data-i18n="s4n">Suivi parental</span></article></div>
     </div>
   </section>
 
@@ -107,12 +108,12 @@
     <div class="wrap">
       <h2 data-i18n="centerTitle"></h2>
       <article class="card center-card reveal">
-        <div class="ph"><img src="main-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <div class="ph"><img src="main-center.jpg" data-cms-img="center" alt="" loading="lazy" onerror="this.remove()"></div>
         <div class="body">
           <span class="ic"><i data-i="center"></i></span>
           <h3 data-i18n="cn"></h3>
           <p data-i18n="cd"></p>
-          <a class="btn" href="https://maps.app.goo.gl/t6nTLCWQ8NMMDG4A9" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map"></span><i data-i="arrow" class="arr"></i></a>
+          <a class="btn" href="https://maps.app.goo.gl/t6nTLCWQ8NMMDG4A9" data-cms-link="mapCenter" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map"></span><i data-i="arrow" class="arr"></i></a>
         </div>
       </article>
     </div>
@@ -121,7 +122,7 @@
   <section id="annexes" class="sec alt">
     <div class="wrap">
       <h2 data-i18n="annexTitle">الملاحقات</h2>
-      <div class="grid two"><article class="card reveal"><div class="ph"><img src="farm-hydroponic.jpg" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="farm"></i></span><h3 data-i18n="nA1n"></h3><p data-i18n="nA1d"></p><a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article><article class="card reveal"><div class="ph"><img src="work-center.jpg" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="work"></i></span><h3 data-i18n="nA2n"></h3><p data-i18n="nA2d"></p><a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article></div>
+      <div class="grid two"><article class="card reveal"><div class="ph"><img src="farm-hydroponic.jpg" data-cms-img="farm" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="farm"></i></span><h3 data-i18n="nA1n"></h3><p data-i18n="nA1d"></p><a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" data-cms-link="mapFarm" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article><article class="card reveal"><div class="ph"><img src="work-center.jpg" data-cms-img="work" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="work"></i></span><h3 data-i18n="nA2n"></h3><p data-i18n="nA2d"></p><a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" data-cms-link="mapWork" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article></div>
     </div>
   </section>
 
@@ -132,9 +133,17 @@
     </div>
   </section>
 
+  <!-- قسم المعرض: يبقى مخفيًا إلى أن يضيف المدير عناصر من لوحة الإدارة -->
+  <section id="gallery" class="sec alt" hidden>
+    <div class="wrap">
+      <h2 data-i18n="galleryTitle">معرض الصور والفيديو</h2>
+      <div class="grid" id="cmsGallery"></div>
+    </div>
+  </section>
+
   </main>
 
-<a class="fab" href="https://wa.me/213668034147" target="_blank" rel="noopener" aria-label="WhatsApp">
+<a class="fab" href="https://wa.me/213668034147" data-cms-wa="whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
   <i data-i="wa"></i><span data-i18n="waText">واتساب</span>
 </a>
 
@@ -146,19 +155,22 @@
     <div id="contact" class="fbox">
       <h3 data-i18n="contactTitle"></h3>
       <div class="fgrid">
-        <div class="fi"><i data-i="pin"></i><p>بلدية العطف – ولاية غرداية – الجزائر<br><span dir="ltr">El Atteuf – Ghardaïa – Algeria</span></p></div>
-        <div class="fi"><i data-i="mail"></i><h4 data-i18n="mailT"></h4><p dir="ltr"><a href="mailto:cppdarelihcen@gmail.com">cppdarelihcen@gmail.com</a><br><a href="mailto:contact@darelihsan.com">contact@darelihsan.com</a></p></div>
-        <div class="fi"><i data-i="phone"></i><h4 data-i18n="phoneT"></h4><p dir="ltr">Tel/Fax: <a href="tel:044444834">044 44 48 34</a><br><a href="tel:0664421444">0664 42 14 44</a><br><a href="tel:0540817775">0540 81 77 75</a><br><a href="tel:0668034147">0668 03 41 47</a></p></div>
+        <div class="fi"><i data-i="pin"></i><p><span data-cms="addrAr">بلدية العطف – ولاية غرداية – الجزائر</span><br><span dir="ltr" data-cms="addrFr">El Atteuf – Ghardaïa – Algeria</span></p></div>
+        <div class="fi"><i data-i="mail"></i><h4 data-i18n="mailT"></h4><p dir="ltr"><a href="mailto:cppdarelihcen@gmail.com" data-cms-mail="email1">cppdarelihcen@gmail.com</a><br><a href="mailto:contact@darelihsan.com" data-cms-mail="email2">contact@darelihsan.com</a></p></div>
+        <div class="fi"><i data-i="phone"></i><h4 data-i18n="phoneT"></h4><p dir="ltr">Tel/Fax: <a href="tel:044444834" data-cms-tel="phone1">044 44 48 34</a><br><a href="tel:0664421444" data-cms-tel="phone2">0664 42 14 44</a><br><a href="tel:0540817775" data-cms-tel="phone3">0540 81 77 75</a><br><a href="tel:0668034147" data-cms-tel="phone4">0668 03 41 47</a></p></div>
       </div>
-      <a class="btn gold" href="https://wa.me/213668034147" target="_blank" rel="noopener"><i data-i="wa"></i><span data-i18n="waText"></span></a>
+      <a class="btn gold" href="https://wa.me/213668034147" data-cms-wa="whatsapp" target="_blank" rel="noopener"><i data-i="wa"></i><span data-i18n="waText"></span></a>
     </div>
     <div class="fs">
-      <a href="https://www.facebook.com/apehme" target="_blank" rel="noopener"><i data-i="fb"></i><span data-i18n="fb"></span></a>
-      <a href="https://www.instagram.com/cpp_1990" target="_blank" rel="noopener"><i data-i="ig"></i><span data-i18n="ig"></span></a>
+      <a href="https://www.facebook.com/apehme" data-cms-link="facebook" target="_blank" rel="noopener"><i data-i="fb"></i><span data-i18n="fb"></span></a>
+      <a href="https://www.instagram.com/cpp_1990" data-cms-link="instagram" target="_blank" rel="noopener"><i data-i="ig"></i><span data-i18n="ig"></span></a>
     </div>
     <p class="copy" dir="ltr">© Association des Parents d'Enfants Handicapés Mentaux – Dar El Ihsan</p>
   </div>
 </footer>
+<script src="i18n-data.js"></script>
+<script src="cms-config.js"></script>
+<script src="cms.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
