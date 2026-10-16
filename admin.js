@@ -172,6 +172,7 @@
     o.texts.ar = isObj(o.texts.ar) ? o.texts.ar : {}; o.texts.fr = isObj(o.texts.fr) ? o.texts.fr : {};
     o.fields = isObj(o.fields) ? o.fields : {}; o.images = isObj(o.images) ? o.images : {};
     o.gallery = Array.isArray(o.gallery) ? o.gallery : [];
+    o.sections = Array.isArray(o.sections) ? o.sections : [];
     return o;
   }
   var S = { work: null, draft: null, published: null, draftAt: null, pubAt: null, tab: 'texts', lang: 'ar' };
@@ -198,6 +199,8 @@
   async function saveDraft() {
     var errs = validateFields();
     if (errs.length) { go('contact'); toast(errs[0], 'err'); throw new Error(errs[0]); }
+    errs = validateSections();
+    if (errs.length) { go('sections'); toast(errs[0], 'err'); throw new Error(errs[0]); }
     var body = { data: S.work, updated_at: new Date().toISOString(), updated_by: session && session.user ? session.user.id : null };
     var rows = await rest('PATCH', '/site_content?id=eq.draft', body, { Prefer: 'return=representation' });
     if (!rows || !rows.length) rows = await rest('POST', '/site_content', Object.assign({ id: 'draft' }, body), { Prefer: 'return=representation' });
@@ -474,12 +477,202 @@
     wrap.append(card); return wrap;
   }
 
+  /* ---------- الأقسام المخصصة ---------- */
+  var AFTER_OPTS = [['about', 'بعد قسم «من نحن»'], ['services', 'بعد قسم «خدماتنا»'], ['center', 'بعد قسم «مركزنا»'], ['annexes', 'بعد قسم «الملاحقات»'], ['goals', 'بعد قسم «أهدافنا» (الافتراضي)']];
+  var MAX_SECTIONS = 30;
+  function validateSections() {
+    var out = [];
+    S.work.sections.forEach(function (x, i) {
+      var b = x.button;
+      if (b && b.url) { try { if (new URL(b.url).protocol !== 'https:') out.push('القسم ' + (i + 1) + ': رابط الزر يجب أن يبدأ بـ https://'); } catch (e) { out.push('القسم ' + (i + 1) + ': رابط الزر غير صالح'); } }
+    });
+    return out;
+  }
+  function sectionCard(s, i) {
+    ['title', 'body', 'menuLabel'].forEach(function (k) { if (!isObj(s[k])) s[k] = {}; });
+    function txt(kind, l, label, multi) {
+      var el = h(multi ? 'textarea' : 'input', { dir: l === 'ar' ? 'rtl' : 'ltr', maxlength: multi ? 8000 : 150, rows: multi ? 5 : null, type: multi ? null : 'text', 'data-grow': multi ? '1' : null });
+      el.value = s[kind][l] || '';
+      el.addEventListener('input', function () { if (el.value) s[kind][l] = el.value; else delete s[kind][l]; if (multi) autoGrow(el); changed(); });
+      return h('label', { class: 'fld' }, h('span', { text: label }), el);
+    }
+    function sel(label, opts, get, set) {
+      var el = h('select', null, opts.map(function (o) { return h('option', { value: o[0], text: o[1] }); }));
+      el.value = get(); el.addEventListener('change', function () { set(el.value); changed(); });
+      return h('label', { class: 'fld' }, h('span', { text: label }), el);
+    }
+    function chk(label, get, set, after) {
+      var c = h('input', { type: 'checkbox' }); c.checked = !!get();
+      c.addEventListener('change', function () { set(c.checked); changed(); if (after) after(c.checked); });
+      return h('label', { class: 'chk' }, c, h('span', { text: label }));
+    }
+    // الوسائط
+    var mediaBox = h('div', { class: 'stack' });
+    function drawMedia() {
+      mediaBox.textContent = '';
+      var m = s.media;
+      if (m) {
+        var th = h('div', { class: 'thumb' });
+        if (m.type === 'image' && safePath(m.path)) th.append(h('img', { alt: '', src: publicUrl(m.path), loading: 'lazy' }));
+        else if (m.type === 'video' && safePath(m.path)) th.append(h('video', { src: publicUrl(m.path) + '#t=0.1', preload: 'metadata', controls: true, playsinline: true }));
+        else th.append(h('div', { class: 'emb' }, icon('play'), h('span', { text: (m.provider === 'vimeo' ? 'Vimeo' : 'YouTube') + ' · ' + (m.videoId || '') })));
+        mediaBox.append(th);
+      }
+      var imgIn = filePicker('image/*', false, async function (f) { var r = await handleFile(f, { only: 'image', maxDim: 1600 }); s.media = { type: 'image', path: r.path }; changed(); drawMedia(); });
+      var vidIn = filePicker('video/mp4,video/webm,video/quicktime', false, async function (f) { var r = await handleFile(f, { only: 'video' }); s.media = { type: 'video', path: r.path }; changed(); drawMedia(); });
+      mediaBox.append(h('div', { class: 'item-actions' },
+        h('button', { class: 'btn light small', type: 'button', onclick: function () { imgIn.click(); } }, icon('upload'), 'صورة'),
+        h('button', { class: 'btn light small', type: 'button', onclick: function () { vidIn.click(); } }, icon('upload'), 'فيديو'),
+        h('button', { class: 'btn light small', type: 'button', onclick: async function () {
+          var inp = h('input', { type: 'url', dir: 'ltr', placeholder: 'https://www.youtube.com/watch?v=…' });
+          await ask({ title: 'فيديو من رابط', msg: 'الصق رابط فيديو من يوتيوب أو فيميو.', body: h('label', { class: 'fld' }, inp), ok: 'إضافة', onOk: async function () {
+            var e = parseEmbed(inp.value); if (!e) throw new Error('الرابط غير مدعوم. استخدم رابط يوتيوب أو فيميو صحيحًا.');
+            s.media = { type: 'embed', provider: e.provider, videoId: e.videoId }; changed(); drawMedia();
+          } });
+        } }, icon('link'), 'رابط فيديو'),
+        m && h('button', { class: 'btn danger small', type: 'button', onclick: function () { s.media = null; changed(); drawMedia(); } }, icon('trash'), 'إزالة الوسائط'), imgIn, vidIn));
+    }
+    drawMedia();
+    // الزر
+    function btnSet(kind, l, v) { if (!s.button) s.button = { label: {}, url: '' }; if (kind === 'url') s.button.url = v; else if (v) s.button.label[l] = v; else delete s.button.label[l]; if (!s.button.url && !Object.keys(s.button.label).length) s.button = null; changed(); }
+    function btnIn(kind, l, label, ph) {
+      var el = h('input', { type: kind === 'url' ? 'url' : 'text', dir: kind === 'url' || l === 'fr' ? 'ltr' : 'rtl', maxlength: kind === 'url' ? 500 : 60, placeholder: ph || '' });
+      el.value = s.button ? (kind === 'url' ? s.button.url || '' : (s.button.label && s.button.label[l]) || '') : '';
+      el.addEventListener('input', function () { btnSet(kind, l, el.value.trim()); });
+      return h('label', { class: 'fld' }, h('span', { text: label }), el);
+    }
+    var menuBox = h('div', { class: 'two' }, txt('menuLabel', 'ar', 'اسم القسم في القائمة (عربي) – اختياري'), txt('menuLabel', 'fr', 'Nom dans le menu (Français)'));
+    menuBox.hidden = !s.inMenu;
+    return h('section', { class: 'card' + (s.hidden ? ' teal' : '') },
+      h('div', { class: 'row' }, h('span', { class: 'badge', text: 'قسم ' + (i + 1) + (s.hidden ? ' · مخفي' : '') }), h('span', { class: 'grow' }),
+        h('button', { class: 'icon-btn small', type: 'button', 'aria-label': 'تحريك للأعلى', onclick: function () { moveSec(i, -1); } }, icon('up')),
+        h('button', { class: 'icon-btn small', type: 'button', 'aria-label': 'تحريك للأسفل', onclick: function () { moveSec(i, 1); } }, icon('down'))),
+      h('div', { class: 'two' }, txt('title', 'ar', 'العنوان (عربي)'), txt('title', 'fr', 'Titre (Français)'), txt('body', 'ar', 'النص (عربي)', true), txt('body', 'fr', 'Texte (Français)', true)),
+      h('p', { class: 'muted', text: 'اترك سطرًا فارغًا بين الفقرات لبدء فقرة جديدة. إن تُرك الحقل الفرنسي فارغًا يظهر النص العربي.' }),
+      h('div', { class: 'two' },
+        sel('مكان القسم في الصفحة', AFTER_OPTS, function () { return s.after || 'goals'; }, function (v) { s.after = v; }),
+        sel('لون الخلفية', [['auto', 'تلقائي'], ['light', 'فاتحة'], ['tint', 'ملوّنة']], function () { return s.bg || 'auto'; }, function (v) { s.bg = v; })),
+      h('h3', { text: 'صورة أو فيديو (اختياري)' }), mediaBox,
+      h('h3', { text: 'زر (اختياري)' }),
+      h('div', { class: 'two' }, btnIn('label', 'ar', 'نص الزر (عربي)'), btnIn('label', 'fr', 'Texte du bouton (Français)')), btnIn('url', null, 'رابط الزر (https فقط)', 'https://…'),
+      chk('إظهار القسم في القائمة العلوية', function () { return s.inMenu; }, function (v) { s.inMenu = v; }, function (v) { menuBox.hidden = !v; }), menuBox,
+      chk('إخفاء القسم مؤقتًا (لا يظهر للزوار)', function () { return s.hidden; }, function (v) { s.hidden = v; render(); }),
+      h('div', { class: 'item-actions' }, h('button', { class: 'btn danger small', type: 'button', onclick: async function () {
+        if (await ask({ title: 'حذف القسم؟', msg: 'سيُزال من الموقع عند النشر. يمكنك التراجع قبل الحفظ بزر «إلغاء التعديلات».', ok: 'حذف', danger: true })) { S.work.sections.splice(i, 1); changed(); render(); }
+      } }, icon('trash'), 'حذف القسم')));
+  }
+  function moveSec(i, d) { var a = S.work.sections, j = i + d; if (j < 0 || j >= a.length) return; var t = a[i]; a[i] = a[j]; a[j] = t; changed(); render(); }
+  function viewSections() {
+    var wrap = h('div', null, h('h2', { text: 'أقسام ونصوص إضافية' }),
+      h('p', { class: 'lead', text: 'أضف قسمًا جديدًا بعنوان ونص، ويمكنك إرفاق صورة أو فيديو أو زر. يظهر بنفس تصميم الموقع.' }),
+      h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', onclick: function () {
+        if (S.work.sections.length >= MAX_SECTIONS) return toast('بلغت الحد الأقصى (' + MAX_SECTIONS + ' قسمًا).', 'err');
+        S.work.sections.push(newSection()); changed(); render();
+        setTimeout(function () { var c = $('#view').lastElementChild; if (c && c.scrollIntoView) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+      } }, icon('plus'), 'إضافة قسم جديد')), h('p', { class: 'muted', text: 'الأقسام التي تشترك في نفس المكان تظهر بالترتيب نفسه هنا.' }));
+    if (!S.work.sections.length) wrap.append(h('div', { class: 'empty', text: 'لا توجد أقسام إضافية بعد.' }));
+    S.work.sections.forEach(function (x, i) { wrap.append(sectionCard(x, i)); });
+    return wrap;
+  }
+  function newSection() { return { id: rid(), after: 'goals', title: {}, body: {}, media: null, button: null, bg: 'auto', inMenu: false, menuLabel: {}, hidden: false }; }
+
+  /* ---------- المستخدمون (عبر دالة خلفية آمنة) ---------- */
+  var FN_PATH = '/functions/v1/manage-admins';
+  async function fn(action, payload) {
+    await ensureFresh();
+    var go = function () { return fetch(base + FN_PATH, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(Object.assign({ action: action }, payload || {})) }); };
+    var res; try { res = await go(); } catch (e) { throw new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت.'); }
+    if (res.status === 401 && session && (await refresh())) res = await go();
+    var j = {}; try { j = JSON.parse(await res.text()); } catch (e) { /* غير JSON */ }
+    if (res.status === 404 && !j.error) { var nd = new Error('NOT_DEPLOYED'); nd.notDeployed = true; throw nd; }
+    if (!res.ok) { var er = new Error(j.message || ('حدث خطأ (' + res.status + ')')); er.code = j.error; throw er; }
+    return j;
+  }
+  function genCode() {
+    var al = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789', a = new Uint8Array(14), o = '';
+    crypto.getRandomValues(a); a.forEach(function (x) { o += al[x % al.length]; }); return o;
+  }
+  function codeField(labelText, value) {
+    var el = h('input', { type: 'text', dir: 'ltr', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', maxlength: 72 }); if (value) el.value = value;
+    var hint = h('span', { class: 'hint', text: '8 أحرف على الأقل. يُفضَّل 12 فأكثر مع أحرف وأرقام ولا تستعمل اسم المركز أو سنة التأسيس.' });
+    el.addEventListener('input', function () { var v = el.value; hint.classList.toggle('bad', v.length > 0 && v.length < 8); });
+    var gen = h('button', { class: 'btn light small', type: 'button', onclick: function () { el.value = genCode(); el.dispatchEvent(new Event('input')); } }, 'توليد كود قوي');
+    return { input: el, node: h('div', { class: 'stack' }, h('label', { class: 'fld' }, h('span', { text: labelText }), el, hint), h('div', { class: 'row' }, gen)) };
+  }
+  async function addUserFlow(reload) {
+    var email = h('input', { type: 'email', dir: 'ltr', inputmode: 'email', autocomplete: 'off', placeholder: 'name@example.com' });
+    var cf = codeField('الكود (كلمة المرور) الذي تحدده له');
+    var body = h('div', { class: 'stack' }, h('label', { class: 'fld' }, h('span', { text: 'البريد الإلكتروني' }), email), cf.node);
+    var created = null;
+    var ok = await ask({ title: 'إضافة مستخدم بصلاحية إدارة', msg: 'سيدخل هذا الشخص إلى لوحة الإدارة بهذا البريد وهذا الكود، وتكون له صلاحية كاملة على المحتوى (دون إدارة المستخدمين).', body: body, ok: 'إضافة', onOk: async function () {
+      var r = await fn('add', { email: email.value.trim(), password: cf.input.value }); created = { email: r.user.email, code: cf.input.value, existed: r.existed };
+    } });
+    if (!ok || !created) return;
+    var url = location.origin + location.pathname;
+    var msg = 'بيانات الدخول إلى لوحة إدارة دار الإحسان\nالرابط: ' + url + '\nالبريد: ' + created.email + '\nالكود: ' + created.code;
+    var ta = h('textarea', { readonly: true, dir: 'rtl', rows: 5 }); ta.value = msg;
+    await ask({ title: created.existed ? 'تم تحديث الحساب' : 'تمت الإضافة ✔', msg: 'أرسل هذه البيانات للشخص بشكل خاص، ويُفضَّل أن يغيّر كلمته بعد أول دخول.', hideCancel: true, ok: 'تم', body: h('div', { class: 'stack' }, h('label', { class: 'fld' }, ta),
+      h('button', { class: 'btn light small', type: 'button', onclick: function () { try { navigator.clipboard.writeText(msg); toast('تم النسخ', 'ok'); } catch (e) { ta.select(); } } }, 'نسخ البيانات')) });
+    reload();
+  }
+  async function resetUserFlow(u, reload) {
+    var cf = codeField('الكود الجديد لـ ' + u.email);
+    var ok = await ask({ title: 'تغيير كود الدخول', msg: 'سيُستبدل كود هذا المستخدم فورًا.', body: cf.node, ok: 'تغيير', onOk: async function () { await fn('reset', { user_id: u.id, password: cf.input.value }); } });
+    if (ok) { toast('تم تغيير الكود. أبلغ صاحبه به.', 'ok'); reload(); }
+  }
+  async function removeUserFlow(u, reload) {
+    if (!(await ask({ title: 'حذف هذا المستخدم؟', msg: u.email + ' — ستسقط صلاحيته فورًا ويُحذف حسابه نهائيًا.', ok: 'حذف', danger: true }))) return;
+    var b = busy(); try { await fn('remove', { user_id: u.id }); toast('تم حذف المستخدم.', 'ok'); reload(); } catch (e) { toast(e.message, 'err'); } finally { b.done(); }
+  }
+  function viewUsers() {
+    var box = h('div', { class: 'stack' }, h('p', { class: 'muted', text: 'جارٍ التحميل…' }));
+    var wrap = h('div', null, h('h2', { text: 'المستخدمون وصلاحيات الدخول' }),
+      h('p', { class: 'lead', text: 'من هنا تمنح أي بريد إلكتروني حق الدخول إلى لوحة الإدارة بكود تحدده أنت.' }), box);
+    function load() {
+      box.textContent = ''; box.append(h('p', { class: 'muted', text: 'جارٍ التحميل…' }));
+      fn('list').then(function (r) {
+        box.textContent = '';
+        if (r.can_manage) box.append(h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', onclick: function () { addUserFlow(load); } }, icon('plus'), 'إضافة مستخدم')));
+        else box.append(h('p', { class: 'muted', text: 'إدارة المستخدمين متاحة للمالك فقط. هذه قائمة بالمديرين الحاليين.' }));
+        var ul = h('ul', { class: 'list' });
+        r.admins.forEach(function (u) {
+          var meta = h('div', { class: 'grow' }, h('div', { dir: 'ltr', class: 'u-mail', text: u.email }),
+            h('div', { class: 'row' }, u.is_owner && h('span', { class: 'badge owner', text: 'المالك' }), u.is_me && h('span', { class: 'badge', text: 'أنت' }),
+              h('span', { class: 'muted small', text: u.last_sign_in_at ? 'آخر دخول: ' + fmtDate(u.last_sign_in_at) : 'لم يدخل بعد' })));
+          var acts = h('div', { class: 'item-actions' });
+          if (r.can_manage && !u.is_owner) {
+            acts.append(h('button', { class: 'btn light small', type: 'button', onclick: function () { resetUserFlow(u, load); } }, 'تغيير الكود'),
+              h('button', { class: 'btn danger small', type: 'button', onclick: function () { removeUserFlow(u, load); } }, icon('trash'), 'حذف'));
+          }
+          ul.append(h('li', { class: 'u-row' }, meta, acts));
+        });
+        box.append(ul);
+      }).catch(function (e) {
+        box.textContent = '';
+        if (e.notDeployed) box.append(h('section', { class: 'card' }, h('h3', { text: 'الميزة تحتاج تفعيلًا لمرة واحدة' }),
+          h('p', { text: 'إنشاء حسابات جديدة يتطلب مفتاحًا سريًا لا يجوز وضعه في الموقع، لذلك يتم عبر دالة خلفية اسمها manage-admins.' }),
+          h('p', { class: 'muted', text: 'انشرها من Supabase ▸ Edge Functions باستعمال الملف supabase/functions/manage-admins/index.ts (الخطوات في SETUP-AR.md ▸ قسم المستخدمين)، ثم أعد فتح هذا التبويب.' }),
+          h('button', { class: 'btn light small', type: 'button', onclick: load }, 'إعادة المحاولة')));
+        else box.append(h('div', { class: 'err', text: e.message }));
+      });
+    }
+    load(); return wrap;
+  }
+  async function changeMyPassword() {
+    var cf = codeField('كلمة المرور الجديدة لحسابك');
+    var ok = await ask({ title: 'تغيير كلمة مروري', msg: 'ستُستعمل في الدخول القادم.', body: cf.node, ok: 'تغيير', onOk: async function () {
+      var v = cf.input.value; if (v.length < 8) throw new Error('الكود قصير: 8 أحرف على الأقل.');
+      await http('PUT', '/auth/v1/user', { password: v });
+    } });
+    if (ok) toast('تم تغيير كلمة المرور ✔', 'ok');
+  }
+
   /* ---------- النشر والأمان ---------- */
   function diffCounts(a, b) {
     var t = 0; ['ar', 'fr'].forEach(function (l) { var ks = Object.keys(Object.assign({}, a.texts[l], b.texts[l])); ks.forEach(function (k) { if (a.texts[l][k] !== b.texts[l][k]) t++; }); });
     var f = Object.keys(Object.assign({}, a.fields, b.fields)).filter(function (k) { return a.fields[k] !== b.fields[k]; }).length;
     var im = Object.keys(Object.assign({}, a.images, b.images)).filter(function (k) { return a.images[k] !== b.images[k]; }).length;
-    return { t: t, f: f, im: im, g: canon(a.gallery) === canon(b.gallery) ? 0 : 1 };
+    return { t: t, f: f, im: im, g: canon(a.gallery) === canon(b.gallery) ? 0 : 1, s: canon(a.sections) === canon(b.sections) ? 0 : 1 };
   }
   function viewPublish() {
     var d = diffCounts(S.work, S.published);
@@ -488,7 +681,7 @@
       h('dl', { class: 'kv' },
         h('dt', { text: 'آخر نشر' }), h('dd', { text: S.pubAt && canon(S.published) !== canon(normalize({})) ? fmtDate(S.pubAt) : 'لم يُنشر محتوى بعد' }),
         h('dt', { text: 'آخر حفظ للمسودة' }), h('dd', { text: S.draftAt ? fmtDate(S.draftAt) : '—' }),
-        h('dt', { text: 'الفروق عن المنشور' }), h('dd', { text: (d.t + d.f + d.im + d.g) ? [d.t && d.t + ' نص', d.f && d.f + ' بيانات اتصال', d.im && d.im + ' صورة أساسية', d.g && 'المعرض'].filter(Boolean).join('، ') : 'لا فروق' })),
+        h('dt', { text: 'الفروق عن المنشور' }), h('dd', { text: (d.t + d.f + d.im + d.g + d.s) ? [d.t && d.t + ' نص', d.f && d.f + ' بيانات اتصال', d.im && d.im + ' صورة أساسية', d.g && 'المعرض', d.s && 'الأقسام المخصصة'].filter(Boolean).join('، ') : 'لا فروق' })),
       h('div', { class: 'row' }, h('button', { class: 'btn light small', type: 'button', onclick: discardDraft }, icon('undo'), 'إرجاع المسودة إلى المنشور'))));
     var hist = h('ul', { class: 'list' }, h('li', { class: 'muted', text: 'جارٍ التحميل…' }));
     wrap.append(h('section', { class: 'card plain' }, h('h3', { text: 'النسخ المنشورة السابقة' }), hist));
@@ -497,7 +690,7 @@
     wrap.append(h('section', { class: 'card plain' }, h('h3', { text: 'الأمان' }),
       h('dl', { class: 'kv' }, h('dt', { text: 'الحساب' }), h('dd', { dir: 'ltr', text: (session && session.user && session.user.email) || '—' })),
       mfa,
-      h('div', { class: 'row' }, h('button', { class: 'btn light small', type: 'button', onclick: cleanupFiles }, icon('trash'), 'تنظيف الملفات غير المستخدمة'),
+      h('div', { class: 'row' }, h('button', { class: 'btn light small', type: 'button', onclick: changeMyPassword }, 'تغيير كلمة مروري'), h('button', { class: 'btn light small', type: 'button', onclick: cleanupFiles }, icon('trash'), 'تنظيف الملفات غير المستخدمة'),
         h('button', { class: 'btn light small', type: 'button', onclick: doLogout }, icon('out'), 'تسجيل الخروج'))));
     loadMfa(mfa);
     return wrap;
@@ -553,6 +746,7 @@
     o = normalize(o);
     Object.keys(o.images).forEach(function (k) { if (o.images[k]) set[o.images[k]] = 1; });
     o.gallery.forEach(function (g) { if (g && g.path) set[g.path] = 1; });
+    o.sections.forEach(function (x) { if (x && x.media && x.media.path) set[x.media.path] = 1; });
   }
   async function cleanupFiles() {
     var b = busy('جارٍ فحص الملفات…');
@@ -597,12 +791,12 @@
   });
 
   /* ---------- التنقل والعرض ---------- */
-  var VIEWS = { texts: viewTexts, images: viewImages, gallery: viewGallery, contact: viewContact, publish: viewPublish };
+  var VIEWS = { texts: viewTexts, sections: viewSections, images: viewImages, gallery: viewGallery, contact: viewContact, users: viewUsers, publish: viewPublish };
   function go(tab) { S.tab = tab; render(); window.scrollTo(0, 0); }
   function render() {
     document.querySelectorAll('#tabs button').forEach(function (b) { var on = b.dataset.tab === S.tab; b.setAttribute('aria-selected', String(on)); if (on && b.scrollIntoView) b.scrollIntoView({ inline: 'center', block: 'nearest' }); });
     var v = $('#view'); v.textContent = ''; v.append(VIEWS[S.tab]()); refreshStatus();
-    v.querySelectorAll('details[open] textarea').forEach(autoGrow);
+    v.querySelectorAll('details[open] textarea, textarea[data-grow]').forEach(autoGrow);
   }
   function showLogin(msg) {
     $('#boot').hidden = true; $('#app').hidden = true; $('#login').hidden = false;

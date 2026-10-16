@@ -143,3 +143,11 @@ code.sec{display:block;direction:ltr;text-align:left;word-break:break-all;backgr
 
 .card .icon-btn,.row>.icon-btn{background:#eef3f6;color:var(--blue);width:42px;height:42px}
 .view .btn .i{width:20px;height:20px}
+
+.badge.owner{background:#fff1cf;color:#6a4b00}
+.small{font-size:13.5px}
+.u-row{align-items:flex-start;flex-wrap:wrap}
+.u-mail{font-weight:700;word-break:break-all}
+.view select{width:100%}
+.fld textarea[data-grow]{min-height:110px}
+.view h3{margin:14px 0 8px;font-size:16px;color:var(--blue)}

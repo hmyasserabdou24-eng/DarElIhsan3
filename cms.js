@@ -150,6 +150,67 @@
     sec.hidden = shown === 0;
   }
 
+  /* ---------- الأقسام المخصصة (تُدرج بعد قسم موجود) ---------- */
+  var AFTER = ['about', 'services', 'center', 'annexes', 'goals'];
+  function buildMedia(m, alt, l) {
+    if (!isObj(m)) return null;
+    var el = null;
+    if (m.type === 'image') {
+      var u = mediaUrl(m.path); if (!u) return null;
+      el = document.createElement('img'); el.src = u; el.alt = alt || ''; el.loading = 'lazy';
+    } else if (m.type === 'video') {
+      var vu = mediaUrl(m.path); if (!vu) return null;
+      el = document.createElement('video'); el.src = vu + '#t=0.1'; el.controls = true; el.preload = 'metadata'; el.setAttribute('playsinline', '');
+    } else if (m.type === 'embed') {
+      var es = embedSrc(m); if (!es) return null;
+      el = document.createElement('iframe'); el.src = es; el.loading = 'lazy'; el.title = alt || 'video'; el.allowFullscreen = true;
+      el.setAttribute('allow', 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen');
+      el.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    } else return null;
+    var box = document.createElement('div'); box.className = 'cms-media'; box.appendChild(el); return box;
+  }
+  function renderSections() {
+    document.querySelectorAll('[data-cms-sec]').forEach(function (e) { e.remove(); });
+    document.querySelectorAll('a[data-cms-nav]').forEach(function (e) { e.remove(); });
+    var list = current && Array.isArray(current.sections) ? current.sections.slice(0, 30) : [];
+    var l = lang(), last = {}, nav = document.querySelector('.main-nav');
+    var contactLink = nav ? nav.querySelector('a[href="#contact"]') : null;
+    list.forEach(function (s, i) {
+      if (!isObj(s) || s.hidden === true) return;
+      var after = AFTER.indexOf(s.after) >= 0 ? s.after : 'goals';
+      var title = pick(s.title, l), body = pick(s.body, l);
+      var media = buildMedia(s.media, title, l);
+      var btnLabel = isObj(s.button) ? pick(s.button.label, l) : '', btnUrl = isObj(s.button) ? httpsUrl(s.button.url) : null;
+      if (!title && !body && !media) return;
+      var target = last[after] || document.getElementById(after); if (!target) return;
+      var sid = 's-' + (String(s.id || i).replace(/[^\w-]/g, '').slice(0, 40) || i);
+      var tintDefault = !target.classList.contains('alt');
+      var tint = s.bg === 'tint' ? true : s.bg === 'light' ? false : tintDefault;
+      var sec = document.createElement('section'); sec.id = sid; sec.className = 'sec cms-sec' + (tint ? ' alt' : ''); sec.setAttribute('data-cms-sec', '1');
+      var wrap = document.createElement('div'); wrap.className = 'wrap';
+      if (title) { var h2 = document.createElement('h2'); h2.textContent = title; wrap.appendChild(h2); }
+      if (body || media || (btnLabel && btnUrl)) {
+        var box = document.createElement('div'); box.className = 'about-content hist cms-box' + (media ? ' has-media' : '');
+        if (media) box.appendChild(media);
+        var txt = document.createElement('div'); txt.className = 'cms-text';
+        body.split(/\n\s*\n/).forEach(function (para) { if (para.trim()) { var p = document.createElement('p'); p.textContent = para.trim(); txt.appendChild(p); } });
+        if (btnLabel && btnUrl) {
+          var a = document.createElement('a'); a.className = 'btn gold'; a.href = btnUrl; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = btnLabel; txt.appendChild(a);
+        }
+        if (txt.childNodes.length) box.appendChild(txt);
+        wrap.appendChild(box);
+      }
+      sec.appendChild(wrap);
+      target.insertAdjacentElement('afterend', sec); last[after] = sec;
+      if (s.inMenu === true && nav && contactLink) {
+        var label = pick(s.menuLabel, l) || title; if (!label) return;
+        var na = document.createElement('a'); na.href = '#' + sid; na.textContent = label; na.setAttribute('data-cms-nav', '1');
+        na.addEventListener('click', function () { nav.classList.remove('open'); var t = document.querySelector('.nav-toggle'); if (t) t.setAttribute('aria-expanded', 'false'); });
+        nav.insertBefore(na, contactLink);
+      }
+    });
+  }
+
   /* ---------- تطبيق المحتوى كاملًا ---------- */
   function apply(content, rerenderText) {
     current = isObj(content) ? content : {};
@@ -158,6 +219,7 @@
     applyFields(current);
     applyImages(current);
     renderGallery();
+    renderSections();
   }
 
   /* 1) تطبيق النسخة المخزّنة محليًا فورًا (قبل script.js) لتجنّب وميض المحتوى القديم */
@@ -178,7 +240,7 @@
       window.parent.postMessage({ type: 'cms-ready' }, location.origin);
       return;
     }
-    if (isObj(cached)) { applyFields(cached); applyImages(cached); renderGallery(); }
+    if (isObj(cached)) { applyFields(cached); applyImages(cached); renderGallery(); renderSections(); }
     if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
 
     var ctl = window.AbortController ? new AbortController() : null;
@@ -202,6 +264,6 @@
   });
 
   /* إعادة رسم المعرض عند تبديل اللغة (script.js يغيّر lang على <html>) */
-  new MutationObserver(function () { renderGallery(); })
+  new MutationObserver(function () { renderGallery(); renderSections(); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 })();
