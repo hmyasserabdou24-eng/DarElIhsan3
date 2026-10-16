@@ -10,7 +10,8 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin.css">
+<meta name="admin-version" content="3">
+<link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -47,8 +48,20 @@
     <div id="stepMfa" hidden>
       <label class="fld"><span>رمز المصادقة الثنائية (6 أرقام)</span><input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr"></label>
     </div>
+    <div id="stepForgot1" hidden>
+      <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr"></label>
+    </div>
+    <div id="stepForgot2" hidden>
+      <label class="fld"><span>الرمز الذي وصلك على البريد</span><input id="rCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr"></label>
+      <label class="fld"><span>كلمة المرور الجديدة</span><input id="rPass" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span>أعد كتابة كلمة المرور الجديدة</span><input id="rPass2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <button id="resendBtn" class="linkbtn" type="button">إعادة إرسال الرمز</button>
+    </div>
     <p id="loginErr" class="err" role="alert" hidden></p>
+    <p id="loginOk" class="okmsg" role="status" hidden></p>
     <button id="loginBtn" class="btn primary block" type="submit">دخول</button>
+    <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
+    <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
   </form>
 </main>
 
@@ -102,6 +115,6 @@
 
 <script src="i18n-data.js"></script>
 <script src="cms-config.js"></script>
-<script src="admin.js"></script>
+<script src="admin.js?v=3"></script>
 </body>
 </html>

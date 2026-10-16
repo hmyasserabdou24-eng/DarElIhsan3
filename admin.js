@@ -9,7 +9,7 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var base = (CFG.supabaseUrl || '').replace(/\/+$/, '');
   var BUCKET = CFG.bucket || 'media';
-  var SKEY = 'de_admin_session', BKEY = 'de_admin_backup';
+  var SKEY = 'de_admin_session', BKEY = 'de_admin_backup', VERSION = '3';
 
   /* ---------- أدوات صغيرة ---------- */
   function isObj(v) { return v && typeof v === 'object' && !Array.isArray(v); }
@@ -96,7 +96,12 @@
   var MSG = [
     [/invalid login credentials/i, 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
     [/invalid (totp|code)|mfa.*(invalid|failed)|code.*incorrect/i, 'رمز المصادقة غير صحيح أو منتهٍ.'],
-    [/rate limit|too many/i, 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.'],
+    [/rate limit|too many|over_email_send_rate_limit|only request this (after|once)/i, 'محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة.'],
+    [/sending (recovery )?email|smtp/i, 'تعذّر إرسال البريد. تأكد من ضبط خدمة البريد (SMTP) في Supabase.'],
+    [/otp.*expired|token has expired|invalid.*(token|otp)|otp_expired/i, 'الرمز غير صحيح أو انتهت صلاحيته.'],
+    [/same password|should be different/i, 'اختر كلمة مرور مختلفة عن الحالية.'],
+    [/aal2|insufficient_aal|assurance level/i, 'حسابك محميّ بالمصادقة الثنائية، لذا لا يمكن إعادة التعيين بالرمز. اطلب من المالك تغيير الكود من تبويب المستخدمين.'],
+    [/weak.?password|password should|at least \d+ char/i, 'كلمة المرور ضعيفة أو قصيرة (8 أحرف على الأقل).'],
     [/row-level security|permission denied|42501|not authorized|غير مصرّح/i, 'هذا الحساب لا يملك صلاحية تنفيذ هذه العملية.'],
     [/payload too large|exceeded the maximum|too large/i, 'حجم الملف أكبر من الحد المسموح (50 ميغابايت).'],
     [/mime type|not supported/i, 'نوع الملف غير مدعوم. المسموح: JPG وPNG وWebP وGIF وMP4 وWebM.']
@@ -795,14 +800,48 @@
   function go(tab) { S.tab = tab; render(); window.scrollTo(0, 0); }
   function render() {
     document.querySelectorAll('#tabs button').forEach(function (b) { var on = b.dataset.tab === S.tab; b.setAttribute('aria-selected', String(on)); if (on && b.scrollIntoView) b.scrollIntoView({ inline: 'center', block: 'nearest' }); });
-    var v = $('#view'); v.textContent = ''; v.append(VIEWS[S.tab]()); refreshStatus();
+    var v = $('#view'); v.textContent = '';
+    try { if (!VIEWS[S.tab]) throw new Error('هذا القسم غير موجود في ملف admin.js المرفوع'); v.append(VIEWS[S.tab]()); }
+    catch (ex) { v.append(h('div', { class: 'err', text: 'تعذّر عرض هذا القسم: ' + ex.message + '. ارفع كل ملفات الإصدار الأخير (admin.html وadmin.js وadmin.css) ثم حدّث الصفحة بالكامل.' })); }
+    refreshStatus();
     v.querySelectorAll('details[open] textarea, textarea[data-grow]').forEach(autoGrow);
+  }
+  var loginMode = 'login', resetEmail = '', resendT = null;
+  function setMode(m, hint) {
+    loginMode = m;
+    $('#stepCreds').hidden = m !== 'login'; $('#stepMfa').hidden = m !== 'mfa';
+    $('#stepForgot1').hidden = m !== 'forgot1'; $('#stepForgot2').hidden = m !== 'forgot2';
+    $('#forgotBtn').hidden = m !== 'login'; $('#backBtn').hidden = m === 'login' || m === 'mfa';
+    $('#loginBtn').textContent = { login: 'دخول', mfa: 'تأكيد', forgot1: 'إرسال الرمز إلى بريدي', forgot2: 'تأكيد الرمز وتعيين كلمة المرور' }[m];
+    $('#loginBtn').disabled = false;
+    $('#loginHint').textContent = hint || { login: 'سجّل الدخول لإدارة محتوى الموقع.', mfa: 'أدخل الرمز من تطبيق المصادقة.', forgot1: 'اكتب بريد حسابك وسنرسل إليه رمز تحقق.', forgot2: 'أدخل الرمز الذي وصلك ثم اختر كلمة مرور جديدة.' }[m];
+    $('#loginErr').hidden = true; $('#loginOk').hidden = true;
   }
   function showLogin(msg) {
     $('#boot').hidden = true; $('#app').hidden = true; $('#login').hidden = false;
-    $('#stepCreds').hidden = false; $('#stepMfa').hidden = true; $('#password').value = ''; $('#mfaCode').value = '';
-    $('#loginBtn').textContent = 'دخول'; $('#loginBtn').disabled = false;
+    $('#password').value = ''; $('#mfaCode').value = ''; $('#rCode').value = ''; $('#rPass').value = ''; $('#rPass2').value = '';
+    setMode('login');
     var e = $('#loginErr'); e.hidden = !msg; e.textContent = msg || '';
+  }
+  function cooldown() {
+    var b = $('#resendBtn'), left = 60; b.disabled = true; clearInterval(resendT);
+    resendT = setInterval(function () { left--; if (left <= 0) { clearInterval(resendT); b.disabled = false; b.textContent = 'إعادة إرسال الرمز'; } else b.textContent = 'إعادة الإرسال بعد ' + left + ' ثانية'; }, 1000);
+    b.textContent = 'إعادة الإرسال بعد 60 ثانية';
+  }
+  async function sendRecovery(email) {
+    var r; try { r = await fetch(base + '/auth/v1/recover', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }, false), body: JSON.stringify({ email: email }) }); }
+    catch (e) { throw new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت.'); }
+    if (!r.ok) throw await apiError(r);
+  }
+  async function finishReset(email, code, pw) {
+    var hd = function (tok) { return headers({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, false); };
+    var v; try { v = await fetch(base + '/auth/v1/verify', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }, false), body: JSON.stringify({ type: 'recovery', email: email, token: code }) }); }
+    catch (e) { throw new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت.'); }
+    if (!v.ok) throw await apiError(v);
+    var tok = await v.json();
+    var u = await fetch(base + '/auth/v1/user', { method: 'PUT', headers: hd(tok.access_token), body: JSON.stringify({ password: pw }) });
+    if (!u.ok) { var er = await apiError(u); fetch(base + '/auth/v1/logout', { method: 'POST', headers: hd(tok.access_token) }).catch(function () { }); throw er; }
+    fetch(base + '/auth/v1/logout', { method: 'POST', headers: hd(tok.access_token) }).catch(function () { }); // نُغلق جلسة الاستعادة ونسجّل الدخول بشكل طبيعي (مع المصادقة الثنائية إن وُجدت)
   }
   async function enterApp() {
     $('#boot').hidden = false; $('#boot').textContent = 'جارٍ التحميل…';
@@ -820,6 +859,8 @@
 
   /* ---------- التشغيل ---------- */
   function init() {
+    var mv = document.querySelector('meta[name=admin-version]');
+    if (!mv || mv.content !== VERSION) { $('#boot').textContent = 'ملفات لوحة الإدارة غير متطابقة (admin.html وadmin.js). ارفع كل ملفات الإصدار الأخير ثم حدّث الصفحة بالكامل (Ctrl+F5).'; return; }
     if (!base || !CFG.supabaseKey) { $('#boot').textContent = 'لم يتم ضبط الاتصال بعد. عدّل الملف cms-config.js وأضف عنوان Supabase والمفتاح العام.'; return; }
     $('#tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
     $('#btnSave').addEventListener('click', async function () {
@@ -835,17 +876,41 @@
     $('#logoutBtn').addEventListener('click', doLogout);
     window.addEventListener('beforeunload', function (e) { if (S.work && isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
+    $('#forgotBtn').addEventListener('click', function () { $('#fEmail').value = $('#email').value.trim(); setMode('forgot1'); $('#fEmail').focus(); });
+    $('#backBtn').addEventListener('click', function () { clearInterval(resendT); setMode('login'); });
+    $('#resendBtn').addEventListener('click', async function () {
+      var err = $('#loginErr'); err.hidden = true;
+      try { await sendRecovery(resetEmail); cooldown(); var ok = $('#loginOk'); ok.textContent = 'أُعيد إرسال الرمز.'; ok.hidden = false; } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    });
     $('#loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      var btn = $('#loginBtn'), err = $('#loginErr'); err.hidden = true; btn.disabled = true;
+      var btn = $('#loginBtn'), err = $('#loginErr'), okm = $('#loginOk'); err.hidden = true; okm.hidden = true; btn.disabled = true;
       try {
-        if (!$('#stepMfa').hidden) { await verifyMfa($('#mfaCode').value.trim()); }
+        if (loginMode === 'mfa') { await verifyMfa($('#mfaCode').value.trim()); await enterApp(); }
+        else if (loginMode === 'forgot1') {
+          var em = $('#fEmail').value.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) throw new Error('اكتب بريدًا إلكترونيًا صالحًا.');
+          await sendRecovery(em); resetEmail = em;
+          setMode('forgot2'); cooldown(); $('#rCode').focus();
+          okm.textContent = 'إن كان هذا البريد مسجَّلًا فقد أُرسل إليه رمز التحقق. تحقق أيضًا من البريد المزعج (Spam).'; okm.hidden = false; return;
+        }
+        else if (loginMode === 'forgot2') {
+          var code = $('#rCode').value.replace(/\s/g, ''), p1 = $('#rPass').value, p2 = $('#rPass2').value;
+          if (!/^\d{6,10}$/.test(code)) throw new Error('الرمز أرقام فقط (6 إلى 10 أرقام).');
+          if (p1.length < 8) throw new Error('كلمة المرور قصيرة: 8 أحرف على الأقل.');
+          if (p1 !== p2) throw new Error('كلمتا المرور غير متطابقتين.');
+          await finishReset(resetEmail, code, p1);
+          clearInterval(resendT);
+          var r2 = await signIn(resetEmail, p1, true);
+          if (r2 === 'mfa') { setMode('mfa'); $('#mfaCode').focus(); return; }
+          await enterApp();
+        }
         else {
           var remember = $('#remember').checked; localStorage.setItem('de_admin_remember', remember ? '1' : '0');
           var r = await signIn($('#email').value.trim(), $('#password').value, remember);
-          if (r === 'mfa') { $('#stepCreds').hidden = true; $('#stepMfa').hidden = false; $('#loginHint').textContent = 'أدخل الرمز من تطبيق المصادقة.'; btn.textContent = 'تأكيد'; btn.disabled = false; $('#mfaCode').focus(); return; }
+          if (r === 'mfa') { setMode('mfa'); $('#mfaCode').focus(); return; }
+          await enterApp();
         }
-        await enterApp();
       } catch (ex) { err.textContent = ex.message; err.hidden = false; btn.disabled = false; }
     });
 
