@@ -155,3 +155,6 @@ code.sec{display:block;direction:ltr;text-align:left;word-break:break-all;backgr
 .linkbtn{align-self:center;border:0;background:none;color:var(--burg);font-weight:700;font-size:15px;cursor:pointer;min-height:40px;padding:4px 10px}
 .okmsg{color:#0b5a4c;background:#e3f6ef;padding:10px 14px;border-radius:12px;font-size:15px;text-align:start!important}
 .ver-banner{position:sticky;top:0;z-index:100;padding:10px 14px;background:#fff3cd;color:#664d03;font-weight:700;text-align:center}
+
+.steps{margin:0 0 14px;padding-inline-start:22px;color:#31465f}
+.steps li{margin:4px 0}
