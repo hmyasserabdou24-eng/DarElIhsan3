@@ -14,8 +14,10 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.supabase.co; media-src 'self' https://*.supabase.co; connect-src https://*.supabase.co; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="cms.css?v=4">
+<link rel="stylesheet" href="cms.css?v=5">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -108,7 +110,7 @@
     <div class="wrap">
       <h2 data-i18n="centerTitle"></h2>
       <article class="card center-card reveal">
-        <div class="ph"><img src="main-center.jpg" data-cms-img="center" alt="" loading="lazy" onerror="this.remove()"></div>
+        <div class="ph"><img src="main-center.jpg" data-cms-img="center" alt="" loading="lazy"></div>
         <div class="body">
           <span class="ic"><i data-i="center"></i></span>
           <h3 data-i18n="cn"></h3>
@@ -122,7 +124,7 @@
   <section id="annexes" class="sec alt">
     <div class="wrap">
       <h2 data-i18n="annexTitle">الملاحقات</h2>
-      <div class="grid two"><article class="card reveal"><div class="ph"><img src="farm-hydroponic.jpg" data-cms-img="farm" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="farm"></i></span><h3 data-i18n="nA1n"></h3><p data-i18n="nA1d"></p><a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" data-cms-link="mapFarm" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article><article class="card reveal"><div class="ph"><img src="work-center.jpg" data-cms-img="work" alt="" loading="lazy" onerror="this.remove()"></div><div class="body"><span class="ic"><i data-i="work"></i></span><h3 data-i18n="nA2n"></h3><p data-i18n="nA2d"></p><a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" data-cms-link="mapWork" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article></div>
+      <div class="grid two"><article class="card reveal"><div class="ph"><img src="farm-hydroponic.jpg" data-cms-img="farm" alt="" loading="lazy"></div><div class="body"><span class="ic"><i data-i="farm"></i></span><h3 data-i18n="nA1n"></h3><p data-i18n="nA1d"></p><a class="btn" href="https://maps.app.goo.gl/vLLZMdjQfvt87oHr9" data-cms-link="mapFarm" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article><article class="card reveal"><div class="ph"><img src="work-center.jpg" data-cms-img="work" alt="" loading="lazy"></div><div class="body"><span class="ic"><i data-i="work"></i></span><h3 data-i18n="nA2n"></h3><p data-i18n="nA2d"></p><a class="btn" href="https://maps.app.goo.gl/H6kUhztG2EW298kaA" data-cms-link="mapWork" target="_blank" rel="noopener"><i data-i="pin"></i><span data-i18n="map">الموقع على الخريطة</span><i data-i="arrow" class="arr"></i></a></div></article></div>
     </div>
   </section>
 
@@ -170,7 +172,7 @@
 </footer>
 <script src="i18n-data.js"></script>
 <script src="cms-config.js"></script>
-<script src="cms.js?v=4"></script>
+<script src="cms.js?v=5"></script>
 <script src="script.js"></script>
 </body>
 </html>

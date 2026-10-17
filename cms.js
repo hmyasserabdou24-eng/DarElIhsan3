@@ -22,6 +22,14 @@
   }
   function lang() { return document.documentElement.lang === 'fr' ? 'fr' : 'ar'; }
 
+  /* صور البطاقات: إن فشل تحميل الصورة تُحذف كما كان يفعل onerror سابقًا (أُزيلت السمات المضمَّنة لتفعيل CSP صارمة) */
+  function dropBrokenImages() {
+    document.querySelectorAll('img[data-cms-img]').forEach(function (img) {
+      var bad = function () { if (!img.dataset.cmsSwapped) img.remove(); };
+      if (img.complete && img.naturalWidth === 0) bad(); else img.addEventListener('error', bad, { once: true });
+    });
+  }
+
   /* ---------- النصوص: تُدمج داخل T ---------- */
   function applyTexts(content) {
     var texts = content && isObj(content.texts) ? content.texts : {};
@@ -231,6 +239,7 @@
 
   /* 2) بعد تحميل الصفحة: تطبيق بقية العناصر ثم جلب النسخة المنشورة الحديثة */
   document.addEventListener('DOMContentLoaded', function () {
+    dropBrokenImages();
     if (isPreview) {
       window.addEventListener('message', function (ev) {
         if (ev.origin !== location.origin || ev.source !== window.parent) return;

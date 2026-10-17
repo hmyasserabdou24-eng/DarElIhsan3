@@ -21,7 +21,8 @@ function splitWelcomeWords() {
   const words = text.split(/\s+/).filter(Boolean);
   if (!words.length) return;
 
-  title.innerHTML = words.map((word, index) => `<span class="word" style="--i:${index}">${word}</span>`).join(' ');
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  title.innerHTML = words.map((word, index) => `<span class="word" style="--i:${index}">${esc(word)}</span>`).join(' ');
 }
 
 function updateI18n() {
