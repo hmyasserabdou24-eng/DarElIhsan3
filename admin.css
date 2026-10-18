@@ -158,3 +158,5 @@ code.sec{display:block;direction:ltr;text-align:left;word-break:break-all;backgr
 
 .steps{margin:0 0 14px;padding-inline-start:22px;color:#31465f}
 .steps li{margin:4px 0}
+
+a.icon-btn{text-decoration:none;font-size:20px}

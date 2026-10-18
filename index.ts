@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         return fail(inv.error, exists ? 'هذا البريد مسجَّل مسبقًا.' : 'تعذّر إرسال الدعوة. تحقق من إعداد البريد (SMTP) في Supabase.', exists ? 409 : 500);
       }
       const uid = inv.data.user.id;
-      const prof = await svc.from('parent_profiles').insert({ user_id: uid, full_name: input.full_name, phone: input.phone ?? null, created_by: actor.id });
+      const prof = await svc.from('parent_profiles').insert({ user_id: uid, full_name: input.full_name, email: input.email, phone: input.phone ?? null, created_by: actor.id });
       let linkErr = prof.error;
       if (!linkErr && input.child_ids.length) {
         linkErr = (await svc.from('parent_children').insert(input.child_ids.map((c) => ({ parent_id: uid, child_id: c })))).error;

@@ -60,11 +60,13 @@ create table if not exists public.parent_profiles (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   full_name  text not null check (char_length(btrim(full_name)) between 2 and 120),
   phone      text check (phone is null or phone ~ '^[0-9+()\s.-]{5,25}$'),
+  email      text check (email is null or char_length(email) <= 254),   -- للعرض الإداري فقط؛ المصادقة تبقى في auth.users
   disabled   boolean not null default false,
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.parent_profiles add column if not exists email text check (email is null or char_length(email) <= 254);
 drop trigger if exists parent_profiles_touch on public.parent_profiles;
 create trigger parent_profiles_touch before update on public.parent_profiles for each row execute function public.touch_updated_at();
 
@@ -442,5 +444,30 @@ begin
 end $$;
 revoke all on function public.admin_family_counts() from public, anon;
 grant execute on function public.admin_family_counts() to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 7) قائمة المديرين مع الدور وحالة التعطيل (تحلّ محل النسخة في users-setup.sql بالتوقيع نفسه)
+-- ---------------------------------------------------------------------
+create or replace function public.admin_list()
+returns jsonb language plpgsql stable security definer set search_path = public, auth as $$
+declare v_owner uuid; v_out jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'غير مصرّح' using errcode = '42501';
+  end if;
+  select a.user_id into v_owner from public.admins a order by a.created_at asc, a.user_id asc limit 1;
+  select jsonb_build_object(
+           'can_manage', auth.uid() = v_owner,
+           'admins', coalesce(jsonb_agg(jsonb_build_object(
+               'id', a.user_id, 'email', u.email, 'created_at', a.created_at,
+               'last_sign_in_at', u.last_sign_in_at, 'role', a.role, 'disabled', a.disabled,
+               'is_owner', a.user_id = v_owner, 'is_me', a.user_id = auth.uid())
+             order by a.created_at asc, a.user_id asc), '[]'::jsonb))
+    into v_out
+    from public.admins a join auth.users u on u.id = a.user_id;
+  return v_out;
+end $$;
+revoke all on function public.admin_list() from public, anon;
+grant execute on function public.admin_list() to authenticated;
 
 notify pgrst, 'reload schema';

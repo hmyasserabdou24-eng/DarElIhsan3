@@ -60,25 +60,39 @@ function renderNews() {
     return;
   }
 
-  newsGrid.innerHTML = posts.map((p) => {
+  // بناء آمن: لا innerHTML ولا إدراج نصوص/روابط قادمة من مصدر خارجي (حماية من XSS)
+  const safeHttps = (u) => { try { const x = new URL(u, location.href); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } };
+  newsGrid.textContent = '';
+  posts.forEach((p) => {
     const date = new Date(p.date).toLocaleDateString(L === 'ar' ? 'ar-DZ-u-nu-latn' : 'fr-FR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-
-    return `
-      <article class="card in">
-        <div class="ph"><img src="${p.image || ''}" alt="" loading="lazy" onerror="this.remove()"></div>
-        <div class="body">
-          <span class="date">${date}</span>
-          <h3>${p.title[L]}</h3>
-          <p>${p.text[L]}</p>
-          <a class="btn" href="${p.url || '#'}"><span>${T[L].more}</span><i class="arr">${icon('arrow')}</i></a>
-        </div>
-      </article>
-    `;
-  }).join('');
+    const card = document.createElement('article');
+    card.className = 'card in';
+    const ph = document.createElement('div');
+    ph.className = 'ph';
+    const imgSrc = safeHttps(p.image);
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc; img.alt = ''; img.loading = 'lazy';
+      img.addEventListener('error', () => img.remove());
+      ph.appendChild(img);
+    }
+    const body = document.createElement('div');
+    body.className = 'body';
+    const d = document.createElement('span'); d.className = 'date'; d.textContent = date;
+    const t = document.createElement('h3'); t.textContent = (p.title && p.title[L]) || '';
+    const tx = document.createElement('p'); tx.textContent = (p.text && p.text[L]) || '';
+    const a = document.createElement('a'); a.className = 'btn'; a.href = safeHttps(p.url) || '#';
+    const sp = document.createElement('span'); sp.textContent = T[L].more;
+    const ar = document.createElement('i'); ar.className = 'arr'; ar.innerHTML = icon('arrow');
+    a.append(sp, ar);
+    body.append(d, t, tx, a);
+    card.append(ph, body);
+    newsGrid.appendChild(card);
+  });
 }
 
 function setLang(lang) {
