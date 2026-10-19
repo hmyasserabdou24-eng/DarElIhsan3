@@ -144,7 +144,12 @@
       if (body !== undefined && !isBin) hd['Content-Type'] = 'application/json';
       var res;
       try { res = await fetch(base + path, { method: method, headers: hd, body: body === undefined ? undefined : (isBin ? body : JSON.stringify(body)) }); }
-      catch (e) { var ne = new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت.'); ne.status = 0; throw ne; }
+      catch (e) {
+        var errText = path.indexOf('/functions/v1/') === 0
+          ? 'تعذّر الاتصال بالدالة السحابية. يرجى التأكد من نشر دالة admin-users في Supabase.'
+          : 'تعذّر الاتصال بالخادم. تحقق من الإنترنت.';
+        var ne = new Error(errText); ne.status = 0; throw ne;
+      }
       var txt = await res.text(), j = null;
       try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = null; }
       if (!res.ok) {

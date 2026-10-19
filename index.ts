@@ -32,9 +32,8 @@ function cors(origin: string | null): Record<string, string> {
   const h: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin',
+    'Access-Control-Allow-Origin': (!ALLOWED.length || !ALLOWED[0]) ? (origin || '*') : (ALLOWED.includes(origin || '') ? (origin || '*') : '*'),
   };
-  if (origin && ALLOWED.includes(origin)) h['Access-Control-Allow-Origin'] = origin;
   return h;
 }
 const json = (status: number, body: unknown, origin: string | null) =>

@@ -300,7 +300,15 @@
         onSubmit: async function (x) {
           var body = { action: 'invite_parent', email: x.email.toLowerCase(), full_name: x.full_name, child_ids: x.child_ids };
           if (x.phone) body.phone = x.phone;
-          await C.fn('admin-users', body); bust(); toast('أُرسلت الدعوة بنجاح إلى بريد ولي الأمر.', 'ok'); go('parents');
+          try {
+            await C.fn('admin-users', body);
+            bust(); toast('أُرسلت الدعوة بنجاح إلى بريد ولي الأمر.', 'ok'); go('parents');
+          } catch (e) {
+            if (e.status === 0 || (e.message && e.message.indexOf('admin-users') >= 0)) {
+              throw new Error('الدالة السحابية (admin-users) غير منشورة في Supabase بعد. يرجى نشر الدالة، أو دعوة الولي مباشرة من لوحة تحكم Supabase.');
+            }
+            throw e;
+          }
         }
       });
     }
@@ -355,8 +363,16 @@
               msg: 'سيُرسل بريد إلكتروني يحتوي على رابط آمن إلى: ' + (r.email || 'البريد المسجل') + '. هل تريد المتابعة؟',
               ok: 'إرسال الرابط'
             }))) return;
-            await C.fn('admin-users', { action: 'resend_parent_invite', user_id: uid(r.user_id) });
-            toast('تم إرسال الرابط بنجاح إلى بريد الولي.', 'ok');
+            try {
+              await C.fn('admin-users', { action: 'resend_parent_invite', user_id: uid(r.user_id) });
+              toast('تم إرسال الرابط بنجاح إلى بريد الولي.', 'ok');
+            } catch (e) {
+              if (e.status === 0 || (e.message && e.message.indexOf('admin-users') >= 0)) {
+                toast('تعذّر الاتصال بالدالة السحابية (admin-users). يرجى التأكد من نشرها في Supabase.', 'bad');
+              } else {
+                toast(e.message, 'bad');
+              }
+            }
           }),
           rbtn(r.disabled ? 'تفعيل' : 'تعطيل', async function () {
             if (!r.disabled && !(await ask({

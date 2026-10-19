@@ -84,4 +84,30 @@ alter table public.parent_profiles add column if not exists email text check (em
 grant all on public.rate_limits to service_role;
 grant all on public.admin_audit to service_role;
 
+-- 8) مزامنة تلقائية لملفات الأولياء عند دعوة أو إنشاء أي مستخدم من لوحة تحكم Supabase (Auth > Users)
+create or replace function public.handle_new_auth_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.admins where user_id = new.id) then
+    insert into public.parent_profiles (user_id, full_name, email, disabled)
+    values (
+      new.id,
+      coalesce(nullif(btrim(new.raw_user_meta_data->>'full_name'), ''), split_part(coalesce(new.email, 'ولي أمر'), '@', 1)),
+      new.email,
+      false
+    )
+    on conflict (user_id) do update
+      set email = coalesce(excluded.email, public.parent_profiles.email);
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.handle_new_auth_user() from public, anon;
+grant execute on function public.handle_new_auth_user() to service_role, postgres;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_auth_user();
+
 notify pgrst, 'reload schema';
