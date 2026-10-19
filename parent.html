@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
 <title>فضاء الأولياء – دار الإحسان</title>
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +20,7 @@
 <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
 <symbol id="i-file" viewBox="0 0 24 24"><path d="M21 12.5 12.5 21a5 5 0 0 1-7-7L14 5.5a3.3 3.3 0 0 1 5 5L10.5 19"/></symbol>
 <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+<symbol id="i-contact" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6z"/></symbol>
 </svg>
 
 <div id="boot" class="boot" role="status">جارٍ التحميل…</div>
@@ -27,32 +28,34 @@
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-card" novalidate>
     <img src="logo-sq.png" alt="" class="login-logo">
+    <div class="lang-row"><button id="loginLangBtn" class="linkbtn small" type="button">Français</button></div>
     <h1 id="lTitle">فضاء الأولياء</h1>
     <p class="muted" id="lHint">سجّل الدخول لمتابعة ملف طفلك.</p>
     <div id="stCreds">
-      <label class="fld"><span>البريد الإلكتروني</span><input id="email" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
-      <label class="fld"><span>كلمة المرور</span><input id="password" type="password" autocomplete="current-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span id="lblEmail">البريد الإلكتروني</span><input id="email" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
+      <label class="fld"><span id="lblPassword">كلمة المرور</span><input id="password" type="password" autocomplete="current-password" dir="ltr" maxlength="72"></label>
     </div>
     <div id="stForgot" hidden>
-      <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
+      <label class="fld"><span id="lblFEmail">البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
     </div>
     <div id="stSet" hidden>
-      <label class="fld"><span>كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint">10 أحرف على الأقل مع حرف كبير وصغير ورقم.</small></label>
-      <label class="fld"><span>أعد كتابتها</span><input id="np2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span id="lblNp1">كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وصغير ورقم.</small></label>
+      <label class="fld"><span id="lblNp2">أعد كتابتها</span><input id="np2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
     </div>
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
     <button id="lBtn" class="btn block" type="submit">دخول</button>
     <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
     <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
-    <p class="muted small">الحسابات تُنشأ من إدارة المركز فقط. إن لم تصلك دعوة فتواصل مع المركز.</p>
+    <p class="muted small" id="loginNotice">الحسابات تُنشأ من إدارة المركز فقط. إن لم تصلك دعوة فتواصل مع المركز.</p>
   </form>
 </main>
 
 <div id="app" hidden>
   <header class="bar">
     <img src="logo-sq.png" alt="" class="logo">
-    <div class="ttl"><strong>فضاء الأولياء</strong><span class="chip" id="who">—</span></div>
+    <div class="ttl"><strong id="barTitle">فضاء الأولياء</strong><span class="chip" id="who">—</span></div>
+    <button id="barLangBtn" class="icon-btn" type="button" aria-label="اللغة / Langue" title="Changer de langue">FR</button>
     <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج"><svg class="i"><use href="#i-out"/></svg></button>
   </header>
   <main id="view" class="wrap" tabindex="-1"></main>
@@ -60,8 +63,8 @@
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="cms-config.js?v=6"></script>
-<script src="de-core.js?v=6"></script>
-<script src="parent.js?v=6"></script>
+<script src="cms-config.js?v=7"></script>
+<script src="de-core.js?v=7"></script>
+<script src="parent.js?v=7"></script>
 </body>
 </html>

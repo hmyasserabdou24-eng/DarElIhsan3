@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
 
-  var BUILD = '2026-10-18.1';
+  var BUILD = '2026-10-19.3';
   var MAX_FILE = 5 * 1024 * 1024;                       // 5 ميغابايت (يطابق حد الحاوية private-docs)
   var EXT = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
   var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

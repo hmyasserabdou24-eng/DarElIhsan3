@@ -1,0 +1,12 @@
+# أسرار — لا تُرفع أبدًا
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+supabase/
+node_modules/
+# نسخ احتياطية تحتوي بيانات حقيقية للأطفال
+backups/
+*.dump
+*.sql.gz

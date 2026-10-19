@@ -22,6 +22,7 @@ const Body = z.discriminatedUnion('action', [
     phone: z.string().trim().regex(/^[0-9+()\s.-]{5,25}$/).optional(),
     child_ids: z.array(uuid).max(10).default([]),
   }),
+  z.object({ action: z.literal('resend_parent_invite'), user_id: uuid }),
   z.object({ action: z.literal('set_parent_disabled'), user_id: uuid, disabled: z.boolean() }),
   z.object({ action: z.literal('invite_admin'), email, role: z.enum(['admin', 'editor']) }),
   z.object({ action: z.literal('set_admin_disabled'), user_id: uuid, disabled: z.boolean() }),
@@ -102,6 +103,30 @@ Deno.serve(async (req) => {
       }
       await audit('parent:invite', uid);
       return json(200, { ok: true, user_id: uid }, origin);
+    }
+
+    if (input.action === 'resend_parent_invite') {
+      const { data: prof, error: profErr } = await svc.from('parent_profiles').select('email, full_name, disabled').eq('user_id', input.user_id).single();
+      if (profErr || !prof) return fail(profErr, 'ملف ولي الأمر غير موجود.', 404);
+      if (prof.disabled) return fail(null, 'لا يمكن إرسال دعوة لحساب معطّل. قم بتفعيل الحساب أولًا.', 400);
+      if (!prof.email) return fail(null, 'البريد الإلكتروني للولي غير مسجّل.', 400);
+
+      const { data: uObj, error: uErr } = await svc.auth.admin.getUserById(input.user_id);
+      if (uErr || !uObj?.user) return fail(uErr, 'حساب المستخدم غير موجود في نظام المصادقة.', 404);
+
+      let sendErr: Error | null = null;
+      if (!uObj.user.email_confirmed_at) {
+        const inv = await svc.auth.admin.inviteUserByEmail(prof.email, { redirectTo: redirect('/parent.html') });
+        if (inv.error) sendErr = inv.error;
+      } else {
+        const rst = await svc.auth.resetPasswordForEmail(prof.email, { redirectTo: redirect('/parent.html') });
+        if (rst.error) sendErr = rst.error;
+      }
+      if (sendErr) {
+        return fail(sendErr, 'تعذّر إرسال البريد. تحقق من إعدادات SMTP في Supabase.');
+      }
+      await audit('parent:resend_invite', input.user_id);
+      return json(200, { ok: true, email: prof.email }, origin);
     }
 
     if (input.action === 'set_parent_disabled') {

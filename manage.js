@@ -2,7 +2,7 @@
    لا innerHTML: كل النصوص عبر DE.h (textContent). لا كلمات مرور تمرّ من هنا لحسابات الأولياء (دعوة بريدية). */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-18.1';
+  var FILE_BUILD = '2026-10-19.3';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var CFG = window.DE_CONFIG || {}, h = DE.h;
@@ -14,7 +14,7 @@
   var TITLES = { dash: 'لوحة التحكم', children: 'الأطفال', parents: 'الأولياء', reports: 'التقارير التربوية', appts: 'المواعيد والأنشطة', msgs: 'الرسائل والإعلانات', docs: 'الوثائق', accounts: 'حسابات الإدارة', audit: 'سجل العمليات', settings: 'الأمان والإعدادات' };
   var AUDIT = { publish: 'نشر محتوى الموقع', load_version: 'تحميل نسخة سابقة', add_user: 'إضافة مدير', update_user: 'تحديث كود مدير', reset_password: 'تغيير كود مدير', remove_user: 'حذف مدير',
     'children:insert': 'إنشاء ملف طفل', 'children:delete': 'حذف ملف طفل', 'parent_profiles:insert': 'إنشاء ملف ولي', 'parent_profiles:delete': 'حذف ملف ولي',
-    'parent:disable': 'تعطيل ولي', 'parent:enable': 'تفعيل ولي', 'parent:invite': 'دعوة ولي', 'parent:disable_login': 'حظر دخول ولي', 'parent:enable_login': 'رفع حظر ولي',
+    'parent:disable': 'تعطيل ولي', 'parent:enable': 'تفعيل ولي', 'parent:invite': 'دعوة ولي', 'parent:resend_invite': 'إعادة إرسال دعوة ولي', 'parent:disable_login': 'حظر دخول ولي', 'parent:enable_login': 'رفع حظر ولي',
     'parent_children:insert': 'ربط ولي بطفل', 'parent_children:delete': 'فك ربط ولي بطفل', 'progress_reports:insert': 'إنشاء تقرير', 'progress_reports:delete': 'حذف تقرير',
     'report:publish': 'نشر تقرير', 'report:unpublish': 'إلغاء نشر تقرير', 'appointments:insert': 'إضافة موعد', 'appointments:update': 'تعديل موعد', 'appointments:delete': 'حذف موعد',
     'messages:insert': 'إنشاء رسالة/إعلان', 'messages:delete': 'حذف رسالة/إعلان', 'documents:insert': 'رفع وثيقة', 'documents:delete': 'حذف وثيقة',
@@ -189,11 +189,40 @@
   /* ---------- لوحة التحكم ---------- */
   async function secDash(v) {
     var c = await C.rpc('admin_family_counts');
-    var items = [['children', 'أطفال نشطون'], ['parents_active', 'أولياء مفعّلون'], ['reports_draft', 'تقارير مسودة'], ['reports_published', 'تقارير منشورة'], ['appointments_upcoming', 'مواعيد قادمة'], ['messages_draft', 'رسائل مسودة']];
-    v.appendChild(h('div', { class: 'stats' }, items.map(function (i) { return h('div', { class: 'stat' }, h('b', { text: String(c[i[0]] == null ? 0 : c[i[0]]) }), h('span', { text: i[1] })); })));
-    v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'ابدأ من هنا' }),
-      h('p', { class: 'muted', text: 'الإحصاءات أعداد فقط ولا تتضمن أي بيانات شخصية. لإضافة طفل ثم دعوة وليّه: افتح «الأطفال» ثم «الأولياء».' }),
-      h('div', { class: 'row-actions' }, [['children', 'إضافة طفل'], ['parents', 'دعوة ولي'], ['reports', 'كتابة تقرير'], ['msgs', 'نشر إعلان']].map(function (x) { return h('button', { class: 'btn small', type: 'button', text: x[1], onclick: function () { go(x[0]); } }); }))));
+    var items = [
+      ['children', 'أطفال نشطون'],
+      ['children_all', 'إجمالي ملفات الأطفال'],
+      ['parents_active', 'أولياء مفعّلون'],
+      ['parents_disabled', 'أولياء معطّلون'],
+      ['parents_total', 'إجمالي الأولياء'],
+      ['reports_published', 'تقارير منشورة'],
+      ['reports_draft', 'تقارير مسودة'],
+      ['appointments_upcoming', 'مواعيد قادمة'],
+      ['messages_published', 'إعلانات ورسائل منشورة'],
+      ['messages_draft', 'رسائل مسودة'],
+      ['documents_total', 'إجمالي الوثائق'],
+      ['documents_shared', 'وثائق مشاركة مع الأولياء']
+    ];
+    v.appendChild(h('div', { class: 'stats' }, items.map(function (i) {
+      return h('div', { class: 'stat' },
+        h('b', { text: String(c[i[0]] == null ? 0 : c[i[0]]) }),
+        h('span', { text: i[1] })
+      );
+    })));
+    v.appendChild(h('div', { class: 'card' },
+      h('h2', { text: 'إدارة فضاء العائلات — اختصارات سريعة' }),
+      h('p', { class: 'muted', text: 'الإحصاءات مستخرجة آليًا وبشكل دقيق من قاعدة البيانات الفعلية. لإدارة أي قسم استخدم الأزرار التالية أو القائمة الجانبية:' }),
+      h('div', { class: 'row-actions' }, [
+        ['children', 'إضافة / أرشفة طفل'],
+        ['parents', 'دعوة ولي أمر'],
+        ['reports', 'كتابة تقرير تربوي'],
+        ['appts', 'جدولة موعد / نشاط'],
+        ['msgs', 'نشر إعلان للأولياء'],
+        ['docs', 'رفع وثيقة خاصة']
+      ].map(function (x) {
+        return h('button', { class: 'btn small', type: 'button', text: x[1], onclick: function () { go(x[0]); } });
+      }))
+    ));
   }
 
   /* ---------- الأطفال ---------- */
@@ -201,37 +230,54 @@
     var rows = await get('children');
     function edit(c) {
       return openForm({
-        title: c ? 'تعديل ملف طفل' : 'إضافة طفل', values: c || { active: true, center: 'main' },
+        title: c ? 'تعديل ملف طفل' : 'إضافة طفل جديد', values: c || { active: true, center: 'main' },
         fields: [
           { k: 'full_name', label: 'الاسم الكامل', req: true, min: 2, max: 120 },
-          { k: 'center', label: 'المركز', type: 'select', opts: CENTER_OPTS, req: true },
-          { k: 'section', label: 'القسم', max: 80 },
-          { k: 'basic_info', label: 'معلومات أساسية يسمح المركز بمشاركتها مع الولي', type: 'textarea', max: 1000, hint: 'لا تُدخل معلومات طبية أو تشخيصية حساسة هنا.' },
+          { k: 'center', label: 'المركز / الملحقة', type: 'select', opts: CENTER_OPTS, req: true },
+          { k: 'section', label: 'القسم / الورشة', max: 80 },
+          { k: 'basic_info', label: 'معلومات أساسية يسمح المركز بمشاركتها مع الولي', type: 'textarea', max: 1000, hint: 'لا تُدخل تشخيصات طبية سرية؛ اكتب التوجيهات العامة المناسبة للولي.' },
           { k: 'photo_consent', label: 'يوجد إذن مكتوب من الولي بنشر صور الطفل علنًا', type: 'checkbox' },
-          { k: 'active', label: 'الملف نشط', type: 'checkbox' }],
+          { k: 'active', label: 'الملف نشط (إلغاء التحديد ينقل الملف إلى الأرشيف)', type: 'checkbox' }
+        ],
         onSubmit: async function (x) {
           var body = { full_name: x.full_name, center: x.center, section: x.section || null, basic_info: x.basic_info || null, photo_consent: x.photo_consent, active: x.active };
           if (c) await C.rest('PATCH', '/children?id=eq.' + uid(c.id), body); else await C.rest('POST', '/children', body);
-          bust(); toast('تم الحفظ.', 'ok'); go('children');
+          bust(); toast('تم حفظ ملف الطفل بنجاح.', 'ok'); go('children');
         }
       });
     }
     listView(v, {
       title: 'ملفات الأطفال', addLabel: 'إضافة طفل', onAdd: function () { edit(null); }, rows: rows, empty: 'لا توجد ملفات أطفال بعد.',
       search: function (r) { return r.full_name + ' ' + (r.section || ''); },
-      filters: [{ label: 'المركز', opts: CENTER_OPTS, test: function (r, x) { return r.center === x; } }, { label: 'الحالة', opts: [['1', 'نشط'], ['0', 'غير نشط']], test: function (r, x) { return String(+r.active) === x; } }],
-      cols: [{ label: 'الاسم', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
+      filters: [
+        { label: 'المركز', opts: CENTER_OPTS, test: function (r, x) { return r.center === x; } },
+        { label: 'الحالة', opts: [['1', 'نشط'], ['0', 'مؤرشف']], test: function (r, x) { return String(+r.active) === x; } }
+      ],
+      cols: [
+        { label: 'الاسم الكامل', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
         { label: 'المركز', get: function (r) { return CENTERS[r.center]; }, sort: function (r) { return r.center; } },
         { label: 'القسم', get: function (r) { return r.section || '—'; } },
-        { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'غير نشط', r.active ? 'ok' : 'gray'); } },
-        { label: 'إذن الصور', get: function (r) { return r.photo_consent ? 'نعم' : 'لا'; } }],
+        { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); } },
+        { label: 'إذن الصور', get: function (r) { return r.photo_consent ? badge('موافق', 'ok') : badge('غير مصرح', 'gray'); } }
+      ],
       actions: function (r) {
-        return [rbtn('تعديل', function () { return edit(r); }),
-          rbtn(r.active ? 'تعطيل' : 'تفعيل', async function () { await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active }); bust(); go('children'); }),
+        return [
+          rbtn('تعديل', function () { return edit(r); }),
+          rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
+            await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
+            bust(); toast(r.active ? 'تم نقل الملف إلى الأرشيف.' : 'تمت استعادة الملف إلى الحالة النشطة.', 'ok');
+            go('children');
+          }, r.active ? 'light' : 'gold'),
           rbtn('حذف', async function () {
-            if (!(await ask({ title: 'حذف ملف الطفل؟', msg: 'سيُحذف الملف وروابطه مع الأولياء والمواعيد والوثائق. لا يمكن حذف طفل له تقارير؛ عطّل ملفه بدلًا من ذلك. لا يمكن التراجع.', ok: 'حذف نهائي', danger: true }))) return;
-            await C.rest('DELETE', '/children?id=eq.' + uid(r.id)); bust(); toast('تم الحذف.', 'ok'); go('children');
-          }, 'danger')];
+            if (!(await ask({
+              title: 'تنبيه بشأن حذف ملف الطفل',
+              msg: 'سيُحذف الملف وروابطه نهائيًا. وفق سياسة المؤسسة: يُفضَّل دائمًا «أرشفة الملف» بدلًا من حذفه للحفاظ على السجلات التاريخية. هل تريد الحذف النهائي رغم ذلك؟',
+              ok: 'حذف نهائي', danger: true
+            }))) return;
+            await C.rest('DELETE', '/children?id=eq.' + uid(r.id));
+            bust(); toast('تم حذف الملف.', 'ok'); go('children');
+          }, 'danger')
+        ];
       }
     });
   }
@@ -241,44 +287,87 @@
     var d = await getMany('parents', 'links', 'children'), rows = d[0], links = d[1], kids = d[2];
     function kidsOf(pid) { return links.filter(function (l) { return l.parent_id === pid; }).map(function (l) { return l.child_id; }); }
     var kidOpts = kids.map(function (k) { return [k.id, k.full_name]; });
+
     function invite() {
       return openForm({
-        title: 'دعوة ولي أمر', submits: [{ key: 'go', label: 'إرسال الدعوة' }],
-        fields: [{ k: 'full_name', label: 'اسم الولي', req: true, min: 2, max: 120 }, { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254, hint: 'ستصله دعوة لتعيين كلمة مروره بنفسه. لا تُنشأ كلمات مرور من هنا.' },
-          { k: 'phone', label: 'الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 }, { k: 'child_ids', label: 'الأبناء المرتبطون', type: 'multi', opts: kidOpts, maxItems: 10 }],
+        title: 'دعوة ولي أمر جديد', submits: [{ key: 'go', label: 'إرسال الدعوة الآمنة' }],
+        fields: [
+          { k: 'full_name', label: 'اسم ولي الأمر الكامل', req: true, min: 2, max: 120 },
+          { k: 'email', label: 'البريد الإلكتروني للولي', type: 'email', req: true, kind: 'email', max: 254, hint: 'ستصل الولي دعوة عبر البريد لتعيين كلمة مروره بنفسه وبأمان.' },
+          { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 },
+          { k: 'child_ids', label: 'الأبناء المرتبطون بحسابه', type: 'multi', opts: kidOpts, maxItems: 10, hint: 'يمكن تحديد طفل أو أكثر لربطهم بحساب الولي مباشرة.' }
+        ],
         onSubmit: async function (x) {
           var body = { action: 'invite_parent', email: x.email.toLowerCase(), full_name: x.full_name, child_ids: x.child_ids };
           if (x.phone) body.phone = x.phone;
-          await C.fn('admin-users', body); bust(); toast('أُرسلت الدعوة إلى البريد.', 'ok'); go('parents');
+          await C.fn('admin-users', body); bust(); toast('أُرسلت الدعوة بنجاح إلى بريد ولي الأمر.', 'ok'); go('parents');
         }
       });
     }
+
+    function editParent(p) {
+      return openForm({
+        title: 'تعديل بيانات الولي: ' + p.full_name, values: p,
+        fields: [
+          { k: 'full_name', label: 'الاسم الكامل', req: true, min: 2, max: 120 },
+          { k: 'phone', label: 'رقم الهاتف', type: 'tel', kind: 'phone', max: 25 }
+        ],
+        onSubmit: async function (x) {
+          await C.rest('PATCH', '/parent_profiles?user_id=eq.' + uid(p.user_id), { full_name: x.full_name, phone: x.phone || null });
+          bust(); toast('تم تعديل بيانات ولي الأمر بنجاح.', 'ok'); go('parents');
+        }
+      });
+    }
+
     function relink(p) {
       var cur = kidsOf(p.user_id);
       return openForm({
-        title: 'ربط الأبناء بـ ' + p.full_name, fields: [{ k: 'child_ids', label: 'الأبناء', type: 'multi', opts: kidOpts, maxItems: 10 }], values: { child_ids: cur },
+        title: 'ربط الأبناء بـ ' + p.full_name, fields: [{ k: 'child_ids', label: 'الأبناء المصرح للولي بالوصول لملفاتهم', type: 'multi', opts: kidOpts, maxItems: 10 }], values: { child_ids: cur },
         onSubmit: async function (x) {
           var add = x.child_ids.filter(function (i) { return cur.indexOf(i) < 0; }), del = cur.filter(function (i) { return x.child_ids.indexOf(i) < 0; });
           if (del.length) await C.rest('DELETE', '/parent_children?parent_id=eq.' + uid(p.user_id) + '&child_id=in.(' + del.map(uid).join(',') + ')');
           if (add.length) await C.rest('POST', '/parent_children', add.map(function (i) { return { parent_id: p.user_id, child_id: i }; }));
-          bust(); toast('تم تحديث الربط.', 'ok'); go('parents');
+          bust(); toast('تم تحديث ربط الأبناء بنجاح.', 'ok'); go('parents');
         }
       });
     }
+
     listView(v, {
-      title: 'حسابات الأولياء', addLabel: 'دعوة ولي', onAdd: invite, rows: rows, empty: 'لا توجد حسابات أولياء بعد.',
+      title: 'حسابات الأولياء', addLabel: 'دعوة ولي أمر', onAdd: invite, rows: rows, empty: 'لا توجد حسابات أولياء بعد.',
       search: function (r) { return r.full_name + ' ' + (r.email || '') + ' ' + (r.phone || ''); },
       filters: [{ label: 'الحالة', opts: [['0', 'مفعّل'], ['1', 'معطَّل']], test: function (r, x) { return String(+r.disabled) === x; } }],
-      cols: [{ label: 'الاسم', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
-        { label: 'البريد', get: function (r) { return r.email || '—'; } }, { label: 'الهاتف', get: function (r) { return r.phone || '—'; } },
-        { label: 'الأبناء', get: function (r) { var n = kidsOf(r.user_id).map(function (i) { return nameOf(kids, i); }); return n.length ? n.join('، ') : '—'; } },
-        { label: 'الحالة', get: function (r) { return badge(r.disabled ? 'معطَّل' : 'مفعّل', r.disabled ? 'bad' : 'ok'); } }],
+      cols: [
+        { label: 'الاسم الكامل', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
+        { label: 'البريد الإلكتروني', get: function (r) { return r.email || '—'; } },
+        { label: 'الهاتف', get: function (r) { return r.phone || '—'; } },
+        { label: 'الأبناء المرتبطون', get: function (r) { var n = kidsOf(r.user_id).map(function (i) { return nameOf(kids, i); }); return n.length ? n.join('، ') : 'لا يوجد'; } },
+        { label: 'تاريخ التسجيل', get: function (r) { return fmt(r.created_at); }, sort: function (r) { return r.created_at; } },
+        { label: 'الحالة', get: function (r) { return badge(r.disabled ? 'معطَّل' : 'مفعّل', r.disabled ? 'bad' : 'ok'); } }
+      ],
       actions: function (r) {
-        return [rbtn('ربط الأبناء', function () { return relink(r); }),
+        return [
+          rbtn('تعديل', function () { return editParent(r); }),
+          rbtn('ربط الأبناء', function () { return relink(r); }),
+          rbtn('إعادة إرسال الرابط', async function () {
+            if (r.disabled) return toast('الحساب معطّل؛ فعّله أولاً قبل إرسال الرابط.', 'bad');
+            if (!(await ask({
+              title: 'إعادة إرسال رابط التفعيل / الاستعادة؟',
+              msg: 'سيُرسل بريد إلكتروني يحتوي على رابط آمن إلى: ' + (r.email || 'البريد المسجل') + '. هل تريد المتابعة؟',
+              ok: 'إرسال الرابط'
+            }))) return;
+            await C.fn('admin-users', { action: 'resend_parent_invite', user_id: uid(r.user_id) });
+            toast('تم إرسال الرابط بنجاح إلى بريد الولي.', 'ok');
+          }),
           rbtn(r.disabled ? 'تفعيل' : 'تعطيل', async function () {
-            if (!r.disabled && !(await ask({ title: 'تعطيل الحساب؟', msg: 'لن يتمكن الولي من الدخول أو رؤية أي بيانات حتى تعيد تفعيله.', ok: 'تعطيل', danger: true }))) return;
-            await C.fn('admin-users', { action: 'set_parent_disabled', user_id: uid(r.user_id), disabled: !r.disabled }); bust(); toast('تم.', 'ok'); go('parents');
-          }, r.disabled ? 'gold' : 'danger')];
+            if (!r.disabled && !(await ask({
+              title: 'تعطيل حساب الولي؟',
+              msg: 'لن يتمكن ولي الأمر من تسجيل الدخول أو الاطلاع على أي ملفات حتى تعيد تفعيل حسابه.',
+              ok: 'تعطيل الحساب', danger: true
+            }))) return;
+            await C.fn('admin-users', { action: 'set_parent_disabled', user_id: uid(r.user_id), disabled: !r.disabled });
+            bust(); toast('تم تحديث حالة الحساب.', 'ok'); go('parents');
+          }, r.disabled ? 'gold' : 'danger')
+        ];
       }
     });
   }

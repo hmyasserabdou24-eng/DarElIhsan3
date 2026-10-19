@@ -1,7 +1,7 @@
 /* فحص النشر: يجلب كل ملف بـ cache:'no-store' + معامل عشوائي، ويتحقق من وجوده ومن علامة الإصدار (BUILD). */
 (function () {
   'use strict';
-  var EXPECT_BUILD = '2026-10-18.1';
+  var EXPECT_BUILD = '2026-10-19.3';
   var FILES = [
     ['index.html', 0], ['style.css', 0], ['script.js', 0], ['i18n-data.js', 0], ['cms.js', 0], ['cms.css', 0], ['cms-config.js', 0],
     ['admin.html', 0], ['admin.js', 0], ['admin.css', 0],
