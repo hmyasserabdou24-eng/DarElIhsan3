@@ -283,9 +283,12 @@ def main():
         # نشر
         wf(pg, "document.querySelector('#toast') && !document.querySelector('#toast').hidden && document.querySelector('#toast').textContent.indexOf('مسودة')>=0"); time.sleep(0.5)
         pg.wait_for_selector('.tbl'); pg.get_by_role('button', name='نشر', exact=True).first.click(); pg.click('.modal-actions .btn:not(.light)'); wf(pg, "document.querySelector('#modal').hidden")
-        for _ in range(60):
+        for _ in range(300):   # حتى 15 ثانية: كان 3 ثوانٍ ويفشل أحيانًا على أجهزة بطيئة (سباق توقيت في الاختبار وليس في الموقع)
             if last('PATCH', r'/progress_reports\?id=eq\.' + R1): break
             time.sleep(0.05)
+        if not (last('PATCH', r'/progress_reports\?id=eq\.' + R1)):   # تشخيص عند الفشل فقط
+            print('DIAG patches:', [(x['p'], x['q'], x['b']) for x in LOG if x['m'] == 'PATCH'], file=sys.stderr)
+            print('DIAG modal hidden:', pg.evaluate("document.querySelector('#modal').hidden"), 'rows:', pg.evaluate("Array.from(document.querySelectorAll('.tbl tbody tr')).map(function(r){return r.innerText.replace(/\\s+/g,' ').slice(0,60)})"), 'toast:', pg.evaluate("(document.querySelector('#toast')||{}).textContent"), file=sys.stderr)
         e = last('PATCH', r'/progress_reports\?id=eq\.' + R1); check(e and json.loads(e['b']) == {'status': 'published'}, 'النشر بعد نافذة تأكيد')
         pg.get_by_role('button', name='معاينة').first.click(); check('معاينة كما يراها الولي' in pg.inner_text('#modal'), 'معاينة قبل النشر')
         pg.click('.modal-actions .btn.light')
