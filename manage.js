@@ -245,9 +245,9 @@
 
       list.forEach(function (r) {
         var tr = h('tr');
-        o.cols.forEach(function (c) {
+        o.cols.forEach(function (c, ci) {
           var val = c.get(r);
-          var td = h('td');
+          var td = h('td', { 'data-label': c.label });
           if (val instanceof Node) td.appendChild(val); else td.textContent = val == null ? '—' : String(val);
           tr.appendChild(td);
         });
@@ -689,7 +689,22 @@
      3. إدارة الفروع والأقسام التربوية (Branches & Sections)
      ===================================================================== */
   async function secBranches(v) {
-    var d = await getMany('branches', 'sections', 'children');
+    var d;
+    try {
+      d = await getMany('branches', 'sections', 'children');
+    } catch (e) {
+      var is404 = (e.status === 404) || (e.message && (e.message.indexOf('404') >= 0 || e.message.indexOf('Not Found') >= 0 || e.message.indexOf('relation') >= 0));
+      if (is404) {
+        v.appendChild(h('div', { class: 'card' },
+          h('h2', { text: '⚠️ يجب تنفيذ ترقية قاعدة البيانات أولاً' }),
+          h('p', { text: 'جداول الفروع والأقسام غير موجودة في قاعدة البيانات بعد.' }),
+          h('p', { class: 'muted', text: 'لإصلاح هذا: في Supabase Dashboard → SQL Editor، شغّل محتوى ملف 05-branches-sections-import.sql الموجود في مجلد المشروع.' }),
+          h('p', { class: 'muted small', text: 'بعد تنفيذ السكريبت، أعد تشغيل PostgREST عبر إرسال الأمر: notify pgrst, \'reload schema\';' })
+        ));
+        return;
+      }
+      throw e;
+    }
     var branches = d[0], sections = d[1], kids = d[2];
 
     function kidsCountInBranch(bid) { return kids.filter(function (k) { return k.branch_id === bid && k.active; }).length; }
