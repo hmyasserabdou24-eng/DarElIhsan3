@@ -10,7 +10,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=6">
+<link rel="stylesheet" href="portal.css?v=7">
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -24,6 +24,7 @@
 </svg>
 
 <div id="boot" class="boot" role="status">جارٍ التحميل…</div>
+<noscript><div class="boot boot-fail"><p>يحتاج فضاء الأولياء إلى تفعيل JavaScript في المتصفح. / Veuillez activer JavaScript.</p></div></noscript>
 
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-card" novalidate>
@@ -45,6 +46,7 @@
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
     <button id="lBtn" class="btn block" type="submit">دخول</button>
+    <button id="newLinkBtn" class="btn block" type="button" hidden>طلب رابط جديد</button>
     <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
     <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
     <p class="muted small" id="loginNotice">الحسابات تُنشأ من إدارة المركز فقط. إن لم تصلك دعوة فتواصل مع المركز.</p>
@@ -63,8 +65,9 @@
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="cms-config.js?v=7"></script>
-<script src="de-core.js?v=7"></script>
-<script src="parent.js?v=7"></script>
+<script src="parent-guard.js?v=9"></script>
+<script src="cms-config.js?v=9"></script>
+<script src="de-core.js?v=9"></script>
+<script src="parent.js?v=9"></script>
 </body>
 </html>

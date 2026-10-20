@@ -3,7 +3,7 @@
    كل النصوص تُدرج بـ textContent لحماية تامة من XSS. */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-19.3';
+  var FILE_BUILD = '2026-10-20.2';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var CFG = window.DE_CONFIG || {}, h = DE.h;
@@ -57,9 +57,9 @@
       emptyApptsPast: 'لا توجد مواعيد سابقة.',
       emptyMsgs: 'لا توجد رسائل أو إعلانات حتى الآن.',
       emptyDocs: 'لا توجد وثائق مشاركة معك بعد.',
-      center_main: 'المركز الرئيسي لدار الإحسان',
-      center_work: 'مركز المساعدة على العمل (ورشات التأهيل)',
-      center_farm: 'المزرعة البيداغوجية',
+      center_main: 'المركز النفسي البيداغوجي دار الإحسان',
+      center_work: 'مركز المساعدة على العمل',
+      center_farm: 'المزرعة البيداغوجية ومركز التكوين في الزراعة المائية وتربية الأسماك',
       sectionPrefix: 'القسم: ',
       basicInfoTitle: 'المعلومات الأساسية والتوجيهات',
       noExtraInfo: 'لا توجد معلومات إضافية مسجلة.',
@@ -98,7 +98,17 @@
       validEmailErr: 'أدخل بريدًا إلكترونيًا صحيحًا.',
       passMismatchErr: 'كلمتا المرور غير متطابقتين.',
       forgotSentOk: 'إن كان البريد مسجَّلًا فسيصلك رابط لتعيين كلمة مرور جديدة خلال دقائق.',
-      notActiveParentErr: 'هذا الحساب غير مفعّل أو غير مخصّص للأولياء.'
+      notActiveParentErr: 'هذا الحساب غير مفعّل أو غير مخصّص للأولياء.',
+      titleConfirm: 'تفعيل حسابك',
+      hintConfirmInvite: 'تمت دعوتك إلى فضاء الأولياء. اضغط «تفعيل حسابي» ثم اختر كلمة مرور.',
+      hintConfirmReset: 'اضغط «متابعة» ثم اختر كلمة مرور جديدة لحسابك.',
+      btnConfirmInvite: 'تفعيل حسابي',
+      btnConfirmReset: 'متابعة',
+      verifying: 'جارٍ التحقق من الرابط…',
+      expiredMsg: 'هذا الرابط انتهت صلاحيته أو سبق استعماله. اطلب رابطًا جديدًا من الزر أدناه، أو تواصل مع إدارة المركز.',
+      invalidMsg: 'هذا الرابط غير صالح أو ناقص. افتح الرابط كاملًا من البريد، أو اطلب رابطًا جديدًا.',
+      btnRequestNew: 'طلب رابط جديد',
+      hintNewLink: 'أدخل بريدك الإلكتروني وسنرسل إليك رابطًا جديدًا إن كان حسابك مسجَّلًا.'
     },
     fr: {
       brand: 'Espace Parents',
@@ -139,9 +149,9 @@
       emptyApptsPast: 'Aucun rendez-vous passé.',
       emptyMsgs: 'Aucun message ou annonce pour le moment.',
       emptyDocs: 'Aucun document partagé avec votre compte.',
-      center_main: 'Centre principal Dar El Ihsan',
+      center_main: 'Centre psycho-pédagogique Dar El Ihsan',
       center_work: 'Centre d’Aide par le Travail (CAT)',
-      center_farm: 'Ferme pédagogique',
+      center_farm: 'Ferme pédagogique et centre de formation en hydroponie et aquaculture',
       sectionPrefix: 'Section : ',
       basicInfoTitle: 'Informations de base & Orientations',
       noExtraInfo: 'Aucune information supplémentaire enregistrée.',
@@ -180,7 +190,17 @@
       validEmailErr: 'Veuillez saisir une adresse e-mail valide.',
       passMismatchErr: 'Les mots de passe ne correspondent pas.',
       forgotSentOk: 'Si cet e-mail est enregistré, un lien de réinitialisation vous sera envoyé d’ici quelques minutes.',
-      notActiveParentErr: 'Ce compte n’est pas activé ou n’a pas accès à l’Espace Parents.'
+      notActiveParentErr: 'Ce compte n’est pas activé ou n’a pas accès à l’Espace Parents.',
+      titleConfirm: 'Activer votre compte',
+      hintConfirmInvite: 'Vous êtes invité(e) à l’Espace Parents. Appuyez sur « Activer mon compte » puis choisissez un mot de passe.',
+      hintConfirmReset: 'Appuyez sur « Continuer » puis choisissez un nouveau mot de passe.',
+      btnConfirmInvite: 'Activer mon compte',
+      btnConfirmReset: 'Continuer',
+      verifying: 'Vérification du lien…',
+      expiredMsg: 'Ce lien a expiré ou a déjà été utilisé. Demandez un nouveau lien ci-dessous ou contactez l’administration.',
+      invalidMsg: 'Ce lien est invalide ou incomplet. Ouvrez le lien complet depuis l’e-mail ou demandez-en un nouveau.',
+      btnRequestNew: 'Demander un nouveau lien',
+      hintNewLink: 'Saisissez votre e-mail : un nouveau lien vous sera envoyé si votre compte existe.'
     }
   };
 
@@ -199,15 +219,16 @@
     if (btnBar) btnBar.textContent = t('langBtnBar');
 
     var bt = $('#barTitle'); if (bt) bt.textContent = t('brand');
-    var lt = $('#lTitle'); if (lt) lt.textContent = mode === 'set' ? t('titleSet') : mode === 'forgot' ? t('titleForgot') : t('titleLogin');
-    var lh = $('#lHint'); if (lh && !lh.dataset.custom) lh.textContent = mode === 'set' ? t('hintSet') : mode === 'forgot' ? t('hintForgot') : t('hintLogin');
+    var lt = $('#lTitle'); if (lt) lt.textContent = mode === 'confirm' ? t('titleConfirm') : mode === 'set' ? t('titleSet') : mode === 'forgot' ? t('titleForgot') : t('titleLogin');
+    var lh = $('#lHint'); if (lh && !lh.dataset.custom) lh.textContent = mode === 'confirm' ? confirmHint() : mode === 'set' ? t('hintSet') : mode === 'forgot' ? t('hintForgot') : t('hintLogin');
     var em = $('#lblEmail'); if (em) em.textContent = t('emailLabel');
     var pw = $('#lblPassword'); if (pw) pw.textContent = t('passLabel');
     var fe = $('#lblFEmail'); if (fe) fe.textContent = t('emailLabel');
     var np1 = $('#lblNp1'); if (np1) np1.textContent = t('newPassLabel');
     var np2 = $('#lblNp2'); if (np2) np2.textContent = t('confirmPassLabel');
     var nh = $('#npHint'); if (nh) nh.textContent = t('passRule');
-    var lb = $('#lBtn'); if (lb) lb.textContent = mode === 'login' ? t('btnLogin') : mode === 'forgot' ? t('btnForgotSend') : t('btnSetSave');
+    var lb = $('#lBtn'); if (lb) lb.textContent = lblBtn(mode);
+    var nl = $('#newLinkBtn'); if (nl) nl.textContent = t('btnRequestNew');
     var fb = $('#forgotBtn'); if (fb) fb.textContent = t('btnForgot');
     var bb = $('#backBtn'); if (bb) bb.textContent = t('btnBack');
     var nt = $('#loginNotice'); if (nt) nt.textContent = t('accountNotice');
@@ -234,7 +255,7 @@
     clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, 3800);
   }
 
-  function show(id) { ['boot', 'login', 'app'].forEach(function (x) { $('#' + x).hidden = x !== id; }); }
+  function show(id) { ['boot', 'login', 'app'].forEach(function (x) { $('#' + x).hidden = x !== id; }); if (id !== 'boot') window.__deReady = true; }
   function setMsg(el, m) { el.textContent = m || ''; el.hidden = !m; }
 
   function lockBtn(btn, fn) {
@@ -244,7 +265,15 @@
   }
 
   /* ---------- الدخول / الدعوة / الاستعادة ---------- */
-  var mode = 'login'; // login | forgot | set
+  var mode = 'login'; // login | forgot | set | confirm
+  var pendingOtp = null;      // { token_hash, type } من رابط البريد؛ يُستعمل مرة واحدة فقط ثم يُمسح
+  var offerNewLink = false;   // يظهر زر «طلب رابط جديد» بعد رابط منتهٍ/غير صالح
+
+  function confirmHint() { return pendingOtp && pendingOtp.type !== 'invite' ? t('hintConfirmReset') : t('hintConfirmInvite'); }
+  function lblBtn(m) {
+    return m === 'login' ? t('btnLogin') : m === 'forgot' ? t('btnForgotSend')
+      : m === 'confirm' ? (pendingOtp && pendingOtp.type !== 'invite' ? t('btnConfirmReset') : t('btnConfirmInvite')) : t('btnSetSave');
+  }
 
   function setMode(m, customHint) {
     mode = m;
@@ -252,10 +281,11 @@
     $('#stForgot').hidden = m !== 'forgot';
     $('#stSet').hidden = m !== 'set';
     $('#forgotBtn').hidden = m !== 'login';
-    $('#backBtn').hidden = (m === 'login' || m === 'set');
+    $('#backBtn').hidden = (m === 'login' || m === 'set' || m === 'confirm');
+    $('#newLinkBtn').hidden = !(m === 'login' && offerNewLink);
 
-    $('#lBtn').textContent = m === 'login' ? t('btnLogin') : m === 'forgot' ? t('btnForgotSend') : t('btnSetSave');
-    $('#lTitle').textContent = m === 'set' ? t('titleSet') : m === 'forgot' ? t('titleForgot') : t('titleLogin');
+    $('#lBtn').textContent = lblBtn(m);
+    $('#lTitle').textContent = m === 'confirm' ? t('titleConfirm') : m === 'set' ? t('titleSet') : m === 'forgot' ? t('titleForgot') : t('titleLogin');
 
     var hintEl = $('#lHint');
     if (customHint) {
@@ -263,13 +293,14 @@
       hintEl.dataset.custom = '1';
     } else {
       delete hintEl.dataset.custom;
-      hintEl.textContent = m === 'login' ? t('hintLogin') : m === 'forgot' ? t('hintForgot') : t('hintSet');
+      hintEl.textContent = m === 'login' ? t('hintLogin') : m === 'forgot' ? t('hintForgot') : m === 'confirm' ? confirmHint() : t('hintSet');
     }
     setMsg($('#lErr'), ''); setMsg($('#lOk'), '');
   }
 
-  function showLogin(msg) {
+  function showLogin(msg, newLink) {
     stopIdle && stopIdle();
+    offerNewLink = !!newLink;
     show('login');
     setMode('login');
     setMsg($('#lErr'), msg);
@@ -279,7 +310,20 @@
     e.preventDefault(); setMsg($('#lErr'), ''); setMsg($('#lOk'), '');
     await lockBtn($('#lBtn'), async function () {
       try {
-        if (mode === 'login') {
+        if (mode === 'confirm') {
+          var po = pendingOtp;
+          if (!po) return showLogin(t('invalidMsg'), true);
+          pendingOtp = null;                         // استعمال واحد: لا إعادة معالجة لنفس الرمز
+          setMsg($('#lOk'), t('verifying'));
+          try { await C.verifyOtp(po.token_hash, po.type); }
+          catch (er) {
+            if (er.status === 0) { pendingOtp = po; setMsg($('#lOk'), ''); return setMsg($('#lErr'), er.message); }   // انقطاع شبكة: يمكن إعادة المحاولة بنفس الرابط
+            return showLogin(t('expiredMsg'), true);
+          }
+          setMsg($('#lOk'), '');
+          if (po.type === 'invite' || po.type === 'recovery') setMode('set', po.type === 'invite' ? t('hintInvite') : t('hintSet'));
+          else await enter();
+        } else if (mode === 'login') {
           var em = DE.clean($('#email').value, 254).toLowerCase(), pw = $('#password').value;
           if (!DE.isEmail(em) || !pw || pw.length > 72) return setMsg($('#lErr'), t('enterCredsErr'));
           await C.signIn(em, pw);
@@ -624,12 +668,18 @@
     var barLang = $('#barLangBtn');
     if (barLang) barLang.addEventListener('click', toggleLang);
 
-    var hash = C.adoptHash();
-    if (hash && hash.error) { showLogin(hash.error); return; }
-    if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {
-      show('login');
-      setMode('set', hash.type === 'invite' ? t('hintInvite') : t('hintSet'));
-      return;
+    $('#newLinkBtn').addEventListener('click', function () { offerNewLink = false; setMode('forgot', t('hintNewLink')); });
+
+    var u = C.adoptUrl();      // يعالج #hash وكذلك ?token_hash= و?error= و?code= ويمسحها من الشريط فورًا
+    if (u) {
+      if (u.kind === 'error') { showLogin(u.expired ? t('expiredMsg') : u.message, true); return; }
+      if (u.kind === 'unsupported') { showLogin(t('invalidMsg'), true); return; }
+      if (u.kind === 'otp') { pendingOtp = { token_hash: u.token_hash, type: u.type }; show('login'); setMode('confirm'); return; }
+      if (u.kind === 'session' && (u.type === 'invite' || u.type === 'recovery')) {
+        show('login');
+        setMode('set', u.type === 'invite' ? t('hintInvite') : t('hintSet'));
+        return;
+      }
     }
 
     if (C.load()) enter(); else showLogin();

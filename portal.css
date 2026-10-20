@@ -165,3 +165,20 @@ table.tbl{width:100%;border-collapse:collapse}
 /* تحسين شريط tabs */
 .tabs button .ti{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-bottom:1px}
 
+
+/* شاشة الفشل بدل الصفحة البيضاء (parent-guard.js) */
+.boot-fail{max-width:420px;margin:0 auto;padding:24px 20px;text-align:center;color:var(--ink,#0C2D55);line-height:1.8}
+.boot-fail strong{display:block;font:700 18px/1.5 "Cairo","Tajawal",sans-serif;margin-bottom:8px}
+.boot-fail p{margin:0 0 10px}
+.boot-fail .btn{display:inline-block;text-decoration:none;margin:6px 0 10px}
+.boot-fail small{display:block;opacity:.6}
+
+/* بطاقة المنخرط: معاينة داخل النافذة + طباعة بمقاس بطاقة الائتمان فقط */
+.card-preview { display: block; width: 100%; max-width: 480px; height: auto; margin: 8px auto 12px; border-radius: 12px; box-shadow: 0 8px 22px rgba(12,45,85,.18); }
+#printArea { display: none; }
+@media print {
+  @page { size: 85.6mm 54mm; margin: 0; }
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block !important; position: static; margin: 0; padding: 0; }
+  #printArea img { display: block; width: 85.6mm; height: 54mm; }
+}

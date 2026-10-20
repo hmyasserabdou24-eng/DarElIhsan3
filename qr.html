@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>بطاقة منخرط – دار الإحسان</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="qr.css?v=9">
+</head>
+<body>
+<main class="qr-wrap">
+  <p id="state" class="qr-state" role="status">جارٍ التحقق من البطاقة…</p>
+
+  <section id="card" class="qr-card" hidden>
+    <img id="logo" class="qr-logo" alt="">
+    <p id="centerName" class="qr-center"></p>
+    <h1 id="childName" class="qr-name"></h1>
+    <dl class="qr-facts">
+      <div><dt>رقم المنخرط</dt><dd id="memberNo" dir="ltr"></dd></div>
+      <div><dt>تاريخ الانخراط</dt><dd id="enrolled" dir="ltr"></dd></div>
+      <div id="sectionRow" hidden><dt>القسم</dt><dd id="section"></dd></div>
+    </dl>
+  </section>
+
+  <section id="unavailable" class="qr-card qr-off" hidden>
+    <h1>الصفحة غير متاحة</h1>
+    <p>هذا الرمز غير صالح أو لم يعد مفعّلًا. تواصل مع إدارة المركز.</p>
+    <p lang="fr" dir="ltr">Cette page n’est pas disponible. Contactez l’administration du centre.</p>
+  </section>
+</main>
+<script src="cms-config.js?v=9"></script>
+<script src="centers.js?v=9"></script>
+<script src="qr.js?v=9"></script>
+</body>
+</html>

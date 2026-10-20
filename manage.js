@@ -2,13 +2,13 @@
    لا innerHTML: كل النصوص عبر DE.h (textContent). لا كلمات مرور تمرّ من هنا لحسابات الأولياء (دعوة بريدية). */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-19.3';
+  var FILE_BUILD = '2026-10-20.2';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var CFG = window.DE_CONFIG || {}, h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
   var C = DE.Client(CFG, 'de_manage_session');
-  var CENTERS = { main: 'المركز الرئيسي', work: 'مركز المساعدة على العمل', farm: 'المزرعة البيداغوجية' };
+  var CENTERS = {}; Object.keys(window.DE_CENTERS || {}).forEach(function (k) { CENTERS[k] = window.DE_CENTERS[k].name; });
   var CENTER_OPTS = Object.keys(CENTERS).map(function (k) { return [k, CENTERS[k]]; });
   var S = { sec: 'dash', cache: {}, nav: 0, me: null, stopIdle: null };
   var TITLES = { dash: 'لوحة التحكم', children: 'الأطفال', parents: 'الأولياء', reports: 'التقارير التربوية', appts: 'المواعيد والأنشطة', msgs: 'الرسائل والإعلانات', docs: 'الوثائق', accounts: 'حسابات الإدارة', audit: 'سجل العمليات', settings: 'الأمان والإعدادات' };
@@ -18,7 +18,7 @@
     'parent_children:insert': 'ربط ولي بطفل', 'parent_children:delete': 'فك ربط ولي بطفل', 'progress_reports:insert': 'إنشاء تقرير', 'progress_reports:delete': 'حذف تقرير',
     'report:publish': 'نشر تقرير', 'report:unpublish': 'إلغاء نشر تقرير', 'appointments:insert': 'إضافة موعد', 'appointments:update': 'تعديل موعد', 'appointments:delete': 'حذف موعد',
     'messages:insert': 'إنشاء رسالة/إعلان', 'messages:delete': 'حذف رسالة/إعلان', 'documents:insert': 'رفع وثيقة', 'documents:delete': 'حذف وثيقة',
-    'admin:invite': 'دعوة مدير', 'admin:disable': 'تعطيل مدير', 'admin:enable': 'تفعيل مدير' };
+    'admin:invite': 'دعوة مدير', 'admin:disable': 'تعطيل مدير', 'admin:enable': 'تفعيل مدير', 'child_qr:reissue': 'إعادة إصدار رمز QR لطفل' };
 
   /* ---------- أدوات ---------- */
   function fmt(v, t) { if (!v) return '—'; try { return new Date(v).toLocaleString('ar-DZ-u-nu-latn', t ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }); } catch (e) { return '—'; } }
@@ -44,8 +44,9 @@
   function size(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
   function readBytes(file) { return file.arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
 
+  var CHILD_COLS = 'id,full_name,center,section,basic_info,photo_consent,active,created_by,created_at,updated_at,member_no,enrolled_on,qr_show_extra';
   var Q = {
-    children: function () { return C.rest('GET', '/children?select=*&order=full_name'); },
+    children: function () { return C.rest('GET', '/children?select=' + CHILD_COLS + '&order=full_name'); },
     parents: function () { return C.rest('GET', '/parent_profiles?select=*&order=full_name'); },
     links: function () { return C.rest('GET', '/parent_children?select=parent_id,child_id'); },
     reports: function () { return C.rest('GET', '/progress_reports?select=*&order=report_date.desc'); },
@@ -226,35 +227,76 @@
   }
 
   /* ---------- الأطفال ---------- */
+  // بطاقة المنخرط: تُولَّد من بيانات الطفل ورمز QR الخاص به. الرمز يُجلب من الخادم للمدير فقط (دالة admin_child_card).
+  function cardUrl(token) {
+    var u = new URL('qr.html', location.href);        // الرابط يحمل الرمز العشوائي فقط: لا اسم ولا بيانات شخصية
+    u.searchParams.set('t', token);
+    return u.href;
+  }
+  async function buildCard(childId) {
+    var d = await C.rpc('admin_child_card', { p_child_id: uid(childId) });
+    var card = await DECARD.render({ full_name: d.full_name, center: d.center, member_no: d.member_no, enrolled_on: d.enrolled_on, url: cardUrl(d.qr_token) });
+    return { d: d, card: card };
+  }
+  function pdfName(d) { return 'member-card-' + DECARD.memberLabel(d.member_no) + '.pdf'; }
+  function downloadPdf(built) {
+    return DECARD.toPdf(built.card).then(function (blob) { DECARD.download(blob, pdfName(built.d)); });
+  }
+  function openCardModal(built) {
+    var d = built.d;
+    openModal(h('div', { class: 'modal-body' },
+      h('h2', { text: 'بطاقة المنخرط' }),
+      h('img', { class: 'card-preview', src: built.card.url, alt: 'بطاقة منخرط رقم ' + DECARD.memberLabel(d.member_no) }),
+      h('p', { class: 'muted small', text: 'رقم المنخرط: ' + DECARD.memberLabel(d.member_no) + '. رمز QR خاص بهذا الطفل وحده؛ لا تنشره علنًا. عند إعادة إصدار الرمز يتوقف القديم فورًا.' }),
+      h('div', { class: 'modal-actions' },
+        h('button', { class: 'btn light', type: 'button', text: 'طباعة', onclick: function () { DECARD.print(built.card.url).catch(function (e) { toast(e.message, 'bad'); }); } }),
+        h('button', { class: 'btn light', type: 'button', text: 'تنزيل PDF', onclick: function () { downloadPdf(built).catch(function (e) { toast(e.message, 'bad'); }); } }),
+        h('button', { class: 'btn', type: 'button', text: 'إغلاق', onclick: closeModal }))));
+  }
+
   async function secChildren(v) {
     var rows = await get('children');
+    var created = null;                                  // طفل أُضيف للتو: تُعرض بطاقته بعد إغلاق الاستمارة
     function edit(c) {
       return openForm({
         title: c ? 'تعديل ملف طفل' : 'إضافة طفل جديد', values: c || { active: true, center: 'main' },
         fields: [
           { k: 'full_name', label: 'الاسم الكامل', req: true, min: 2, max: 120 },
-          { k: 'center', label: 'المركز / الملحقة', type: 'select', opts: CENTER_OPTS, req: true },
+          { k: 'center', label: 'المركز / المزرعة', type: 'select', opts: CENTER_OPTS, req: true },
+          { k: 'enrolled_on', label: 'تاريخ الانخراط (اختياري)', type: 'date', hint: 'يظهر على بطاقة المنخرط إن أُدخل.' },
           { k: 'section', label: 'القسم / الورشة', max: 80 },
           { k: 'basic_info', label: 'معلومات أساسية يسمح المركز بمشاركتها مع الولي', type: 'textarea', max: 1000, hint: 'لا تُدخل تشخيصات طبية سرية؛ اكتب التوجيهات العامة المناسبة للولي.' },
+          { k: 'qr_show_extra', label: 'وافق الولي على إظهار القسم/الورشة في صفحة QR العامة', type: 'checkbox' },
           { k: 'photo_consent', label: 'يوجد إذن مكتوب من الولي بنشر صور الطفل علنًا', type: 'checkbox' },
           { k: 'active', label: 'الملف نشط (إلغاء التحديد ينقل الملف إلى الأرشيف)', type: 'checkbox' }
         ],
         onSubmit: async function (x) {
-          var body = { full_name: x.full_name, center: x.center, section: x.section || null, basic_info: x.basic_info || null, photo_consent: x.photo_consent, active: x.active };
-          if (c) await C.rest('PATCH', '/children?id=eq.' + uid(c.id), body); else await C.rest('POST', '/children', body);
-          bust(); toast('تم حفظ ملف الطفل بنجاح.', 'ok'); go('children');
+          var body = { full_name: x.full_name, center: x.center, enrolled_on: x.enrolled_on || null, section: x.section || null, basic_info: x.basic_info || null,
+            qr_show_extra: x.qr_show_extra, photo_consent: x.photo_consent, active: x.active };
+          if (c) {
+            await C.rest('PATCH', '/children?id=eq.' + uid(c.id), body);
+            bust(); toast('تم حفظ ملف الطفل بنجاح.', 'ok'); go('children');
+          } else {
+            body.id = DE.uuid();                         // المعرّف من المتصفح: لا حاجة لقراءة الصف (رمز QR لا يُقرأ مباشرة)
+            await C.rest('POST', '/children', body);     // رقم المنخرط ورمز QR يُولَّدان تلقائيًا في قاعدة البيانات
+            created = { id: body.id };
+            bust(); toast('تم حفظ الطفل وإنشاء بطاقة المنخرط.', 'ok'); go('children');
+          }
         }
+      }).then(function (ok) {
+        if (ok && created) { var k = created; created = null; return buildCard(k.id).then(openCardModal).catch(function (e) { toast('تم حفظ الطفل، لكن تعذّر تجهيز البطاقة: ' + e.message, 'bad'); }); }
       });
     }
     listView(v, {
       title: 'ملفات الأطفال', addLabel: 'إضافة طفل', onAdd: function () { edit(null); }, rows: rows, empty: 'لا توجد ملفات أطفال بعد.',
-      search: function (r) { return r.full_name + ' ' + (r.section || ''); },
+      search: function (r) { return r.full_name + ' ' + (r.section || '') + ' ' + DECARD.memberLabel(r.member_no); },
       filters: [
         { label: 'المركز', opts: CENTER_OPTS, test: function (r, x) { return r.center === x; } },
         { label: 'الحالة', opts: [['1', 'نشط'], ['0', 'مؤرشف']], test: function (r, x) { return String(+r.active) === x; } }
       ],
       cols: [
         { label: 'الاسم الكامل', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
+        { label: 'رقم المنخرط', get: function (r) { return DECARD.memberLabel(r.member_no); }, sort: function (r) { return r.member_no; } },
         { label: 'المركز', get: function (r) { return CENTERS[r.center]; }, sort: function (r) { return r.center; } },
         { label: 'القسم', get: function (r) { return r.section || '—'; } },
         { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); } },
@@ -263,6 +305,18 @@
       actions: function (r) {
         return [
           rbtn('تعديل', function () { return edit(r); }),
+          rbtn('عرض البطاقة', async function () { openCardModal(await buildCard(r.id)); }),
+          rbtn('طباعة', async function () { var b = await buildCard(r.id); await DECARD.print(b.card.url); }),
+          rbtn('PDF', async function () { await downloadPdf(await buildCard(r.id)); }),
+          rbtn('إعادة QR', async function () {
+            if (!(await ask({
+              title: 'إعادة إصدار رمز QR',
+              msg: 'سيتوقف الرمز القديم عن فتح صفحة هذا الطفل فورًا، وستحتاج إلى طباعة البطاقة من جديد. هل تريد المتابعة؟',
+              ok: 'إعادة الإصدار', danger: true
+            }))) return;
+            await C.rpc('admin_reissue_child_qr', { p_child_id: uid(r.id) });
+            toast('تم إصدار رمز QR جديد وإبطال القديم.', 'ok');
+          }, 'gold'),
           rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
             await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
             bust(); toast(r.active ? 'تم نقل الملف إلى الأرشيف.' : 'تمت استعادة الملف إلى الحالة النشطة.', 'ok');
@@ -271,11 +325,18 @@
           rbtn('حذف', async function () {
             if (!(await ask({
               title: 'تنبيه بشأن حذف ملف الطفل',
-              msg: 'سيُحذف الملف وروابطه نهائيًا. وفق سياسة المؤسسة: يُفضَّل دائمًا «أرشفة الملف» بدلًا من حذفه للحفاظ على السجلات التاريخية. هل تريد الحذف النهائي رغم ذلك؟',
+              msg: 'سيُحذف الملف وروابطه ومواعيده ووثائقه نهائيًا، ويتوقف رمز QR عن العمل. الأولياء لا يُحذفون. إن كان للطفل تقارير تربوية فلن يُحذف (أرشِفه بدلًا من ذلك). وفق سياسة المؤسسة: يُفضَّل دائمًا «أرشفة الملف» للحفاظ على السجلات التاريخية. هل تريد الحذف النهائي؟',
               ok: 'حذف نهائي', danger: true
             }))) return;
-            await C.rest('DELETE', '/children?id=eq.' + uid(r.id));
-            bust(); toast('تم حذف الملف.', 'ok'); go('children');
+            var res = await C.rpc('admin_delete_child', { p_child_id: uid(r.id) });
+            var paths = (res && res.storage_paths) || [], failed = 0;
+            for (var i = 0; i < paths.length; i++) {       // الملفات الخاصة تُحذف من التخزين (لا تستطيع SQL حذفها)
+              try { await C.removeObject('private-docs', paths[i]); } catch (e) { failed++; }
+            }
+            bust();
+            if (failed) toast('حُذف الملف، لكن تعذّر حذف ' + failed + ' ملف من التخزين؛ احذفها يدويًا من Supabase ▸ Storage.', 'bad');
+            else toast('تم حذف الملف وإلغاء رمز QR الخاص به.', 'ok');
+            go('children');
           }, 'danger')
         ];
       }
@@ -283,6 +344,17 @@
   }
 
   /* ---------- الأولياء ---------- */
+  // نص صادق لنتيجة الإرسال: «قبلت خدمة البريد» ≠ «وصلت الرسالة». الوصول لصندوق الوارد لا يمكن ضمانه ولا معرفته من الموقع.
+  function mailOutcome(r, what) {
+    var st = r && r.email_status;
+    if (r && r.email_dispatched === true) {
+      return { kind: 'ok', msg: 'قبلت خدمة البريد ' + what + ' وستصل خلال دقائق. إن لم تظهر في الوارد فليفحص الولي مجلد «غير مرغوب فيه (Spam)».' };
+    }
+    if (st === 'rate_limited') return { kind: 'bad', msg: 'لم تُرسل الرسالة: يُسمح برسالة واحدة لكل حساب كل دقيقة تقريبًا. انتظر دقيقة ثم أعد المحاولة.' };
+    if (st === 'smtp_rejected') return { kind: 'bad', msg: 'رفض خادم البريد الرسالة، فلم تُرسل. راجع إعدادات SMTP في Supabase ثم استعمل «إعادة إرسال الرابط».' };
+    if (st === 'unknown') return { kind: 'bad', msg: 'لم يصل ردّ خادم البريد في الوقت المحدد؛ قد تكون الرسالة أُرسلت. اسأل الولي قبل إعادة الإرسال.' };
+    return { kind: 'bad', msg: 'لم نتمكن من تأكيد قبول الرسالة من خدمة البريد. تحقق من إعدادات SMTP.' };
+  }
   async function secParents(v) {
     var d = await getMany('parents', 'links', 'children'), rows = d[0], links = d[1], kids = d[2];
     function kidsOf(pid) { return links.filter(function (l) { return l.parent_id === pid; }).map(function (l) { return l.child_id; }); }
@@ -301,8 +373,11 @@
           var body = { action: 'invite_parent', email: x.email.toLowerCase(), full_name: x.full_name, child_ids: x.child_ids };
           if (x.phone) body.phone = x.phone;
           try {
-            await C.fn('admin-users', body);
-            bust(); toast('أُرسلت الدعوة بنجاح إلى بريد ولي الأمر.', 'ok'); go('parents');
+            var res = await C.fn('admin-users', body);
+            bust();
+            var o = mailOutcome(res, 'الدعوة');
+            var pre = res && res.already_registered ? 'هذا البريد مسجَّل مسبقًا؛ رُبط الأبناء بحسابه وأُرسل له رابط استعادة كلمة المرور. ' : (o.kind === 'ok' ? '' : 'أُنشئ حساب الولي لكن ');
+            toast(pre + o.msg, o.kind); go('parents');
           } catch (e) {
             if (e.status === 0 || (e.message && e.message.indexOf('admin-users') >= 0)) {
               throw new Error('الدالة السحابية (admin-users) غير منشورة في Supabase بعد. يرجى نشر الدالة، أو دعوة الولي مباشرة من لوحة تحكم Supabase.');
@@ -364,8 +439,9 @@
               ok: 'إرسال الرابط'
             }))) return;
             try {
-              await C.fn('admin-users', { action: 'resend_parent_invite', user_id: uid(r.user_id) });
-              toast('تم إرسال الرابط بنجاح إلى بريد الولي.', 'ok');
+              var rr = await C.fn('admin-users', { action: 'resend_parent_invite', user_id: uid(r.user_id) });
+              var ro = mailOutcome(rr, rr && rr.kind === 'password_reset' ? 'رابط استعادة كلمة المرور' : 'الدعوة');
+              toast(ro.msg, ro.kind);
             } catch (e) {
               if (e.status === 0 || (e.message && e.message.indexOf('admin-users') >= 0)) {
                 toast('تعذّر الاتصال بالدالة السحابية (admin-users). يرجى التأكد من نشرها في Supabase.', 'bad');

@@ -1,11 +1,12 @@
 /* فحص النشر: يجلب كل ملف بـ cache:'no-store' + معامل عشوائي، ويتحقق من وجوده ومن علامة الإصدار (BUILD). */
 (function () {
   'use strict';
-  var EXPECT_BUILD = '2026-10-19.3';
+  var EXPECT_BUILD = '2026-10-20.2';
   var FILES = [
     ['index.html', 0], ['style.css', 0], ['script.js', 0], ['i18n-data.js', 0], ['cms.js', 0], ['cms.css', 0], ['cms-config.js', 0],
     ['admin.html', 0], ['admin.js', 0], ['admin.css', 0],
-    ['manage.html', 0], ['manage.js', 1], ['parent.html', 0], ['parent.js', 1], ['portal.css', 0], ['de-core.js', 1],
+    ['manage.html', 0], ['manage.js', 1], ['parent.html', 0], ['parent.js', 1], ['parent-guard.js', 0], ['portal.css', 0], ['de-core.js', 1],
+    ['centers.js', 0], ['qr-encoder.js', 0], ['card.js', 0], ['qr.html', 0], ['qr.js', 0], ['qr.css', 0],
     ['logo.png', 0], ['logo-sq.png', 0]
   ];
   var h = DE.h, out = document.getElementById('out');
