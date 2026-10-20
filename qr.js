@@ -1,46 +1,69 @@
-/* qr.js — عرض معلومات طفل واحد عند مسح رمز QR. لا يعرض إلا الحقول التي يعيدها الخادم (public_child_card). */
+/* التحقق من بطاقة التلميذ عبر رمز QR العام
+   يقرأ فقط 5 حقول أساسية عبر RPC آمن get_public_child دون تسريب أي بيانات شخصية أو حساسة. */
 (function () {
   'use strict';
-  var CFG = window.DE_CONFIG || {}, CENTERS = window.DE_CENTERS || {};
-  var base = String(CFG.supabaseUrl || '').replace(/\/+$/, '');
-  var token = '';
-  try { token = new URLSearchParams(location.search).get('t') || ''; } catch (e) { token = ''; }
-  try { history.replaceState(null, '', location.pathname); } catch (e) { /* لا يمنع العرض */ }   // لا يبقى الرمز في شريط العنوان
+  var CFG = window.DE_CONFIG || {};
+  var $ = function (s) { return document.querySelector(s); };
 
-  var $ = function (id) { return document.getElementById(id); };
-  function show(which) {
-    $('state').hidden = true;
-    $('card').hidden = which !== 'card';
-    $('unavailable').hidden = which !== 'off';
-  }
-  function dateLabel(iso) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-    return m ? m[3] + '/' + m[2] + '/' + m[1] : '—';
-  }
-  function memberLabel(n) { return n == null ? '—' : 'DI-' + String(n).padStart(5, '0'); }
-
-  function render(d) {
-    var center = CENTERS[d.center] || { name: '', logo: 'logo.png' };
-    $('logo').src = center.logo;
-    $('logo').alt = center.name;
-    $('centerName').textContent = center.name;
-    $('childName').textContent = d.full_name || '';
-    $('memberNo').textContent = memberLabel(d.member_no);
-    $('enrolled').textContent = dateLabel(d.enrolled_on);
-    if (d.section) { $('section').textContent = d.section; $('sectionRow').hidden = false; }
-    document.title = 'بطاقة منخرط – ' + (center.name || 'دار الإحسان');
-    show('card');
+  function setField(id, text) {
+    var el = $('#' + id);
+    if (el) el.textContent = text || '—';
   }
 
-  if (!base || !/^[0-9a-f]{32}$/.test(token)) { show('off'); return; }
+  function showError(msg) {
+    var l = $('#loading'), err = $('#errorState'), data = $('#studentData');
+    if (l) l.hidden = true;
+    if (data) data.hidden = true;
+    if (err) {
+      err.textContent = msg;
+      err.hidden = false;
+    }
+  }
 
-  fetch(base + '/rest/v1/rpc/public_child_card', {
-    method: 'POST',
-    headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ p_token: token }),
-    credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer'
-  })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (d) { if (d && d.found) render(d); else show('off'); })
-    .catch(function () { show('off'); });
+  async function init() {
+    var params = new URLSearchParams(window.location.search);
+    var publicUuid = params.get('id');
+
+    if (!publicUuid || !DE.isUuid(publicUuid)) {
+      showError('رابط البطاقة غير صالح أو مفقود. يرجى مسح رمز الاستجابة السريعة (QR) الموجود على بطاقة التلميذ الرسمية.');
+      return;
+    }
+
+    if (!CFG.supabaseUrl || !CFG.supabaseKey) {
+      showError('إعدادات الاتصال غير مضبوطة.');
+      return;
+    }
+
+    try {
+      var client = DE.Client(CFG, 'de_qr_session');
+      var res = await client.rpc('get_public_child', { p_uuid: publicUuid });
+
+      if (!res || !res.full_name) {
+        showError('لم يتم العثور على بيانات تلميذ مطابقة لهذا الرمز، أو أن الملف غير نشط حالياً.');
+        return;
+      }
+
+      setField('f_num', res.membership_no ? ('N° ' + res.membership_no) : '—');
+      setField('f_name', res.full_name);
+      setField('f_dob', res.dob);
+      setField('f_branch', res.branch);
+      setField('f_section', res.section);
+      setField('f_disability', res.disability);
+      setField('f_year', res.academic_year || '2026–2027');
+
+      var claimBtn = $('#btnClaim');
+      if (claimBtn) {
+        claimBtn.href = 'parent.html?child=' + encodeURIComponent(publicUuid);
+      }
+
+      var l = $('#loading'), data = $('#studentData');
+      if (l) l.hidden = true;
+      if (data) data.hidden = false;
+
+    } catch (err) {
+      showError('تعذّر التحقق من بيانات البطاقة. يرجى التأكد من اتصال الإنترنت والمحاولة ثانية.');
+    }
+  }
+
+  init();
 })();

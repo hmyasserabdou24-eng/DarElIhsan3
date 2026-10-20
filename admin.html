@@ -34,6 +34,11 @@
 
 <div id="boot" class="boot" role="status">جارٍ التحميل…</div>
 
+<div style="background:#0f1c30; color:#fff; padding:12px 16px; text-align:center; font-size:14px; border-bottom:2px solid #b8860b; z-index:99; position:relative;">
+  <span>📢 للإدارة الشاملة للطلبة، الأولياء، الفروع والبرامج التربوية:</span>
+  <a href="manage.html" style="color:#f0ca7d; font-weight:800; margin-right:8px; text-decoration:underline;">الانتقال إلى لوحة الإدارة المتطورة (manage.html) ←</a>
+</div>
+
 <!-- تسجيل الدخول -->
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-card" autocomplete="on" novalidate>
@@ -70,7 +75,7 @@
   <header class="top">
     <img src="logo-sq.png" alt="" class="top-logo">
     <div class="top-title"><strong>لوحة الإدارة</strong><span id="statusChip" class="chip">—</span></div>
-    <a class="icon-btn" href="manage.html" aria-label="الأطفال والأولياء" title="الأطفال والأولياء">👪</a>
+    <a href="manage.html" class="btn small" style="background:#b8860b; color:#fff; text-decoration:none; font-weight:700; margin-inline:8px;">إدارة الطلبة والأولياء ←</a>
     <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج"><svg class="i"><use href="#a-out"/></svg></button>
   </header>
   <nav class="tabs" id="tabs" role="tablist" aria-label="الأقسام">

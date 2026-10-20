@@ -164,21 +164,43 @@ table.tbl{width:100%;border-collapse:collapse}
 
 /* تحسين شريط tabs */
 .tabs button .ti{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-bottom:1px}
+.link-box{width:100%;font-size:12px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;direction:ltr;text-align:left;font-family:monospace;margin:10px 0;background:#f9f9f9;word-break:break-all}
 
+/* بطاقة انخراط التلميذ الرسمية */
+.student-id-card{width:100%;max-width:560px;margin:10px auto;background:#fff;border:2px solid var(--gold);border-radius:16px;padding:18px 20px;box-shadow:0 8px 30px rgba(0,0,0,.12);position:relative;color:#0b1d33;box-sizing:border-box}
+.sic-header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #eef2f6;padding-bottom:12px;margin-bottom:14px;gap:12px}
+.sic-header-text{flex:1;text-align:center}
+.sic-republic{font-size:11px;color:#556987;font-weight:700}
+.sic-assoc{font-size:13px;color:var(--navy);font-weight:800;margin:2px 0}
+.sic-center{font-size:12px;color:#b8860b;font-weight:700}
+.sic-logo{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex:none}
+.sic-badge-row{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:6px 12px;border-radius:8px;margin-bottom:12px}
+.sic-title{font-size:14px;font-weight:800;color:var(--navy)}
+.sic-num{font-size:13px;font-weight:800;color:#fff;background:var(--gold);padding:2px 8px;border-radius:6px;letter-spacing:1px}
+.sic-body{display:flex;gap:16px;align-items:flex-start}
+.sic-info{flex:1;display:grid;gap:8px}
+.sic-row{display:flex;font-size:13px;line-height:1.4}
+.sic-label{width:95px;color:#64748b;font-weight:600;flex:none}
+.sic-val{flex:1;color:#0f172a;font-weight:700}
+.sic-qr-wrap{width:110px;text-align:center;flex:none;display:flex;flex-direction:column;align-items:center}
+.sic-qr-canvas{width:100px;height:100px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#fff}
+.sic-qr-hint{font-size:10px;color:#64748b;margin-top:4px;font-weight:600}
+.sic-footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:11px;color:#64748b}
+.sic-stamp{border:1px dashed #94a3b8;border-radius:8px;padding:4px 10px;text-align:center;font-size:10px;color:#475569;min-width:110px}
 
-/* شاشة الفشل بدل الصفحة البيضاء (parent-guard.js) */
-.boot-fail{max-width:420px;margin:0 auto;padding:24px 20px;text-align:center;color:var(--ink,#0C2D55);line-height:1.8}
-.boot-fail strong{display:block;font:700 18px/1.5 "Cairo","Tajawal",sans-serif;margin-bottom:8px}
-.boot-fail p{margin:0 0 10px}
-.boot-fail .btn{display:inline-block;text-decoration:none;margin:6px 0 10px}
-.boot-fail small{display:block;opacity:.6}
+/* أشرطة البحث والتصفية */
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;background:#f8fafc;padding:12px;border-radius:14px;border:1px solid #e2e8f0}
+.filter-bar input, .filter-bar select{flex:1;min-width:160px;min-height:38px;padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px}
+.filter-bar button{flex:none}
 
-/* بطاقة المنخرط: معاينة داخل النافذة + طباعة بمقاس بطاقة الائتمان فقط */
-.card-preview { display: block; width: 100%; max-width: 480px; height: auto; margin: 8px auto 12px; border-radius: 12px; box-shadow: 0 8px 22px rgba(12,45,85,.18); }
-#printArea { display: none; }
-@media print {
-  @page { size: 85.6mm 54mm; margin: 0; }
-  body > *:not(#printArea) { display: none !important; }
-  #printArea { display: block !important; position: static; margin: 0; padding: 0; }
-  #printArea img { display: block; width: 85.6mm; height: 54mm; }
+/* رقائق رموز التسجيل */
+.reg-code-chip{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #cbd5e1;padding:3px 8px;border-radius:6px;font-family:monospace;font-size:12px;font-weight:700;color:var(--navy);direction:ltr}
+
+/* تنسيق الطباعة */
+@media print{
+  body *{visibility:hidden!important}
+  .student-id-card, .student-id-card *{visibility:visible!important}
+  .student-id-card{position:fixed;left:0;top:0;width:100%!important;max-width:none!important;margin:0!important;border:2px solid #b8860b!important;box-shadow:none!important}
+  .modal-actions, .bar, .side, .toast{display:none!important}
 }
+

@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
 
-  var BUILD = '2026-10-20.2';
+  var BUILD = '2026-10-19.3';
   var MAX_FILE = 5 * 1024 * 1024;                       // 5 ميغابايت (يطابق حد الحاوية private-docs)
   var EXT = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
   var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,7 +97,6 @@
     [/banned|user is banned/i, 'هذا الحساب معطَّل. تواصل مع إدارة المركز.'],
     [/invalid (totp|code)|mfa.*(invalid|failed)|code.*incorrect/i, 'رمز المصادقة غير صحيح أو منتهٍ.'],
     [/rate limit|too many|over_.*rate_limit|only request this (after|once)/i, 'محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة.'],
-    [/smtp_rejected|error sending (invite|confirmation|recovery)/i, 'رفض خادم البريد الرسالة. راجع إعدادات SMTP في Supabase.'],
     [/otp.*expired|token has expired|invalid.*(token|otp)|otp_expired/i, 'الرابط أو الرمز غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.'],
     [/same password|should be different/i, 'اختر كلمة مرور مختلفة عن الحالية.'],
     [/weak.?password|password should|at least \d+ char/i, 'كلمة المرور ضعيفة. استخدم 10 أحرف أو أكثر مع أحرف كبيرة وصغيرة وأرقام.'],
@@ -105,14 +104,13 @@
     [/23503|foreign key|violates foreign key/i, 'لا يمكن تنفيذ العملية لأن هناك سجلات مرتبطة (مثل تقارير). عطّل الملف بدلًا من حذفه.'],
     [/23505|duplicate key/i, 'هذا السجل موجود مسبقًا.'],
     [/23514|check constraint/i, 'إحدى القيم غير مقبولة. راجع الحقول وأعد المحاولة.'],
-    [/HAS_REPORTS/, 'لا يمكن حذف الطفل لوجود تقارير تربوية مرتبطة به. أرشِف الملف بدلًا من حذفه للحفاظ على السجلات التاريخية.'],
-    [/NOT_FOUND/, 'الملف غير موجود أو حُذف بالفعل.'],
     [/payload too large|exceeded the maximum|too large/i, 'حجم الملف أكبر من الحد المسموح (5 ميغابايت).'],
     [/mime type|not supported|invalid_mime/i, 'نوع الملف غير مدعوم.']
   ];
   function friendly(status, raw, code) {
     var s = String(raw || '') + ' ' + String(code || '');
     for (var i = 0; i < MSG.length; i++) if (MSG[i][0].test(s)) return MSG[i][1];
+    if (raw && /[\u0600-\u06FF]/.test(raw) && !/violates|SQLSTATE|stack|syntax/i.test(raw)) return raw;
     return 'حدث خطأ غير متوقع (' + status + '). حاول مرة أخرى.';
   }
 
@@ -233,55 +231,6 @@
       root.history.replaceState(null, '', root.location.pathname + root.location.search);
       save({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token'), expires_in: Number(p.get('expires_in')) || 3600 });
       return { type: p.get('type') || '' };
-    };
-
-    /* يفحص عنوان الصفحة كاملًا (hash + query) ويصنّف نوع الرابط، ثم يمسح كل المعاملات الحساسة من الشريط فورًا
-       فلا تبقى في السجل ولا تُعاد معالجتها عند التحديث. لا يطبع الرموز في أي سجل. القيم المعادة:
-         null                                  — لا يوجد شيء يخص المصادقة
-         { kind:'session', type }              — رموز جلسة في #hash (التدفق الضمني) وقد حُفظت
-         { kind:'otp', token_hash, type }      — رابط token_hash: يجب استدعاء verifyOtp بعد موافقة المستخدم
-         { kind:'error', expired, message }    — رابط منتهٍ/مستهلك/غير صالح
-         { kind:'unsupported' }                — رابط code (PKCE) لا يمكن إكماله من هذه الصفحة */
-    var OTP_TYPES = ['invite', 'recovery', 'signup', 'magiclink', 'email', 'email_change'];
-    api.adoptUrl = function () {
-      var loc = root.location;
-      var hp = new URLSearchParams(String(loc.hash || '').replace(/^#/, ''));
-      var qp = new URLSearchParams(String(loc.search || '').replace(/^\?/, ''));
-      function get(k) { return hp.get(k) || qp.get(k); }
-      var sensitive = ['access_token', 'refresh_token', 'token_hash', 'token', 'code', 'type', 'error', 'error_code', 'error_description', 'expires_in', 'expires_at', 'token_type', 'provider_token'];
-      var touched = sensitive.some(function (k) { return hp.has(k) || qp.has(k); });
-      if (!touched) return null;
-      var out;
-      var errCode = get('error_code') || '', err = get('error') || '';
-      if (err || errCode) {
-        var desc = get('error_description') || '';
-        var expired = /expired|otp_expired|invalid|used|consumed/i.test(errCode + ' ' + desc + ' ' + err);
-        out = { kind: 'error', expired: expired, message: friendly(400, desc, errCode) };
-      } else if (hp.get('access_token') && hp.get('refresh_token')) {
-        save({ access_token: hp.get('access_token'), refresh_token: hp.get('refresh_token'), expires_in: Number(hp.get('expires_in')) || 3600 });
-        out = { kind: 'session', type: hp.get('type') || '' };
-      } else if (get('token_hash') && OTP_TYPES.indexOf(get('type') || '') >= 0) {
-        out = { kind: 'otp', token_hash: get('token_hash'), type: get('type') };
-      } else if (qp.get('code')) {
-        out = { kind: 'unsupported' };
-      } else {
-        out = { kind: 'error', expired: true, message: friendly(400, 'invalid token', 'otp_expired') };
-      }
-      // نمسح المعاملات الحساسة فقط ونُبقي ما عداها
-      sensitive.forEach(function (k) { qp.delete(k); });
-      var rest = qp.toString();
-      root.history.replaceState(null, '', loc.pathname + (rest ? '?' + rest : ''));
-      return out;
-    };
-    // تحقق من رمز token_hash عبر واجهة Supabase الرسمية POST /auth/v1/verify ثم احفظ الجلسة
-    api.verifyOtp = async function (tokenHash, type) {
-      if (typeof tokenHash !== 'string' || !/^[A-Za-z0-9_-]{8,200}$/.test(tokenHash) || OTP_TYPES.indexOf(type) < 0) {
-        var e = new Error(friendly(400, 'invalid token', 'otp_expired')); e.status = 400; throw e;
-      }
-      var tok = await raw(null, 'POST', '/auth/v1/verify', { type: type, token_hash: tokenHash });
-      if (!tok || !tok.access_token || !tok.refresh_token) { var e2 = new Error(friendly(400, 'invalid token', 'otp_expired')); e2.status = 400; throw e2; }
-      save(tok);
-      return { type: type };
     };
     api.setPassword = function (pw) { return authed('PUT', '/auth/v1/user', { password: pw }); };
     api.rest = function (method, path, body, prefer) { return authed(method, '/rest/v1' + path, body, prefer ? { Prefer: prefer } : {}); };
