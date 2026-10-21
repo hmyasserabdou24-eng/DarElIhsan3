@@ -404,15 +404,51 @@
      2. إدارة الأطفال والطلبة + بطاقة الانخراط الرسمية + رمز التسجيل
      ===================================================================== */
   async function secChildren(v) {
-    var d = await getMany('children', 'branches', 'sections', 'codes');
-    var rows = d[0], branches = d[1], sections = d[2], codes = d[3];
+    var d = await getMany('children', 'branches', 'sections', 'codes', 'parents', 'links');
+    var rows = d[0], branches = d[1], sections = d[2], codes = d[3], parents = d[4], links = d[5];
 
     var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
+    var parentOpts = parents.map(function (p) { return [p.user_id, (p.full_name || 'ولي الأمر') + (p.email ? ' — ' + p.email : '')]; });
 
     function getCodeForChild(childId) {
       var active = codes.filter(function (c) { return c.child_id === childId && !c.used_at && new Date(c.expires_at) > new Date(); })[0];
       return active ? active.code : null;
+    }
+
+    function parentIdsForChild(childId) {
+      return links.filter(function (l) { return l.child_id === childId; }).map(function (l) { return l.parent_id; });
+    }
+
+    function parentNamesForChild(childId) {
+      var ids = parentIdsForChild(childId);
+      if (!ids.length) return [];
+      return ids.map(function (pid) { var p = parents.filter(function (x) { return x.user_id === pid; })[0]; return p && p.full_name ? p.full_name : 'ولي غير محدّد'; }).filter(Boolean);
+    }
+
+    function assignParentForChild(child) {
+      var current = parentIdsForChild(child.id);
+      return openForm({
+        title: 'ربط / تعديل ولي الأمر للطفل',
+        values: { parent_ids: current },
+        fields: [{
+          k: 'parent_ids', label: 'الأولياء المخوّلون لهذا الطفل', type: 'multi', opts: parentOpts, maxItems: 10,
+          hint: 'اختر وليًا أو أكثر؛ ستُحفظ العلاقة مباشرة في جدول parent_children.'
+        }],
+        onSubmit: async function (x) {
+          var prevSet = new Set(current);
+          var nextSet = new Set(x.parent_ids || []);
+          var toDel = current.filter(function (id) { return !nextSet.has(id); });
+          var toAdd = (x.parent_ids || []).filter(function (id) { return !prevSet.has(id); });
+          for (var i = 0; i < toDel.length; i++) {
+            await C.rest('DELETE', '/parent_children?parent_id=eq.' + uid(toDel[i]) + '&child_id=eq.' + uid(child.id));
+          }
+          for (var j = 0; j < toAdd.length; j++) {
+            await C.rest('POST', '/parent_children', { parent_id: toAdd[j], child_id: child.id });
+          }
+          bust(); toast('تم حفظ ربط ولي الأمر بنجاح.', 'ok'); go('children');
+        }
+      });
     }
 
     function editChild(c) {
@@ -683,16 +719,18 @@
       onAdd: function () { editChild(null); },
       rows: rows,
       sheet: true,
-      searchPlaceholder: 'بحث بالاسم، رقم القيد، الفرع، أو القسم…',
+      searchPlaceholder: 'بحث بالاسم، رقم القيد، ولي الأمر، الفرع، أو القسم…',
       empty: 'لا توجد بيانات مسجلة للأطفال.',
       search: function (r) {
-        return [r.membership_no, r.full_name, nameOf(branches, r.branch_id, 'name'), nameOf(sections, r.section_id, 'name'), r.section, r.disability]
+        return [r.membership_no, r.full_name, parentNamesForChild(r.id).join(' '), nameOf(branches, r.branch_id, 'name'), nameOf(sections, r.section_id, 'name'), r.section, r.disability]
           .filter(Boolean).join(' ');
       },
       details: function (r) {
+        var parentList = parentNamesForChild(r.id);
         var items = [
           ['تاريخ الميلاد', r.dob ? fmt(r.dob) : '—'],
           ['رقم هاتف الاتصال', r.phone || '—'],
+          ['ولي الأمر', parentList.length ? parentList.join('، ') : 'لم يتم تعيين ولي'],
           ['طبيعة الإعاقة', r.disability || '—'],
           ['الموسم الدراسي', r.academic_year || '—'],
           ['إذن نشر الصور', r.photo_consent ? 'نعم' : 'لا'],
@@ -706,11 +744,12 @@
       exportXlsx: {
         file: 'قائمة_الأطفال_دار_الإحسان',
         sheet: 'الأطفال',
-        widths: [14, 30, 14, 30, 30, 28, 18, 16, 14, 12, 40],
+        widths: [14, 30, 14, 26, 30, 30, 28, 18, 16, 14, 12, 40],
         cols: [
           { label: 'رقم القيد', value: function (r) { return r.membership_no || ''; } },
           { label: 'اسم ولقب التلميذ', value: function (r) { return r.full_name || ''; } },
           { label: 'تاريخ الميلاد', value: function (r) { return r.dob || ''; } },
+          { label: 'ولي الأمر', value: function (r) { return parentNamesForChild(r.id).join('، ') || 'لم يتم تعيين ولي'; } },
           { label: 'الفرع', value: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
           { label: 'الفوج / القسم', value: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
           { label: 'طبيعة الإعاقة', value: function (r) { return r.disability || ''; } },
@@ -724,6 +763,7 @@
       filters: [
         { label: 'الفرع', opts: branchOpts, test: function (r, x) { return r.branch_id === x; } },
         { label: 'القسم', opts: secOpts, test: function (r, x) { return r.section_id === x; } },
+        { label: 'ولي الأمر', opts: [['linked', 'مرتبط'], ['unlinked', 'غير مرتبط']], test: function (r, x) { return x === 'linked' ? !!parentNamesForChild(r.id).length : !parentNamesForChild(r.id).length; } },
         { label: 'الحالة', opts: [['1', 'نشط'], ['0', 'مؤرشف']], test: function (r, x) { return String(+r.active) === x; } }
       ],
       cols: [
@@ -735,6 +775,7 @@
           sort: function (r) { return r.membership_no || ''; }
         },
         { label: 'اسم ولقب التلميذ', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
+        { label: 'ولي الأمر', get: function (r) { var names = parentNamesForChild(r.id); return names.length ? names.join('، ') : h('span', { class: 'muted small', text: 'لم يتم تعيين ولي' }); }, sort: function (r) { return parentNamesForChild(r.id).join('، ') || 'لم يتم تعيين ولي'; } },
         { label: 'تاريخ الميلاد', get: function (r) { return r.dob ? fmt(r.dob) : '—'; }, sort: function (r) { return r.dob; } },
         { label: 'الفرع', get: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'; }, sort: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
         { label: 'الفوج / القسم', get: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || '—'; }, sort: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
@@ -767,7 +808,8 @@
       ],
       actions: function (r) {
         return [
-          rbtn('🪪 البطاقة', function () { openStudentCard(r); }, 'gold'),
+          rbtn('🔗 ربط ولي', function () { assignParentForChild(r); }, 'gold'),
+          rbtn('🪪 البطاقة', function () { openStudentCard(r); }, 'light'),
           rbtn('تعديل', function () { editChild(r); }),
           rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
             await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
