@@ -340,7 +340,7 @@ def main():
         check(errs == [], 'لا أخطاء JavaScript في الموقع العام ' + str(errs))
         pg.set_viewport_size({'width': 390, 'height': 800}); time.sleep(0.3)
         check(pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'), 'الموقع العام بلا تمرير أفقي على الهاتف')
-        for f in ['admin.html', 'parent.html', 'manage.html', 'deploy-check.html']:
+        for f in ['parent.html', 'manage.html', 'deploy-check.html']:
             pg2, e2 = new_page(br); fl = []
             pg2.on('response', lambda r, fl=fl: fl.append(r.url) if r.url.startswith(base) and r.status >= 400 else None)
             pg2.goto(base + f); pg2.wait_for_load_state('networkidle'); time.sleep(0.3)

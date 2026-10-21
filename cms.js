@@ -109,55 +109,6 @@
     });
   }
 
-  /* ---------- المعرض ---------- */
-  function embedSrc(it) {
-    if (it.provider === 'youtube' && /^[\w-]{6,20}$/.test(it.videoId || '')) return 'https://www.youtube-nocookie.com/embed/' + it.videoId;
-    if (it.provider === 'vimeo' && /^\d{4,15}$/.test(it.videoId || '')) return 'https://player.vimeo.com/video/' + it.videoId;
-    return null;
-  }
-  function pick(o, l) {
-    if (!isObj(o)) return '';
-    var a = str(o[l], 1500) || '', b = str(o[l === 'ar' ? 'fr' : 'ar'], 1500) || '';
-    return a.trim() ? a : b;
-  }
-  function renderGallery() {
-    var wrap = document.getElementById('cmsGallery');
-    var sec = document.getElementById('gallery');
-    if (!wrap || !sec) return;
-    var items = current && Array.isArray(current.gallery) ? current.gallery.slice(0, 60) : [];
-    var l = lang();
-    wrap.textContent = '';
-    var shown = 0;
-    items.forEach(function (it) {
-      if (!isObj(it)) return;
-      var media = null;
-      if (it.type === 'image') {
-        var u = mediaUrl(it.path); if (!u) return;
-        media = document.createElement('img'); media.src = u; media.alt = pick(it.title, l); media.loading = 'lazy';
-      } else if (it.type === 'video') {
-        var vu = mediaUrl(it.path); if (!vu) return;
-        media = document.createElement('video'); media.src = vu + '#t=0.1'; media.controls = true;
-        media.preload = 'metadata'; media.setAttribute('playsinline', '');
-      } else if (it.type === 'embed') {
-        var es = embedSrc(it); if (!es) return;
-        media = document.createElement('iframe'); media.src = es; media.loading = 'lazy';
-        media.title = pick(it.title, l) || 'video'; media.allowFullscreen = true;
-        media.setAttribute('allow', 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen');
-        media.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-      } else return;
-      var card = document.createElement('article'); card.className = 'card in';
-      var ph = document.createElement('div'); ph.className = 'ph'; ph.appendChild(media);
-      var body = document.createElement('div'); body.className = 'body';
-      var h = document.createElement('h3'); h.textContent = pick(it.title, l);
-      var p = document.createElement('p'); p.textContent = pick(it.desc, l);
-      body.appendChild(h); body.appendChild(p);
-      if (!h.textContent && !p.textContent) card.className += ' no-body';
-      card.appendChild(ph); card.appendChild(body);
-      wrap.appendChild(card); shown++;
-    });
-    sec.hidden = shown === 0;
-  }
-
   /* ---------- الأقسام المخصصة (تُدرج بعد قسم موجود) ---------- */
   var AFTER = ['about', 'services', 'center', 'annexes', 'goals'];
   function buildMedia(m, alt, l) {
@@ -226,7 +177,6 @@
     if (rerenderText && typeof updateI18n === 'function') updateI18n();
     applyFields(current);
     applyImages(current);
-    renderGallery();
     renderSections();
   }
 
@@ -249,7 +199,7 @@
       window.parent.postMessage({ type: 'cms-ready' }, location.origin);
       return;
     }
-    if (isObj(cached)) { applyFields(cached); applyImages(cached); renderGallery(); renderSections(); }
+    if (isObj(cached)) { applyFields(cached); applyImages(cached); renderSections(); }
     if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
 
     var ctl = window.AbortController ? new AbortController() : null;
@@ -272,7 +222,7 @@
       .catch(function () { clearTimeout(timer); /* يبقى المحتوى الحالي كما هو */ });
   });
 
-  /* إعادة رسم المعرض عند تبديل اللغة (script.js يغيّر lang على <html>) */
-  new MutationObserver(function () { renderGallery(); renderSections(); })
+  /* إعادة رسم الأقسام المخصصة عند تبديل اللغة (script.js يغيّر lang على <html>) */
+  new MutationObserver(function () { renderSections(); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 })();

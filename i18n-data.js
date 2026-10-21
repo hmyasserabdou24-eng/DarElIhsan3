@@ -76,7 +76,6 @@ const T = {
   "ig": "إنستغرام",
   "centerTitle": "مركزنا",
   "cn": "المركز النفسي البيداغوجي دار الإحسان",
-  "galleryTitle": "معرض الصور والفيديو",
   "cd": "مركز متخصص يقدم رعاية نفسية وبيداغوجية للأطفال ذوي الإعاقة الذهنية، مع دعم تربوي واجتماعي للأسرة."
  },
  "fr": {
@@ -154,7 +153,6 @@ const T = {
   "ig": "Instagram",
   "centerTitle": "Notre centre",
   "cn": "Centre Psychopédagogique Dar El Ihsan",
-  "galleryTitle": "Galerie photos et vidéos",
   "cd": "Centre spécialisé offrant un accompagnement psychologique et pédagogique aux enfants en situation de handicap mental, avec un soutien éducatif et social aux familles."
  }
 };

@@ -844,3 +844,56 @@ table.tbl { width: 100%; border-collapse: collapse; }
 @media (prefers-color-scheme: dark) {
   /* سيُضاف لاحقاً */
 }
+
+/* ═══════════════════════════════════════════════
+   الجدول الإلكتروني (قائمة الأطفال — وضع sheet)
+   رأس ثابت أثناء التمرير، عمود أول ثابت، تمرير أفقي وعمودي
+   على الهاتف والحاسوب، وبقاء الجدول جدولًا (بدون تحويله لبطاقات)
+═══════════════════════════════════════════════ */
+.sheet-wrap {
+  overflow: auto;
+  max-height: 68vh;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.tbl-sheet { display: table; min-width: 1040px; }
+.tbl-sheet thead { display: table-header-group; }
+.tbl-sheet tbody { display: table-row-group; }
+.tbl-sheet tr { display: table-row; padding: 0; margin: 0; border: 0; }
+.tbl-sheet th, .tbl-sheet td { display: table-cell; white-space: nowrap; }
+.tbl-sheet td { border-bottom: 0; border-top: 1px solid var(--line); }
+.tbl-sheet tr:first-child td { border-top: 0; }
+.tbl-sheet td::before { content: none; }
+.tbl-sheet td:last-child { border-bottom: 0; flex-wrap: nowrap; }
+.tbl-sheet td.actions-cell { white-space: nowrap; }
+.tbl-sheet td.actions-cell .btn { margin-bottom: 0; }
+.tbl-sheet thead th {
+  position: sticky; top: 0; z-index: 2;
+  box-shadow: inset 0 -2px 0 var(--line-strong);
+}
+.tbl-sheet th:first-child, .tbl-sheet td:first-child {
+  position: sticky; inset-inline-start: 0; z-index: 1; background: #fff;
+}
+.tbl-sheet thead th:first-child { z-index: 3; background: #eef2f9; }
+.tbl-sheet tr:hover td:first-child { background: #fafbfd; }
+
+/* تفاصيل الطفل المخفية/المعروضة بزر مستقل */
+.detail-row td {
+  white-space: normal; background: #f8fafc;
+  border-top: 1px dashed var(--line-strong); padding: 12px 16px;
+}
+.child-details {
+  display: grid; gap: 10px 18px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.cd-item { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cd-item span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.cd-item b { font-size: 14px; color: #0f172a; font-weight: 700; overflow-wrap: anywhere; }
+.cd-item.wide { grid-column: 1 / -1; }
+
+/* الهاتف: شبكة تفاصيل من عمودين */
+@media (max-width: 720px) {
+  .sheet-wrap { max-height: 72vh; }
+  .tbl-sheet { min-width: 1040px; }
+  .child-details { grid-template-columns: 1fr 1fr; }
+}

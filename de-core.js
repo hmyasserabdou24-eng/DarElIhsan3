@@ -218,6 +218,13 @@
     api.recover = function (email, redirectTo) {
       return raw(null, 'POST', '/auth/v1/recover' + (redirectTo ? '?redirect_to=' + encodeURIComponent(redirectTo) : ''), { email: email });
     };
+    // استعادة كلمة المرور برمز البريد: التحقق من الرمز ثم تعيين كلمة المرور الجديدة، ثم إغلاق جلسة الاستعادة
+    api.recoverWithCode = async function (email, code, newPassword) {
+      var v = await raw(null, 'POST', '/auth/v1/verify', { type: 'recovery', email: email, token: code });
+      if (!v || !v.access_token) throw new Error('الرمز غير صحيح أو منتهٍ.');
+      try { await raw(v.access_token, 'PUT', '/auth/v1/user', { password: newPassword }); }
+      finally { try { await raw(v.access_token, 'POST', '/auth/v1/logout?scope=local', {}); } catch (e) { /* تجاهل */ } }
+    };
     // روابط الدعوة/الاستعادة تأتي برموز في #hash: نلتقطها ثم نزيلها من الشريط فورًا
     api.adoptHash = function () {
       var m = String(root.location.hash || '').replace(/^#/, '');

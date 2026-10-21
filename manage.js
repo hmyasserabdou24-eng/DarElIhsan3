@@ -195,21 +195,28 @@
     openModal(card);
   }
 
-  /* قوائم العرض والجداول المتجاوبة */
+  /* قوائم العرض والجداول المتجاوبة
+     o.sheet: وضع «الجدول الإلكتروني» — رأس ثابت أثناء التمرير، فرز بالنقر على العمود،
+              وتمرير أفقي على الهاتف والحاسوب معًا (بدون تحويل الجدول إلى بطاقات).
+     o.details(r): محتوى يُظهره أو يُخفيه زر مستقل لكل سجل.
+     o.exportXlsx: { file, sheet, widths, cols:[{label, value(r)}] } لتصدير السجلات المعروضة فقط بصيغة XLSX. */
   function listView(v, o) {
-    var searchVal = '', curFilters = {};
+    var searchVal = '', curFilters = {}, sortIdx = -1, sortDir = 1, openRows = {}, visible = [];
     var bar = h('div', { class: 'bar-sub' }, h('h2', { text: o.title }));
-    if (o.addLabel && o.onAdd) bar.appendChild(h('button', { class: 'btn', type: 'button', text: o.addLabel, onclick: o.onAdd }));
+    var barBtns = h('div', { class: 'row-actions' });
+    if (o.exportXlsx) barBtns.appendChild(h('button', { class: 'btn small light', type: 'button', text: '📊 تصدير Excel (XLSX)', onclick: exportNow }));
+    if (o.addLabel && o.onAdd) barBtns.appendChild(h('button', { class: 'btn', type: 'button', text: o.addLabel, onclick: o.onAdd }));
+    bar.appendChild(barBtns);
     v.appendChild(bar);
 
     var fwrap = h('div', { class: 'filter-bar' });
     if (o.search) {
-      var sIn = h('input', { type: 'search', placeholder: 'بحث بالاسم، رقم القيد، أو القسم…' });
+      var sIn = h('input', { type: 'search', placeholder: o.searchPlaceholder || 'بحث بالاسم، رقم القيد، أو القسم…', 'aria-label': 'بحث' });
       sIn.addEventListener('input', function () { searchVal = DE.clean(sIn.value, 80).toLowerCase(); render(); });
       fwrap.appendChild(sIn);
     }
     (o.filters || []).forEach(function (f, idx) {
-      var sel = h('select', {}, h('option', { value: '', text: '— كل ' + f.label + ' —' }), f.opts.map(function (op) { return h('option', { value: op[0], text: op[1] }); }));
+      var sel = h('select', { 'aria-label': f.label }, h('option', { value: '', text: '— كل ' + f.label + ' —' }), f.opts.map(function (op) { return h('option', { value: op[0], text: op[1] }); }));
       sel.addEventListener('change', function () { curFilters[idx] = sel.value; render(); });
       fwrap.appendChild(sel);
     });
@@ -221,9 +228,8 @@
     var listBox = h('div');
     v.appendChild(listBox);
 
-    function render() {
-      listBox.textContent = '';
-      var list = (o.rows || []).filter(function (r) {
+    function filtered() {
+      return (o.rows || []).filter(function (r) {
         if (searchVal && o.search && (o.search(r) || '').toLowerCase().indexOf(searchVal) === -1) return false;
         for (var k in curFilters) {
           var val = curFilters[k];
@@ -231,37 +237,99 @@
         }
         return true;
       });
+    }
 
-      countBadge.textContent = 'إجمالي السجلات: ' + list.length + ' من ' + (o.rows ? o.rows.length : 0);
+    function sortList(list) {
+      if (sortIdx < 0 || !o.cols[sortIdx] || typeof o.cols[sortIdx].sort !== 'function') return list;
+      var key = o.cols[sortIdx].sort;
+      return list.slice().sort(function (a, b) {
+        var x = key(a), y = key(b);
+        if (x == null) x = ''; if (y == null) y = '';
+        if (typeof x === 'number' && typeof y === 'number') return (x - y) * sortDir;
+        return String(x).localeCompare(String(y), 'ar', { numeric: true, sensitivity: 'base' }) * sortDir;
+      });
+    }
+
+    function render() {
+      var prevWrap = listBox.querySelector('.table-wrap');
+      var pos = prevWrap ? [prevWrap.scrollTop, prevWrap.scrollLeft] : null;
+      listBox.textContent = '';
+
+      var list = sortList(filtered());
+      visible = list;
+      countBadge.textContent = 'إجمالي السجلات المعروضة: ' + list.length + ' من ' + (o.rows ? o.rows.length : 0);
 
       if (!list.length) {
         listBox.appendChild(h('div', { class: 'empty', text: o.empty || 'لا توجد عناصر مطابقة.' }));
         return;
       }
 
-      var table = h('table', { class: 'tbl' });
-      var thead = h('thead', {}, h('tr', {}, o.cols.map(function (c) { return h('th', { text: c.label }); }), o.actions ? h('th', { text: 'الإجراءات' }) : null));
+      var hasActs = !!(o.actions || o.details);
+      var headRow = h('tr');
+      o.cols.forEach(function (c, ci) {
+        var sortable = typeof c.sort === 'function';
+        var label = c.label + (sortable && sortIdx === ci ? (sortDir > 0 ? ' ▲' : ' ▼') : '');
+        var th = h('th', { text: label, class: sortable ? 'sortable' : null, title: sortable ? 'اضغط للفرز' : null });
+        if (sortable) {
+          th.setAttribute('aria-sort', sortIdx === ci ? (sortDir > 0 ? 'ascending' : 'descending') : 'none');
+          th.addEventListener('click', function () {
+            if (sortIdx === ci) sortDir = -sortDir; else { sortIdx = ci; sortDir = 1; }
+            render();
+          });
+        }
+        headRow.appendChild(th);
+      });
+      if (hasActs) headRow.appendChild(h('th', { text: 'الإجراءات' }));
+      var table = h('table', { class: 'tbl' + (o.sheet ? ' tbl-sheet' : '') },
+        h('thead', {}, headRow));
       var tbody = h('tbody');
 
       list.forEach(function (r) {
         var tr = h('tr');
-        o.cols.forEach(function (c, ci) {
+        o.cols.forEach(function (c) {
           var val = c.get(r);
           var td = h('td', { 'data-label': c.label });
           if (val instanceof Node) td.appendChild(val); else td.textContent = val == null ? '—' : String(val);
           tr.appendChild(td);
         });
-        if (o.actions) {
-          var acts = o.actions(r) || [];
-          var tdAct = h('td', { class: 'actions-cell' }, acts.filter(Boolean));
-          tr.appendChild(tdAct);
+        if (hasActs) {
+          var acts = [];
+          if (o.details) {
+            var open = !!openRows[r.id];
+            acts.push(h('button', {
+              class: 'btn small ' + (open ? 'gold' : 'light'), type: 'button',
+              text: open ? '🙈 إخفاء التفاصيل' : '👁 عرض التفاصيل',
+              'aria-expanded': open ? 'true' : 'false',
+              onclick: function () { openRows[r.id] = !open; render(); }
+            }));
+          }
+          if (o.actions) acts = acts.concat(o.actions(r) || []);
+          tr.appendChild(h('td', { class: 'actions-cell' }, acts.filter(Boolean)));
         }
         tbody.appendChild(tr);
+        if (o.details && openRows[r.id]) {
+          tbody.appendChild(h('tr', { class: 'detail-row' },
+            h('td', { colspan: String(o.cols.length + (hasActs ? 1 : 0)) }, o.details(r))));
+        }
       });
 
-      table.appendChild(thead);
       table.appendChild(tbody);
-      listBox.appendChild(h('div', { class: 'table-wrap' }, table));
+      var wrap = h('div', { class: 'table-wrap' + (o.sheet ? ' sheet-wrap' : '') }, table);
+      listBox.appendChild(wrap);
+      if (pos) { wrap.scrollTop = pos[0]; wrap.scrollLeft = pos[1]; }
+    }
+
+    function exportNow() {
+      var x = o.exportXlsx;
+      if (!x || !visible.length) return toast('لا توجد سجلات معروضة للتصدير.', 'bad');
+      if (!window.DE_XLSX) return toast('مكتبة التصدير غير محمّلة. حدّث الصفحة.', 'bad');
+      var headers = x.cols.map(function (c) { return c.label; });
+      var rows = visible.map(function (r) {
+        return x.cols.map(function (c) { var val = c.value(r); return val == null ? '' : String(val); });
+      });
+      var stamp = new Date().toISOString().slice(0, 10);
+      DE_XLSX.download(x.file + '_' + stamp + '.xlsx', x.sheet || 'Sheet1', headers, rows, x.widths);
+      toast('تم تصدير ' + rows.length + ' سجل إلى ملف Excel (XLSX).', 'ok');
     }
 
     render();
@@ -614,9 +682,44 @@
       addLabel: '➕ إضافة طالب جديد',
       onAdd: function () { editChild(null); },
       rows: rows,
+      sheet: true,
+      searchPlaceholder: 'بحث بالاسم، رقم القيد، الفرع، أو القسم…',
       empty: 'لا توجد بيانات مسجلة للأطفال.',
       search: function (r) {
-        return (r.membership_no || '') + ' ' + (r.full_name || '') + ' ' + (r.section || '') + ' ' + (r.disability || '');
+        return [r.membership_no, r.full_name, nameOf(branches, r.branch_id, 'name'), nameOf(sections, r.section_id, 'name'), r.section, r.disability]
+          .filter(Boolean).join(' ');
+      },
+      details: function (r) {
+        var items = [
+          ['تاريخ الميلاد', r.dob ? fmt(r.dob) : '—'],
+          ['رقم هاتف الاتصال', r.phone || '—'],
+          ['طبيعة الإعاقة', r.disability || '—'],
+          ['الموسم الدراسي', r.academic_year || '—'],
+          ['إذن نشر الصور', r.photo_consent ? 'نعم' : 'لا'],
+          ['تاريخ إنشاء الملف', fmt(r.created_at)],
+          ['معلومات وتوجيهات خاصة بالولي', r.basic_info || '—', true]
+        ];
+        return h('div', { class: 'child-details' }, items.map(function (it) {
+          return h('div', { class: 'cd-item' + (it[2] ? ' wide' : '') }, h('span', { text: it[0] }), h('b', { text: it[1] }));
+        }));
+      },
+      exportXlsx: {
+        file: 'قائمة_الأطفال_دار_الإحسان',
+        sheet: 'الأطفال',
+        widths: [14, 30, 14, 30, 30, 28, 18, 16, 14, 12, 40],
+        cols: [
+          { label: 'رقم القيد', value: function (r) { return r.membership_no || ''; } },
+          { label: 'اسم ولقب التلميذ', value: function (r) { return r.full_name || ''; } },
+          { label: 'تاريخ الميلاد', value: function (r) { return r.dob || ''; } },
+          { label: 'الفرع', value: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
+          { label: 'الفوج / القسم', value: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
+          { label: 'طبيعة الإعاقة', value: function (r) { return r.disability || ''; } },
+          { label: 'رقم الهاتف', value: function (r) { return r.phone || ''; } },
+          { label: 'الموسم الدراسي', value: function (r) { return r.academic_year || ''; } },
+          { label: 'إذن نشر الصور', value: function (r) { return r.photo_consent ? 'نعم' : 'لا'; } },
+          { label: 'الحالة', value: function (r) { return r.active ? 'نشط' : 'مؤرشف'; } },
+          { label: 'توجيهات الولي', value: function (r) { return r.basic_info || ''; } }
+        ]
       },
       filters: [
         { label: 'الفرع', opts: branchOpts, test: function (r, x) { return r.branch_id === x; } },
@@ -633,9 +736,9 @@
         },
         { label: 'اسم ولقب التلميذ', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
         { label: 'تاريخ الميلاد', get: function (r) { return r.dob ? fmt(r.dob) : '—'; }, sort: function (r) { return r.dob; } },
-        { label: 'الفرع', get: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'; } },
-        { label: 'الفوج / القسم', get: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || '—'; } },
-        { label: 'الإعاقة', get: function (r) { return r.disability || '—'; } },
+        { label: 'الفرع', get: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'; }, sort: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
+        { label: 'الفوج / القسم', get: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || '—'; }, sort: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
+        { label: 'الإعاقة', get: function (r) { return r.disability || '—'; }, sort: function (r) { return r.disability || ''; } },
         {
           label: 'رمز التسجيل',
           get: function (r) {
@@ -660,7 +763,7 @@
             });
           }
         },
-        { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); } }
+        { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); }, sort: function (r) { return r.active ? 1 : 0; } }
       ],
       actions: function (r) {
         return [
@@ -1415,18 +1518,40 @@
     window.scrollTo(0, 0);
   }
 
-  var mode = 'creds';
+  var mode = 'creds', resetEmail = '', resendT = null;
+  var MODE_UI = {
+    creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
+    mfa: { btn: 'تأكيد الرمز', hint: 'أدخل الرمز من تطبيق المصادقة.' },
+    forgot1: { btn: 'إرسال الرمز إلى بريدي', hint: 'أدخل بريد حسابك وسنرسل إليه رمز استعادة.' },
+    forgot2: { btn: 'تعيين كلمة المرور والدخول', hint: 'أدخل الرمز الذي وصلك واختر كلمة مرور جديدة.' }
+  };
   function setMode(m) {
     mode = m;
+    var u = MODE_UI[m] || MODE_UI.creds;
     $('#stCreds').hidden = m !== 'creds';
     $('#stMfa').hidden = m !== 'mfa';
-    $('#lBtn').textContent = m === 'mfa' ? 'تأكيد الرمز' : 'دخول';
+    $('#stForgot1').hidden = m !== 'forgot1';
+    $('#stForgot2').hidden = m !== 'forgot2';
+    $('#lBtn').textContent = u.btn;
+    $('#lHint').textContent = u.hint;
+    $('#forgotBtn').hidden = m !== 'creds';
+    $('#backBtn').hidden = m === 'creds';
+    if (m !== 'forgot2') { clearInterval(resendT); $('#resendBtn').disabled = false; $('#resendBtn').textContent = 'إعادة إرسال الرمز'; }
   }
   function showLogin(m) {
     S.stopIdle && S.stopIdle();
     show('login');
     setMode('creds');
     msg($('#lErr'), m);
+    msg($('#lOk'), '');
+  }
+  function cooldown() {
+    var b = $('#resendBtn'), left = 60; b.disabled = true; clearInterval(resendT);
+    resendT = setInterval(function () {
+      left--;
+      if (left <= 0) { clearInterval(resendT); b.disabled = false; b.textContent = 'إعادة إرسال الرمز'; }
+      else b.textContent = 'إعادة الإرسال بعد ' + left + ' ثانية';
+    }, 1000);
   }
 
   async function enter() {
@@ -1462,11 +1587,31 @@
           $('#password').value = '';
           if (r.mfa) { setMode('mfa'); $('#mfaCode').focus(); return; }
           await enter();
-        } else {
+        } else if (mode === 'mfa') {
           var code = $('#mfaCode').value.replace(/\s/g, '');
           if (!/^\d{6}$/.test(code)) return msg($('#lErr'), 'أدخل الرمز المكوّن من 6 أرقام.');
           await C.verifyMfa(code);
           $('#mfaCode').value = '';
+          await enter();
+        } else if (mode === 'forgot1') {
+          var em1 = DE.clean($('#fEmail').value, 254).toLowerCase();
+          if (!DE.isEmail(em1)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
+          await C.recover(em1);
+          resetEmail = em1;
+          setMode('forgot2'); cooldown(); $('#rCode').focus();
+          msg($('#lOk'), 'إن كان هذا البريد مسجَّلًا فقد أُرسل إليه رمز التحقق. تحقق أيضًا من البريد المزعج (Spam).');
+        } else if (mode === 'forgot2') {
+          var rc = $('#rCode').value.replace(/\s/g, ''), p1 = $('#rPass').value, p2 = $('#rPass2').value;
+          if (!/^\d{6,10}$/.test(rc)) return msg($('#lErr'), 'الرمز أرقام فقط (6 إلى 10 أرقام).');
+          if (DE.pwProblem(p1)) return msg($('#lErr'), 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.');
+          if (p1 !== p2) return msg($('#lErr'), 'كلمتا المرور غير متطابقتين.');
+          await C.recoverWithCode(resetEmail, rc, p1);
+          clearInterval(resendT);
+          $('#rCode').value = ''; $('#rPass').value = ''; $('#rPass2').value = '';
+          msg($('#lOk'), '');
+          // تسجيل الدخول بكلمة المرور الجديدة (مع المصادقة الثنائية إن كانت مفعّلة)
+          var r2 = await C.signIn(resetEmail, p1);
+          if (r2.mfa) { setMode('mfa'); $('#mfaCode').focus(); return; }
           await enter();
         }
       } catch (er) { msg($('#lErr'), er.message); }
@@ -1477,6 +1622,13 @@
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
     $('#loginForm').addEventListener('submit', submitLogin);
+    $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot1'); $('#fEmail').focus(); });
+    $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
+    $('#resendBtn').addEventListener('click', async function () {
+      msg($('#lErr'), ''); msg($('#lOk'), '');
+      try { await C.recover(resetEmail); cooldown(); msg($('#lOk'), 'أُعيد إرسال الرمز.'); }
+      catch (ex) { msg($('#lErr'), ex.message); }
+    });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
     $('#menuBtn').addEventListener('click', function () { $('#app').classList.toggle('nav-toggled'); });
     $('#scrim').addEventListener('click', function () { $('#app').classList.remove('nav-toggled'); });

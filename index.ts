@@ -304,7 +304,7 @@ Deno.serve(async (req) => {
     if (isOwner !== true) return json(403, { error: 'هذه العملية للمالك فقط.' }, origin);
 
     if (input.action === 'invite_admin') {
-      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirect('/admin.html') });
+      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirect('/manage.html') });
       if (inv.error || !inv.data.user) {
         const exists = /already|registered|exists/i.test(inv.error?.message ?? '');
         return fail(inv.error, exists ? 'هذا البريد مسجَّل مسبقًا.' : 'تعذّر إرسال الدعوة.', exists ? 409 : 500);

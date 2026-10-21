@@ -1,10 +1,4 @@
-/* أنماط إضافية لقسم المعرض فقط. لا يغيّر أي نمط موجود في style.css */
-#cmsGallery .ph{position:relative}
-#cmsGallery .ph video,
-#cmsGallery .ph iframe{display:block;width:100%;height:100%;border:0;background:#0b1d33;object-fit:cover}
-#cmsGallery .body h3:empty,
-#cmsGallery .body p:empty{display:none}
-#cmsGallery .card.no-body .body{display:none}
+/* أنماط الأقسام المخصصة التي يضيفها المحتوى المنشور. لا يغيّر أي نمط موجود في style.css */
 
 /* الأقسام المخصصة */
 .cms-sec .cms-box{display:grid;gap:24px;align-items:start}

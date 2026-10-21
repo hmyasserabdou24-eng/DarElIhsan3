@@ -10,7 +10,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=10">
+<link rel="stylesheet" href="portal.css?v=11">
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -46,9 +46,20 @@
     <div id="stMfa" hidden>
       <label class="fld"><span>رمز المصادقة الثنائية (6 أرقام)</span><input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr"></label>
     </div>
+    <div id="stForgot1" hidden>
+      <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" maxlength="254" dir="ltr"></label>
+    </div>
+    <div id="stForgot2" hidden>
+      <label class="fld"><span>الرمز الذي وصلك على البريد</span><input id="rCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr"></label>
+      <label class="fld"><span>كلمة المرور الجديدة</span><input id="rPass" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span>أعد كتابة كلمة المرور الجديدة</span><input id="rPass2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <button id="resendBtn" class="linkbtn" type="button">إعادة إرسال الرمز</button>
+    </div>
     <p id="lErr" class="err" role="alert" hidden></p>
+    <p id="lOk" class="okmsg" role="status" hidden></p>
     <button id="lBtn" class="btn block" type="submit">دخول</button>
-    <p class="muted small">نسيت كلمة المرور؟ استخدم «نسيت كلمة المرور» في صفحة <a href="admin.html">admin.html</a>.</p>
+    <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
+    <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
   </form>
 </main>
 
@@ -69,8 +80,6 @@
       <button type="button" data-sec="accounts"><svg class="i"><use href="#s-shield"/></svg>حسابات الإدارة</button>
       <button type="button" data-sec="audit"><svg class="i"><use href="#s-log"/></svg>سجل العمليات</button>
       <button type="button" data-sec="settings"><svg class="i"><use href="#s-gear"/></svg>الأمان والإعدادات</button>
-      <div class="sep"></div>
-      <a href="admin.html"><svg class="i"><use href="#s-web"/></svg>محتوى الموقع والوسائط</a>
     </nav>
   </aside>
   <div id="scrim" class="scrim"></div>
@@ -88,8 +97,9 @@
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="cms-config.js?v=9"></script>
-<script src="de-core.js?v=9"></script>
+<script src="de-core.js?v=10"></script>
+<script src="xlsx-writer.js?v=1"></script>
 <script src="qr-gen.js?v=9"></script>
-<script src="manage.js?v=9"></script>
+<script src="manage.js?v=10"></script>
 </body>
 </html>
