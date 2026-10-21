@@ -519,17 +519,13 @@
           )
         ),
         h('div', { class: 'sic-badge-row' },
-          h('span', { class: 'sic-title', text: 'بطاقة انخراط تلميذ — CARTE D’ADHÉRENT' }),
+          h('span', { class: 'sic-title', text: 'بطاقة تلميذ — CARTE D’ADHÉRENT' }),
           h('span', { class: 'sic-num', text: 'N° ' + (child.membership_no || '—') })
         ),
         h('div', { class: 'sic-body' },
           h('div', { class: 'sic-info' },
             h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'الاسم واللقب:' }), h('span', { class: 'sic-val', text: child.full_name })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'تاريخ الميلاد:' }), h('span', { class: 'sic-val', text: child.dob ? fmt(child.dob) : '—' })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'الفرع:' }), h('span', { class: 'sic-val', text: branchName })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'الفوج / القسم:' }), h('span', { class: 'sic-val', text: sectionName })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'طبيعة الإعاقة:' }), h('span', { class: 'sic-val', text: child.disability || '—' })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'الموسم الدراسي:' }), h('span', { class: 'sic-val', text: child.academic_year || '2026–2027' }))
+            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'تاريخ الميلاد:' }), h('span', { class: 'sic-val', text: child.dob ? fmt(child.dob) : '—' }))
           ),
           h('div', { class: 'sic-qr-wrap' },
             h('canvas', { class: 'sic-qr-canvas', id: 'cardQrCanvas' }),
@@ -608,48 +604,33 @@
           ctx.fillStyle = '#0f1c30';
           ctx.fillRect(50, 190, 1100, 52);
 
-          ctx.textAlign = 'right';
+          ctx.textAlign = 'center';
           ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 26px Cairo, Tajawal, sans-serif';
-          ctx.fillText('بطاقة انخراط تلميذ — CARTE D’ADHÉRENT', 1120, 226);
+          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
+          ctx.fillText('بطاقة التلميذ', 600, 226);
 
-          ctx.textAlign = 'left';
-          ctx.fillStyle = '#f0ca7d';
-          ctx.font = 'bold 28px Cairo, Tajawal, monospace';
-          ctx.fillText('N° ' + (child.membership_no || '—'), 75, 226);
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الاسم واللقب', 910, 315);
+          ctx.font = 'bold 32px Cairo, Tajawal, sans-serif';
+          ctx.fillText(child.full_name || '—', 660, 365);
 
-          // شبكة بيانات التلميذ
-          var fields = [
-            ['الاسم واللقب الكامل:', child.full_name],
-            ['تاريخ الميلاد:', child.dob ? fmt(child.dob) : '—'],
-            ['الفرع والمؤسسة:', branchName],
-            ['الفوج / القسم التربوي:', sectionName],
-            ['طبيعة الإعاقة:', child.disability || '—'],
-            ['الموسم الدراسي:', child.academic_year || '2026–2027']
-          ];
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
+          ctx.fillText('تاريخ الميلاد', 910, 440);
+          ctx.font = 'bold 30px Cairo, Tajawal, sans-serif';
+          ctx.fillText(child.dob ? fmt(child.dob) : '—', 700, 490);
 
-          var startY = 295, stepY = 60;
-          fields.forEach(function (f, idx) {
-            var y = startY + (idx * stepY);
-            ctx.textAlign = 'right';
-            ctx.fillStyle = '#718096';
-            ctx.font = 'bold 24px Cairo, Tajawal, sans-serif';
-            ctx.fillText(f[0], 1120, y);
-
-            ctx.fillStyle = '#0f172a';
-            ctx.font = 'bold 27px Cairo, Tajawal, sans-serif';
-            ctx.fillText(f[1], 870, y);
-          });
-
-          // رسم رمز الاستجابة السريعة (QR) على كف اليد اليسار
+          // QR فقط، بدون بيانات حساسة إضافية
           var qrTempCanvas = document.createElement('canvas');
-          DE_QR.drawToCanvas(qrTempCanvas, publicUrl, { size: 230, margin: 4 });
-          ctx.drawImage(qrTempCanvas, 80, 275, 230, 230);
+          DE_QR.drawToCanvas(qrTempCanvas, publicUrl, { size: 240, margin: 4 });
+          ctx.drawImage(qrTempCanvas, 120, 260, 240, 240);
 
           ctx.textAlign = 'center';
           ctx.fillStyle = '#4a5568';
           ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-          ctx.fillText('امسح الرمز للتحقق من البطاقة', 195, 530);
+          ctx.fillText('امسح الرمز للتحقق من ملف الطفل', 240, 540);
 
           // ختم وتوقيع الإدارة
           ctx.strokeStyle = '#cbd5e1';

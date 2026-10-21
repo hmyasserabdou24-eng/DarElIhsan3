@@ -43,13 +43,8 @@
         return;
       }
 
-      setField('f_num', res.membership_no ? ('N° ' + res.membership_no) : '—');
       setField('f_name', res.full_name);
-      setField('f_dob', res.dob);
-      setField('f_branch', res.branch);
-      setField('f_section', res.section);
-      setField('f_disability', res.disability);
-      setField('f_year', res.academic_year || '2026–2027');
+      setField('f_dob', res.dob || '—');
 
       var claimBtn = $('#btnClaim');
       if (claimBtn) {
