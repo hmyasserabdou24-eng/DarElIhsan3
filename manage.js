@@ -152,12 +152,36 @@
       if (f.type === 'datetime' && v) v = toLocalInput(v);
       return fieldEl(f, v);
     });
-    function syncVisibility() {
+    var noteEls = { pick: h('div', { class: 'form-note muted small' }), file: h('div', { class: 'form-note small' }) };
+    var byKey = {}; pairs.forEach(function (p) { byKey[p.def.k] = p; });
+    var api = {
+      input: function (k) { return byKey[k] ? byKey[k].input : null; },
+      setOpts: function (k, opts) {
+        var sel = api.input(k); if (!sel) return;
+        var keep = sel.value;
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+        sel.appendChild(h('option', { value: '', text: '— اختر —' }));
+        opts.forEach(function (o) { sel.appendChild(h('option', { value: o[0], text: o[1] })); });
+        sel.value = opts.some(function (o) { return o[0] === keep; }) ? keep : '';
+      },
+      note: function (slot, content) {
+        var el = noteEls[slot]; while (el.firstChild) el.removeChild(el.firstChild);
+        if (typeof content === 'string') el.textContent = content; else if (content) el.appendChild(content);
+        el.hidden = !el.firstChild;
+      },
+      refresh: function () { syncVisibility('file'); }
+    };
+    function syncVisibility(changed) {
       var cur = {}; pairs.forEach(function (p) { cur[p.def.k] = p.get(); });
       pairs.forEach(function (p) { if (p.def.showIf) p.row.hidden = !p.def.showIf(cur); });
+      if (cfg.onChange) cfg.onChange(changed, cur, api);
     }
-    pairs.forEach(function (p) { p.input.addEventListener('change', syncVisibility); p.input.addEventListener('input', syncVisibility); });
-    syncVisibility();
+    pairs.forEach(function (p) {
+      var k = p.def.k;
+      p.input.addEventListener('change', function () { syncVisibility(k); });
+      p.input.addEventListener('input', function () { syncVisibility(k); });
+    });
+    syncVisibility(null);
 
     var errEl = h('p', { class: 'err', role: 'alert' }); errEl.hidden = true;
     var submits = cfg.submits || [{ key: 'save', label: 'حفظ' }];
@@ -186,6 +210,7 @@
     var card = h('div', { class: 'modal-body' },
       h('h2', { text: cfg.title }),
       pairs.map(function (p) { return p.row; }),
+      noteEls.pick, noteEls.file,
       errEl,
       h('div', { class: 'modal-actions' },
         h('button', { class: 'btn light', type: 'button', text: 'إلغاء', onclick: closeModal }),
@@ -205,6 +230,7 @@
     var bar = h('div', { class: 'bar-sub' }, h('h2', { text: o.title }));
     var barBtns = h('div', { class: 'row-actions' });
     if (o.exportXlsx) barBtns.appendChild(h('button', { class: 'btn small light', type: 'button', text: '📊 تصدير Excel (XLSX)', onclick: exportNow }));
+    (o.extra || []).forEach(function (x) { barBtns.appendChild(h('button', { class: 'btn light', type: 'button', text: x.label, onclick: x.onclick })); });
     if (o.addLabel && o.onAdd) barBtns.appendChild(h('button', { class: 'btn', type: 'button', text: o.addLabel, onclick: o.onAdd }));
     bar.appendChild(barBtns);
     v.appendChild(bar);
@@ -355,7 +381,7 @@
     if (!mime) throw new Error('نوع الملف غير مدعوم. المسموح: PDF, JPG, PNG, WebP فقط.');
 
     var path = 'children/' + uid(childId) + '/' + crypto.randomUUID() + '.' + ext;
-    await C.uploadObject('private-docs', path, bytes, mime);
+    await C.upload('private-docs', path, bytes, mime);
     return { path: path, mime: mime, size: file.size };
   }
 
@@ -404,51 +430,15 @@
      2. إدارة الأطفال والطلبة + بطاقة الانخراط الرسمية + رمز التسجيل
      ===================================================================== */
   async function secChildren(v) {
-    var d = await getMany('children', 'branches', 'sections', 'codes', 'parents', 'links');
-    var rows = d[0], branches = d[1], sections = d[2], codes = d[3], parents = d[4], links = d[5];
+    var d = await getMany('children', 'branches', 'sections', 'codes');
+    var rows = d[0], branches = d[1], sections = d[2], codes = d[3];
 
     var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
-    var parentOpts = parents.map(function (p) { return [p.user_id, (p.full_name || 'ولي الأمر') + (p.email ? ' — ' + p.email : '')]; });
 
     function getCodeForChild(childId) {
       var active = codes.filter(function (c) { return c.child_id === childId && !c.used_at && new Date(c.expires_at) > new Date(); })[0];
       return active ? active.code : null;
-    }
-
-    function parentIdsForChild(childId) {
-      return links.filter(function (l) { return l.child_id === childId; }).map(function (l) { return l.parent_id; });
-    }
-
-    function parentNamesForChild(childId) {
-      var ids = parentIdsForChild(childId);
-      if (!ids.length) return [];
-      return ids.map(function (pid) { var p = parents.filter(function (x) { return x.user_id === pid; })[0]; return p && p.full_name ? p.full_name : 'ولي غير محدّد'; }).filter(Boolean);
-    }
-
-    function assignParentForChild(child) {
-      var current = parentIdsForChild(child.id);
-      return openForm({
-        title: 'ربط / تعديل ولي الأمر للطفل',
-        values: { parent_ids: current },
-        fields: [{
-          k: 'parent_ids', label: 'الأولياء المخوّلون لهذا الطفل', type: 'multi', opts: parentOpts, maxItems: 10,
-          hint: 'اختر وليًا أو أكثر؛ ستُحفظ العلاقة مباشرة في جدول parent_children.'
-        }],
-        onSubmit: async function (x) {
-          var prevSet = new Set(current);
-          var nextSet = new Set(x.parent_ids || []);
-          var toDel = current.filter(function (id) { return !nextSet.has(id); });
-          var toAdd = (x.parent_ids || []).filter(function (id) { return !prevSet.has(id); });
-          for (var i = 0; i < toDel.length; i++) {
-            await C.rest('DELETE', '/parent_children?parent_id=eq.' + uid(toDel[i]) + '&child_id=eq.' + uid(child.id));
-          }
-          for (var j = 0; j < toAdd.length; j++) {
-            await C.rest('POST', '/parent_children', { parent_id: toAdd[j], child_id: child.id });
-          }
-          bust(); toast('تم حفظ ربط ولي الأمر بنجاح.', 'ok'); go('children');
-        }
-      });
     }
 
     function editChild(c) {
@@ -503,174 +493,64 @@
       });
     }
 
-    /* عرض بطاقة التلميذ الاحترافية مع توليد JPG عبر Canvas */
+    /* رابط صفحة التلميذ العامة: يُبنى من عنوان الموقع المنشور نفسه (GitHub Pages أو النطاق)،
+       ويحمل الرمز السري لبطاقة الطفل فقط، دون أي معرّف داخلي أو بيانات شخصية */
+    function publicCardUrl(token) {
+      if (!/^[0-9a-f]{32}$/.test(String(token || ''))) throw new Error('رمز QR غير موجود لهذا الطفل. أعد تحميل القائمة.');
+      var u = new URL('qr.html', window.location.href);
+      u.search = ''; u.hash = '';
+      u.searchParams.set('c', token);
+      if (u.protocol !== 'https:') throw new Error('الموقع غير منشور عبر HTTPS؛ لا يمكن إنشاء رمز QR قابل للمسح. انشر الموقع أولًا.');
+      if (/^(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(u.hostname)) throw new Error('رابط QR محلي؛ انشر الموقع أولًا.');
+      return u.href;
+    }
+
+    /* بطاقة الانخراط: معاينة + تنزيل PDF + طباعة + فتح صفحة التلميذ (كلها من الرابط نفسه المشفَّر في QR) */
     function openStudentCard(child) {
-      var branchName = nameOf(branches, child.branch_id, 'name') || CENTERS[child.center] || 'المركز الرئيسي لدار الإحسان';
-      var sectionName = nameOf(sections, child.section_id, 'name') || child.section || 'عام';
-      var publicUrl = 'https://hmyasserabdou24-eng.github.io/DarElIhsan3/qr.html?id=' + (child.public_uuid || child.id);
+      var status = h('p', { class: 'muted small', text: 'جارٍ إنشاء البطاقة…' });
+      var preview = h('img', { class: 'card-preview', alt: 'معاينة بطاقة انخراط التلميذ ' + (child.full_name || ''), hidden: true });
+      var pdfBtn = h('button', { class: 'btn gold', type: 'button', text: '📄 تنزيل PDF', disabled: true });
+      var printBtn = h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة البطاقة', disabled: true });
+      var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: '🔗 فتح صفحة التلميذ' });
+      var warn = !child.membership_no ? h('p', { class: 'err small', text: 'تنبيه: لا يوجد رقم قيد رسمي لهذا الطفل؛ أكمله في ملف الطفل قبل طباعة البطاقة.' }) : null;
 
-      var cardDiv = h('div', { class: 'student-id-card', id: 'studentCardPrintArea' },
-        h('div', { class: 'sic-header' },
-          h('img', { src: 'logo-sq.png', alt: 'شعار دار الإحسان', class: 'sic-logo' }),
-          h('div', { class: 'sic-header-text' },
-            h('div', { class: 'sic-republic', text: 'الجمهورية الجزائرية الديمقراطية الشعبية' }),
-            h('div', { class: 'sic-assoc', text: 'جمعية أولياء الأطفال المعاقين ذهنياً' }),
-            h('div', { class: 'sic-center', text: 'المركز النفسي البيداغوجي دار الإحسان – العطف، غرداية' })
-          )
-        ),
-        h('div', { class: 'sic-badge-row' },
-          h('span', { class: 'sic-title', text: 'بطاقة تلميذ — CARTE D’ADHÉRENT' }),
-          h('span', { class: 'sic-num', text: 'N° ' + (child.membership_no || '—') })
-        ),
-        h('div', { class: 'sic-body' },
-          h('div', { class: 'sic-info' },
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'الاسم واللقب:' }), h('span', { class: 'sic-val', text: child.full_name })),
-            h('div', { class: 'sic-row' }, h('span', { class: 'sic-label', text: 'تاريخ الميلاد:' }), h('span', { class: 'sic-val', text: child.dob ? fmt(child.dob) : '—' }))
-          ),
-          h('div', { class: 'sic-qr-wrap' },
-            h('canvas', { class: 'sic-qr-canvas', id: 'cardQrCanvas' }),
-            h('span', { class: 'sic-qr-hint', text: 'امسح للتحقق' })
-          )
-        ),
-        h('div', { class: 'sic-footer' },
-          h('span', { text: 'حرر بالعطف في: ' + new Date().toLocaleDateString('ar-DZ-u-nu-latn') }),
-          h('div', { class: 'sic-stamp', text: 'ختم وإمضاء الإدارة' })
-        )
-      );
+      openModal(h('div', { class: 'modal-body card-modal' },
+        h('h2', { text: 'بطاقة انخراط التلميذ' }),
+        warn,
+        preview,
+        status,
+        h('div', { class: 'modal-actions', style: 'margin-top:12px;' },
+          h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
+          openLink, pdfBtn, printBtn)
+      ));
 
-      // رسم الـ QR على الـ Canvas الصغير للمعاينة
-      setTimeout(function () {
-        var qrCanvas = document.getElementById('cardQrCanvas');
-        if (qrCanvas && window.DE_QR) {
-          DE_QR.drawToCanvas(qrCanvas, publicUrl, { size: 100, margin: 2 });
-        }
-      }, 50);
+      var url;
+      try { url = publicCardUrl(child.qr_token); }
+      catch (e) { status.textContent = e.message; status.className = 'err small'; return; }
+      openLink.setAttribute('href', url);
 
-      // توليد ملف JPG عالي الدقة (1200x750) للتحميل الفعلي
-      function exportJpg() {
-        var exportCanvas = document.createElement('canvas');
-        exportCanvas.width = 1200;
-        exportCanvas.height = 750;
-        var ctx = exportCanvas.getContext('2d');
+      var card = null;
+      DECARD.render({ full_name: child.full_name, membership_no: child.membership_no, dob: child.dob, center: child.center, url: url })
+        .then(function (c) {
+          card = c;
+          preview.src = c.url; preview.hidden = false;
+          status.textContent = 'رمز QR يفتح: صفحة التلميذ العامة (بدون بيانات حساسة).';
+          pdfBtn.disabled = false; printBtn.disabled = false;
+        })
+        .catch(function (e) { status.textContent = e.message; status.className = 'err small'; });
 
-        // الخلفية والإطار
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 1200, 750);
-
-        // إطار خارجي مذهب وأنيق
-        ctx.strokeStyle = '#b8860b';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(20, 20, 1160, 710);
-
-        ctx.strokeStyle = '#0f1c30';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(32, 32, 1136, 686);
-
-        // تدرج علوي
-        var grad = ctx.createLinearGradient(0, 35, 1200, 170);
-        grad.addColorStop(0, '#fbf8f1');
-        grad.addColorStop(1, '#f5ede0');
-        ctx.fillStyle = grad;
-        ctx.fillRect(34, 34, 1132, 136);
-
-        // النصوص العلوية
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#4a5568';
-        ctx.font = 'bold 22px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الجمهورية الجزائرية الديمقراطية الشعبية', 600, 72);
-
-        ctx.fillStyle = '#0f1c30';
-        ctx.font = 'bold 30px Cairo, Tajawal, sans-serif';
-        ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنياً', 600, 115);
-
-        ctx.fillStyle = '#b8860b';
-        ctx.font = 'bold 26px Cairo, Tajawal, sans-serif';
-        ctx.fillText('المركز النفسي البيداغوجي دار الإحسان – العطف، ولاية غرداية', 600, 154);
-
-        // رسم الشعار في الزاوية اليمنى العليا
-        var logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        logoImg.onload = function () {
-          try {
-            ctx.drawImage(logoImg, 1020, 48, 105, 105);
-          } catch (e) {}
-          finishExport();
-        };
-        logoImg.onerror = function () { finishExport(); };
-        logoImg.src = 'logo-sq.png';
-
-        function finishExport() {
-          // شريط العنوان ورقم القيد
-          ctx.fillStyle = '#0f1c30';
-          ctx.fillRect(50, 190, 1100, 52);
-
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
-          ctx.fillText('بطاقة التلميذ', 600, 226);
-
-          ctx.textAlign = 'right';
-          ctx.fillStyle = '#0f172a';
-          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
-          ctx.fillText('الاسم واللقب', 910, 315);
-          ctx.font = 'bold 32px Cairo, Tajawal, sans-serif';
-          ctx.fillText(child.full_name || '—', 660, 365);
-
-          ctx.fillStyle = '#0f172a';
-          ctx.font = 'bold 28px Cairo, Tajawal, sans-serif';
-          ctx.fillText('تاريخ الميلاد', 910, 440);
-          ctx.font = 'bold 30px Cairo, Tajawal, sans-serif';
-          ctx.fillText(child.dob ? fmt(child.dob) : '—', 700, 490);
-
-          // QR فقط، بدون بيانات حساسة إضافية
-          var qrTempCanvas = document.createElement('canvas');
-          DE_QR.drawToCanvas(qrTempCanvas, publicUrl, { size: 240, margin: 4 });
-          ctx.drawImage(qrTempCanvas, 120, 260, 240, 240);
-
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#4a5568';
-          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-          ctx.fillText('امسح الرمز للتحقق من ملف الطفل', 240, 540);
-
-          // ختم وتوقيع الإدارة
-          ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([6, 6]);
-          ctx.strokeRect(880, 600, 260, 95);
-          ctx.setLineDash([]);
-
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#718096';
-          ctx.font = 'bold 20px Cairo, Tajawal, sans-serif';
-          ctx.fillText('ختم وإمضاء الإدارة', 1010, 650);
-
-          // تاريخ التحرير
-          ctx.textAlign = 'left';
-          ctx.fillStyle = '#718096';
-          ctx.font = '19px Cairo, Tajawal, sans-serif';
-          ctx.fillText('تحريراً بالعطف في: ' + new Date().toLocaleDateString('ar-DZ-u-nu-latn'), 80, 680);
-
-          // تنزيل الصورة كملف JPG
-          exportCanvas.toBlob(function (blob) {
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            var safeName = (child.full_name || 'تلميذ').replace(/\s+/g, '_');
-            a.download = 'بطاقة_انخراط_' + (child.membership_no || '') + '_' + safeName + '.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            toast('تم تحميل بطاقة الطالب بجودة فائقة (JPG)!', 'ok');
-          }, 'image/jpeg', 0.95);
-        }
-      }
-
-      var modalActions = h('div', { class: 'modal-actions', style: 'margin-top:16px;' },
-        h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-        h('button', { class: 'btn gold', type: 'button', text: '📥 تحميل بطاقة JPG عالية الدقة', onclick: exportJpg }),
-        h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة البطاقة', onclick: function () { window.print(); } })
-      );
-
-      openModal(h('div', null, cardDiv, modalActions));
+      pdfBtn.addEventListener('click', function () {
+        if (!card) return;
+        DECARD.toPdf(card).then(function (blob) {
+          var safe = String(child.full_name || 'تلميذ').replace(/\s+/g, '_');
+          DECARD.download(blob, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.pdf');
+          toast('تم إنشاء ملف PDF بمقاس البطاقة 85.6 × 54 مم.', 'ok');
+        }).catch(function (e) { toast(e.message, 'bad'); });
+      });
+      printBtn.addEventListener('click', function () {
+        if (!card) return;
+        DECARD.print(card.url).catch(function (e) { toast(e.message, 'bad'); });
+      });
     }
 
     /* توليد أو نسخ رمز التسجيل للطفل */
@@ -700,18 +580,16 @@
       onAdd: function () { editChild(null); },
       rows: rows,
       sheet: true,
-      searchPlaceholder: 'بحث بالاسم، رقم القيد، ولي الأمر، الفرع، أو القسم…',
+      searchPlaceholder: 'بحث بالاسم، رقم القيد، الفرع، أو القسم…',
       empty: 'لا توجد بيانات مسجلة للأطفال.',
       search: function (r) {
-        return [r.membership_no, r.full_name, parentNamesForChild(r.id).join(' '), nameOf(branches, r.branch_id, 'name'), nameOf(sections, r.section_id, 'name'), r.section, r.disability]
+        return [r.membership_no, r.full_name, nameOf(branches, r.branch_id, 'name'), nameOf(sections, r.section_id, 'name'), r.section, r.disability]
           .filter(Boolean).join(' ');
       },
       details: function (r) {
-        var parentList = parentNamesForChild(r.id);
         var items = [
           ['تاريخ الميلاد', r.dob ? fmt(r.dob) : '—'],
           ['رقم هاتف الاتصال', r.phone || '—'],
-          ['ولي الأمر', parentList.length ? parentList.join('، ') : 'لم يتم تعيين ولي'],
           ['طبيعة الإعاقة', r.disability || '—'],
           ['الموسم الدراسي', r.academic_year || '—'],
           ['إذن نشر الصور', r.photo_consent ? 'نعم' : 'لا'],
@@ -725,12 +603,11 @@
       exportXlsx: {
         file: 'قائمة_الأطفال_دار_الإحسان',
         sheet: 'الأطفال',
-        widths: [14, 30, 14, 26, 30, 30, 28, 18, 16, 14, 12, 40],
+        widths: [14, 30, 14, 30, 30, 28, 18, 16, 14, 12, 40],
         cols: [
           { label: 'رقم القيد', value: function (r) { return r.membership_no || ''; } },
           { label: 'اسم ولقب التلميذ', value: function (r) { return r.full_name || ''; } },
           { label: 'تاريخ الميلاد', value: function (r) { return r.dob || ''; } },
-          { label: 'ولي الأمر', value: function (r) { return parentNamesForChild(r.id).join('، ') || 'لم يتم تعيين ولي'; } },
           { label: 'الفرع', value: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
           { label: 'الفوج / القسم', value: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
           { label: 'طبيعة الإعاقة', value: function (r) { return r.disability || ''; } },
@@ -744,7 +621,6 @@
       filters: [
         { label: 'الفرع', opts: branchOpts, test: function (r, x) { return r.branch_id === x; } },
         { label: 'القسم', opts: secOpts, test: function (r, x) { return r.section_id === x; } },
-        { label: 'ولي الأمر', opts: [['linked', 'مرتبط'], ['unlinked', 'غير مرتبط']], test: function (r, x) { return x === 'linked' ? !!parentNamesForChild(r.id).length : !parentNamesForChild(r.id).length; } },
         { label: 'الحالة', opts: [['1', 'نشط'], ['0', 'مؤرشف']], test: function (r, x) { return String(+r.active) === x; } }
       ],
       cols: [
@@ -756,7 +632,6 @@
           sort: function (r) { return r.membership_no || ''; }
         },
         { label: 'اسم ولقب التلميذ', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
-        { label: 'ولي الأمر', get: function (r) { var names = parentNamesForChild(r.id); return names.length ? names.join('، ') : h('span', { class: 'muted small', text: 'لم يتم تعيين ولي' }); }, sort: function (r) { return parentNamesForChild(r.id).join('، ') || 'لم يتم تعيين ولي'; } },
         { label: 'تاريخ الميلاد', get: function (r) { return r.dob ? fmt(r.dob) : '—'; }, sort: function (r) { return r.dob; } },
         { label: 'الفرع', get: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'; }, sort: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
         { label: 'الفوج / القسم', get: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || '—'; }, sort: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
@@ -789,8 +664,7 @@
       ],
       actions: function (r) {
         return [
-          rbtn('🔗 ربط ولي', function () { assignParentForChild(r); }, 'gold'),
-          rbtn('🪪 البطاقة', function () { openStudentCard(r); }, 'light'),
+          rbtn('🪪 البطاقة', function () { openStudentCard(r); }, 'gold'),
           rbtn('تعديل', function () { editChild(r); }),
           rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
             await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
@@ -1058,6 +932,45 @@
       });
     }
 
+    function createLogin() {
+      return openForm({
+        title: 'إنشاء حساب ولي (اسم مستخدم + كلمة مرور)',
+        submits: [{ key: 'go', label: 'إنشاء الحساب' }],
+        fields: [
+          { k: 'full_name', label: 'اسم ولي الأمر الكامل', req: true, max: 120 },
+          { k: 'username', label: 'اسم المستخدم (حروف لاتينية صغيرة وأرقام و . _ -)', req: true, max: 30, hint: 'مثال: ali.benyahia — يستعمله الولي للدخول.' },
+          { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'password', req: true, max: 72, hint: 'سلّمها للولي مباشرة؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' },
+          { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 },
+          { k: 'child_ids', label: 'الأبناء المرتبطون بالحساب (لن يرى الولي غيرهم)', type: 'multi', opts: kidOpts, req: true }
+        ],
+        onSubmit: async function (x) {
+          var un = String(x.username).trim().toLowerCase();
+          if (!/^[a-z0-9._-]{3,30}$/.test(un)) throw new Error('اسم المستخدم: 3 إلى 30 حرفًا لاتينيًا صغيرًا أو أرقامًا أو (. _ -) فقط.');
+          var body = { action: 'create', username: un, password: x.password, full_name: x.full_name, child_ids: x.child_ids };
+          if (x.phone) body.phone = x.phone;
+          await C.fn('parent-accounts', body);
+          bust();
+          go('parents');
+          setTimeout(function () {
+            info('تم إنشاء حساب الولي', h('div', null,
+              h('p', { text: 'اسم المستخدم: ' + un }),
+              h('p', { class: 'muted small', text: 'سلّم الولي كلمة المرور مباشرة. يدخل من صفحة «فضاء الأولياء» ولا يرى إلا أبناءه المرتبطين.' })));
+          }, 0);
+        }
+      });
+    }
+
+    function setPassword(p) {
+      return openForm({
+        title: 'تغيير كلمة مرور: ' + p.full_name, submits: [{ key: 'go', label: 'حفظ كلمة المرور الجديدة' }],
+        fields: [{ k: 'password', label: 'كلمة المرور الجديدة (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'password', req: true, max: 72 }],
+        onSubmit: async function (x) {
+          await C.fn('parent-accounts', { action: 'set_password', user_id: uid(p.user_id), password: x.password });
+          toast('تم تغيير كلمة المرور.', 'ok');
+        }
+      });
+    }
+
     function edit(p) {
       var myKids = kidsOf(p.user_id);
       return openForm({
@@ -1080,12 +993,12 @@
     }
 
     listView(v, {
-      title: 'حسابات وملفات الأولياء', addLabel: 'دعوة ولي أمر', onAdd: invite, rows: rows, empty: 'لا يوجد أولياء مسجلون بعد.',
-      search: function (r) { return r.full_name + ' ' + (r.phone || '') + ' ' + (r.email || ''); },
+      title: 'حسابات وملفات الأولياء', addLabel: 'دعوة ولي أمر', onAdd: invite, extra: [{ label: 'إنشاء حساب باسم مستخدم', onclick: createLogin }], rows: rows, empty: 'لا يوجد أولياء مسجلون بعد.',
+      search: function (r) { return r.full_name + ' ' + (r.phone || '') + ' ' + (r.email || '') + ' ' + (r.username || ''); },
       filters: [{ label: 'الحالة', opts: [['0', 'نشط ومفعّل'], ['1', 'معطّل']], test: function (r, x) { return String(+r.disabled) === x; } }],
       cols: [
         { label: 'الاسم الكامل', get: function (r) { return r.full_name; }, sort: function (r) { return r.full_name; } },
-        { label: 'البريد الإلكتروني', get: function (r) { return r.email || '—'; } },
+        { label: 'اسم المستخدم / البريد', get: function (r) { return r.username || r.email || '—'; } },
         { label: 'الهاتف', get: function (r) { return r.phone || '—'; } },
         {
           label: 'الأبناء',
@@ -1100,6 +1013,7 @@
       actions: function (r) {
         return [
           rbtn('تعديل', function () { return edit(r); }),
+          r.username ? rbtn('تغيير كلمة المرور', function () { return setPassword(r); }, 'light') : null,
           rbtn(r.disabled ? 'تفعيل' : 'تعطيل', async function () {
             if (!r.disabled && !(await ask({ title: 'تعطيل حساب الولي؟', msg: 'سيفقد الولي إمكانية تسجيل الدخول فورًا حتى إعادة تفعيله.', ok: 'تعطيل', danger: true }))) return;
             await C.rest('PATCH', '/parent_profiles?user_id=eq.' + uid(r.user_id), { disabled: !r.disabled });
@@ -1130,32 +1044,91 @@
      6. التقارير التربوية (Progress Reports)
      ===================================================================== */
   async function secReports(v) {
-    var d = await getMany('reports', 'children'), rows = d[0], kids = d[1];
+    var d = await getMany('reports', 'children', 'branches', 'sections'), rows = d[0], kids = d[1], branches = d[2], sections = d[3];
     var kidOpts = kids.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; });
+    var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
+    var secAllOpts = sections.map(function (s) { return [s.id, s.name]; });
+    var MAX_FILE = 5242880;
+
+    function fileInfo(f, api, r) {
+      var kb = f.size < 1024 ? (f.size + ' بايت') : f.size < 1048576 ? (Math.round(f.size / 1024) + ' كيلوبايت') : ((f.size / 1048576).toFixed(1) + ' ميغابايت');
+      var warn = f.size > MAX_FILE ? ' — الحجم يتجاوز 5 ميغابايت ولن يُقبل.' : '';
+      var remove = h('button', { class: 'linkbtn', type: 'button', text: 'إزالة الملف قبل الحفظ', onclick: function () {
+        var inp = api.input('file'); if (inp) inp.value = ''; api.refresh();
+      } });
+      return h('span', null, h('strong', { text: 'المرفق: ' }), f.name + ' — ' + (f.type || 'نوع غير معروف') + ' — ' + kb + warn, ' ', remove);
+    }
 
     function edit(r) {
+      var kid0 = r ? kids.filter(function (k) { return k.id === r.child_id; })[0] : null;
+      var values = r ? {
+        branch_id: kid0 ? kid0.branch_id : '', section_id: kid0 ? kid0.section_id : '', child_id: r.child_id,
+        title: r.title, report_date: r.report_date, achievements: r.achievements, activities: r.activities, notes: r.notes, status: r.status
+      } : { status: 'draft', report_date: new Date().toISOString().slice(0, 10) };
+      var lastSec = values.section_id || '';
+      var FORM = null, uploaded = null;
+
       return openForm({
-        title: r ? 'تعديل تقرير تربوي' : 'تقرير تربوي جديد', values: r || { status: 'draft', report_date: new Date().toISOString().slice(0, 10) },
+        title: r ? 'تعديل تقرير تربوي' : 'تقرير تربوي جديد', values: values,
         submits: r && r.status === 'published' ? [{ key: 'save', label: 'حفظ التعديلات (منشور)' }] : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'اعتماد ونشر للولي' }],
         fields: [
+          { k: 'branch_id', label: 'الفرع', type: 'select', opts: branchOpts, req: true },
+          { k: 'section_id', label: 'القسم / الفوج', type: 'select', opts: secAllOpts, req: true },
           { k: 'child_id', label: 'الطفل', type: 'select', opts: kidOpts, req: true },
           { k: 'title', label: 'عنوان التقرير (مثال: التقرير الفصلي الأول)', req: true, max: 150 },
           { k: 'report_date', label: 'تاريخ التقرير', type: 'date', req: true },
-          { k: 'period_start', label: 'بداية الفترة المغطاة', type: 'date', req: true },
-          { k: 'period_end', label: 'نهاية الفترة المغطاة', type: 'date', req: true },
           { k: 'achievements', label: 'المكتسبات والمهارات المحققة', type: 'textarea', max: 5000 },
           { k: 'activities', label: 'الأنشطة والورشات المنجزة', type: 'textarea', max: 5000 },
-          { k: 'notes', label: 'ملاحظات وتوجيهات للأولياء', type: 'textarea', max: 5000 }
+          { k: 'notes', label: 'ملاحظات وتوجيهات للأولياء', type: 'textarea', max: 5000 },
+          { k: 'file', label: 'مرفق (PDF/JPG/PNG/WebP — حتى 5MB)', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', hint: r && r.attachment_path ? 'يوجد مرفق محفوظ؛ اختيار ملف جديد يستبدل اسم المرفق في التقرير، والملف القديم يبقى محفوظًا.' : '' }
         ],
+        onChange: function (key, cur, api) {
+          FORM = api;
+          // 1) الأقسام: تُصفّى حسب الفرع المختار
+          var secs = sections.filter(function (s) { return s.branch_id === cur.branch_id; });
+          api.setOpts('section_id', secs.map(function (s) { return [s.id, s.name]; }));
+          var secNow = api.input('section_id').value;
+          // 2) تغيّر القسم (بالاختيار أو بتغيّر الفرع) يمسح الطفل المختار
+          if (secNow !== lastSec) { api.input('child_id').value = ''; lastSec = secNow; }
+          // 3) الأطفال: من قسم الطفل المختار فقط
+          var ks = secNow ? kids.filter(function (k) { return k.section_id === secNow; }) : [];
+          api.setOpts('child_id', ks.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; }));
+          // 4) رسائل الحالة الفارغة
+          if (!cur.branch_id) api.note('pick', 'اختر الفرع أولًا لعرض أقسامه.');
+          else if (!secs.length) api.note('pick', 'لا توجد أقسام في هذا الفرع بعد.');
+          else if (!secNow) api.note('pick', 'اختر القسم لعرض أطفاله.');
+          else if (!ks.length) api.note('pick', 'لا يوجد أطفال مسجلون في هذا القسم.');
+          else api.note('pick', '');
+          // 5) معاينة المرفق قبل الحفظ
+          var f = cur.file;
+          if (f) api.note('file', fileInfo(f, api, r));
+          else api.note('file', r && r.attachment_path ? 'يوجد مرفق محفوظ لهذا التقرير؛ اختر ملفًا لاستبداله.' : '');
+        },
         onSubmit: async function (x, key) {
-          if (x.period_end < x.period_start) throw new Error('نهاية الفترة يجب أن تكون بعد بدايتها.');
+          if (!x.child_id) throw new Error('اختر طفلًا من القسم المحدد.');
+          var kid = kids.filter(function (k) { return k.id === x.child_id; })[0];
+          if (!kid || kid.section_id !== x.section_id) throw new Error('الطفل المختار لا ينتمي إلى القسم المحدد.');
           if (key === 'publish' && !x.achievements && !x.activities && !x.notes) throw new Error('لا يمكن نشر تقرير فارغ تمامًا.');
+          if (x.file && x.file.size > MAX_FILE) throw new Error('حجم الملف يتجاوز 5 ميغابايت.');
           var body = {
-            child_id: x.child_id, title: x.title, report_date: x.report_date, period_start: x.period_start, period_end: x.period_end,
+            child_id: x.child_id, title: x.title, report_date: x.report_date,
+            // الحقلان مطلوبان في قاعدة البيانات ولم يعودا يُدخلان من الواجهة: يأخذان تاريخ التقرير للتقارير الجديدة ويُحفظ القيم القديمة عند التعديل
+            period_start: r ? r.period_start : x.report_date, period_end: r ? r.period_end : x.report_date,
             achievements: x.achievements || null, activities: x.activities || null, notes: x.notes || null,
             status: key === 'publish' ? 'published' : (r ? r.status : 'draft')
           };
-          if (r) await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), body); else await C.rest('POST', '/progress_reports', body);
+          if (x.file) {
+            if (FORM) FORM.note('file', 'جارٍ رفع المرفق… لا تغلق النافذة.');
+            try { uploaded = await uploadChecked(x.file, x.child_id); }
+            catch (e) { if (FORM) FORM.note('file', 'تعذّر رفع المرفق: ' + (e && e.message || 'خطأ غير معروف')); throw e; }
+            body.attachment_path = uploaded.path;
+          }
+          try {
+            if (r) await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), body); else await C.rest('POST', '/progress_reports', body);
+          } catch (e) {
+            if (uploaded) C.removeObject('private-docs', uploaded.path).catch(function () {});
+            throw e;
+          }
           bust(); toast(key === 'publish' ? 'تم اعتماد التقرير ونشره للولي.' : 'حُفظت المسودة.', 'ok'); go('reports');
         }
       });
@@ -1239,26 +1212,51 @@
      8. الرسائل والإعلانات (Messages)
      ===================================================================== */
   async function secMsgs(v) {
-    var d = await getMany('msgs', 'reads', 'parents', 'children');
-    var rows = d[0], reads = d[1], pars = d[2], kids = d[3];
+    var d = await getMany('msgs', 'reads', 'parents', 'children', 'branches', 'sections');
+    var rows = d[0], reads = d[1], pars = d[2], kids = d[3], branches = d[4], sections = d[5];
+    var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
+    var secAllOpts = sections.map(function (s) { return [s.id, s.name]; });
     var parOpts = pars.map(function (p) { return [p.user_id, p.full_name]; });
     var kidOpts = kids.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; });
 
     function readCount(id) { return reads.filter(function (x) { return x.message_id === id; }).length; }
 
     function edit(m) {
+      var kid0 = m && m.child_id ? kids.filter(function (k) { return k.id === m.child_id; })[0] : null;
+      var vals = m ? Object.assign({}, m, { branch_id: kid0 ? kid0.branch_id : '', section_id: kid0 ? kid0.section_id : '' }) : { kind: 'announcement', audience: 'all' };
+      var lastSec = vals.section_id || '';
       return openForm({
-        title: m ? 'تعديل رسالة/إعلان' : 'رسالة / إعلان جديد', values: m || { kind: 'announcement', audience: 'all' },
+        title: m ? 'تعديل رسالة/إعلان' : 'رسالة / إعلان جديد', values: vals,
         submits: m && m.published_at ? [{ key: 'save', label: 'حفظ التعديلات (منشور)' }] : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'نشر الآن' }],
         fields: [
           { k: 'kind', label: 'النوع', type: 'select', opts: [['announcement', 'إعلان عام'], ['message', 'رسالة خاصة']], req: true },
           { k: 'audience', label: 'المستلمون', type: 'select', opts: [['all', 'جميع الأولياء'], ['parent', 'ولي معيّن'], ['child', 'أولياء طفل معيّن']], req: true },
           { k: 'parent_id', label: 'الولي المستلم', type: 'select', opts: parOpts, req: true, showIf: function (x) { return x.audience === 'parent'; } },
-          { k: 'child_id', label: 'الطفل المعني', type: 'select', opts: kidOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
+          { k: 'branch_id', label: 'الفرع', type: 'select', opts: branchOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
+          { k: 'section_id', label: 'القسم / الفوج', type: 'select', opts: secAllOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
+          { k: 'child_id', label: 'الطفل المعني (يصل فقط لوليّه)', type: 'select', opts: kidOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
           { k: 'title', label: 'العنوان', req: true, max: 150 },
           { k: 'body', label: 'نص الرسالة / الإعلان', type: 'textarea', req: true, max: 5000 }
         ],
+        onChange: function (key, cur, api) {
+          if (cur.audience !== 'child') { api.note('pick', ''); return; }
+          var secs = sections.filter(function (s) { return s.branch_id === cur.branch_id; });
+          api.setOpts('section_id', secs.map(function (s) { return [s.id, s.name]; }));
+          var secNow = api.input('section_id').value;
+          if (secNow !== lastSec) { api.input('child_id').value = ''; lastSec = secNow; }
+          var ks = secNow ? kids.filter(function (k) { return k.section_id === secNow; }) : [];
+          api.setOpts('child_id', ks.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; }));
+          if (!cur.branch_id) api.note('pick', 'اختر الفرع أولًا لعرض أقسامه.');
+          else if (!secs.length) api.note('pick', 'لا توجد أقسام في هذا الفرع بعد.');
+          else if (!secNow) api.note('pick', 'اختر القسم لعرض أطفاله.');
+          else if (!ks.length) api.note('pick', 'لا يوجد أطفال مسجلون في هذا القسم.');
+          else api.note('pick', '');
+        },
         onSubmit: async function (x, key) {
+          if (x.audience === 'child') {
+            var kd = kids.filter(function (k) { return k.id === x.child_id; })[0];
+            if (!kd || kd.section_id !== x.section_id) throw new Error('الطفل المختار لا ينتمي إلى القسم المحدد.');
+          }
           var body = {
             kind: x.kind, audience: x.audience, parent_id: x.audience === 'parent' ? x.parent_id : null, child_id: x.audience === 'child' ? x.child_id : null,
             title: x.title, body: x.body, published_at: key === 'publish' ? new Date().toISOString() : (m ? m.published_at : null)
@@ -1532,7 +1530,10 @@
     try {
       await SECS[sec](box);
     } catch (e) {
-      box = h('div', { class: 'err', role: 'alert', text: e.message });
+      bust();
+      box = h('div', { class: 'err', role: 'alert' },
+        h('p', { text: e.message }),
+        h('button', { class: 'btn small', type: 'button', text: 'إعادة المحاولة', onclick: function () { go(sec); } }));
     }
 
     if (n !== S.nav) return;

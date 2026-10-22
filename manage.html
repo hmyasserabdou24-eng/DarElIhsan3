@@ -10,7 +10,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=11">
+<link rel="stylesheet" href="portal.css?v=12">
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -68,9 +68,9 @@
     <div class="brand"><img src="logo-sq.png" alt=""><strong>دار الإحسان<br><span class="small">الإدارة</span></strong></div>
     <nav id="nav">
       <button type="button" data-sec="dash"><svg class="i"><use href="#s-home"/></svg>لوحة التحكم</button>
-      <button type="button" data-sec="branches"><svg class="i"><use href="#s-branch"/></svg>الفروع والأقسام</button>
       <button type="button" data-sec="children"><svg class="i"><use href="#s-child"/></svg>الأطفال والطلبة</button>
       <button type="button" data-sec="parents"><svg class="i"><use href="#s-users"/></svg>الأولياء</button>
+      <button type="button" data-sec="branches"><svg class="i"><use href="#s-branch"/></svg>الفروع والأقسام</button>
       <button type="button" data-sec="programs"><svg class="i"><use href="#s-book"/></svg>البرامج التربوية</button>
       <button type="button" data-sec="reports"><svg class="i"><use href="#s-report"/></svg>التقارير التربوية</button>
       <button type="button" data-sec="appts"><svg class="i"><use href="#s-cal"/></svg>المواعيد والأنشطة</button>
@@ -94,12 +94,16 @@
 </div>
 
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true"><div id="modalCard" class="modal-card"></div></div>
+<div id="printArea" aria-hidden="true"><img id="printImg" alt=""></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="cms-config.js?v=9"></script>
-<script src="de-core.js?v=10"></script>
+<script src="centers.js?v=1"></script>
+<script src="de-core.js?v=11"></script>
 <script src="xlsx-writer.js?v=1"></script>
 <script src="qr-gen.js?v=9"></script>
-<script src="manage.js?v=10"></script>
+<script src="qr-encoder.js?v=1"></script>
+<script src="card.js?v=1"></script>
+<script src="manage.js?v=12"></script>
 </body>
 </html>

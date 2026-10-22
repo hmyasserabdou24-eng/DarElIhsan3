@@ -32,6 +32,7 @@
       hintSet: 'اختر كلمة مرور قوية لحسابك.',
       hintInvite: 'مرحبًا بك! اختر كلمة مرور لتفعيل حسابك.',
       emailLabel: 'البريد الإلكتروني',
+      loginIdLabel: 'اسم المستخدم أو البريد الإلكتروني',
       passLabel: 'كلمة المرور',
       newPassLabel: 'كلمة المرور الجديدة',
       confirmPassLabel: 'أعد كتابة كلمة المرور',
@@ -100,7 +101,7 @@
       contactSiteLink: 'الصفحة الرئيسية لدار الإحسان',
       contactNoteTitle: 'إرشاد للأولياء',
       contactNoteTxt: 'لأي استفسار طارئ أو مناقشة بخصوص الملف البيداغوجي لطفلك، يُفضَّل التواصل مع الإدارة المباشرة خلال ساعات العمل الرسمية.',
-      enterCredsErr: 'أدخل البريد الإلكتروني وكلمة المرور.',
+      enterCredsErr: 'أدخل اسم المستخدم (أو البريد الإلكتروني) وكلمة المرور.',
       validEmailErr: 'أدخل بريدًا إلكترونيًا صحيحًا.',
       passMismatchErr: 'كلمتا المرور غير متطابقتين.',
       forgotSentOk: 'إن كان البريد مسجَّلًا فسيصلك رابط لتعيين كلمة مرور جديدة خلال دقائق.',
@@ -126,6 +127,7 @@
       hintSet: 'Choisissez un mot de passe sécurisé pour votre compte.',
       hintInvite: 'Bienvenue ! Définissez votre mot de passe pour activer votre compte.',
       emailLabel: 'Adresse e-mail',
+      loginIdLabel: "Nom d'utilisateur ou e-mail",
       passLabel: 'Mot de passe',
       newPassLabel: 'Nouveau mot de passe',
       confirmPassLabel: 'Confirmez le mot de passe',
@@ -194,7 +196,7 @@
       contactSiteLink: 'Page d’accueil Dar El Ihsan',
       contactNoteTitle: 'Information aux parents',
       contactNoteTxt: 'Pour toute question relative au suivi éducatif ou médical de votre enfant, privilégiez le contact par e-mail ou une visite directe durant les heures de permanence.',
-      enterCredsErr: 'Veuillez saisir votre e-mail et votre mot de passe.',
+      enterCredsErr: "Veuillez saisir votre nom d'utilisateur (ou e-mail) et votre mot de passe.",
       validEmailErr: 'Veuillez saisir une adresse e-mail valide.',
       passMismatchErr: 'Les mots de passe ne correspondent pas.',
       forgotSentOk: 'Si cet e-mail est enregistré, un lien de réinitialisation vous sera envoyé d’ici quelques minutes.',
@@ -224,7 +226,7 @@
     var bt = $('#barTitle'); if (bt) bt.textContent = t('brand');
     var lt = $('#lTitle'); if (lt) lt.textContent = mode === 'set' ? t('titleSet') : mode === 'forgot' ? t('titleForgot') : t('titleLogin');
     var lh = $('#lHint'); if (lh && !lh.dataset.custom) lh.textContent = mode === 'set' ? t('hintSet') : mode === 'forgot' ? t('hintForgot') : t('hintLogin');
-    var em = $('#lblEmail'); if (em) em.textContent = t('emailLabel');
+    var em = $('#lblEmail'); if (em) em.textContent = t('loginIdLabel');
     var pw = $('#lblPassword'); if (pw) pw.textContent = t('passLabel');
     var fe = $('#lblFEmail'); if (fe) fe.textContent = t('emailLabel');
     var np1 = $('#lblNp1'); if (np1) np1.textContent = t('newPassLabel');
@@ -317,7 +319,10 @@
       try {
         if (mode === 'login') {
           var em = DE.clean($('#email').value, 254).toLowerCase(), pw = $('#password').value;
-          if (!DE.isEmail(em) || !pw || pw.length > 72) return setMsg($('#lErr'), t('enterCredsErr'));
+          // اسم مستخدم بسيط (بلا @) ← يُحوَّل إلى عنوان الدخول الداخلي الذي أنشأته لوحة الإدارة
+          if (/^[a-z0-9._-]{3,30}$/.test(em)) em = em + '@parents.darelihsan.invalid';
+          else if (!DE.isEmail(em)) return setMsg($('#lErr'), t('enterCredsErr'));
+          if (!pw || pw.length > 72) return setMsg($('#lErr'), t('enterCredsErr'));
           await C.signIn(em, pw);
           $('#password').value = '';
           await enter();

@@ -816,17 +816,6 @@ table.tbl { width: 100%; border-collapse: collapse; }
 /* ═══════════════════════════════════════════════
    تنسيق الطباعة
 ═══════════════════════════════════════════════ */
-@media print {
-  body * { visibility: hidden !important; }
-  .student-id-card, .student-id-card * { visibility: visible !important; }
-  .student-id-card {
-    position: fixed; left: 0; top: 0;
-    width: 100% !important; max-width: none !important;
-    margin: 0 !important; border: 2px solid #b8860b !important;
-    box-shadow: none !important;
-  }
-  .modal-actions, .bar, .side, .toast { display: none !important; }
-}
 
 /* ═══════════════════════════════════════════════
    تحسينات الوصولية والحركة
@@ -897,3 +886,32 @@ table.tbl { width: 100%; border-collapse: collapse; }
   .tbl-sheet { min-width: 1040px; }
   .child-details { grid-template-columns: 1fr 1fr; }
 }
+
+/* ═══════════════════════════════════════════════
+   بطاقة انخراط التلميذ: المعاينة والطباعة (85.6 × 54 مم)
+═══════════════════════════════════════════════ */
+.card-preview {
+  display: block; width: 100%; max-width: 520px; height: auto;
+  aspect-ratio: 1011 / 638; margin: 4px auto 10px;
+  border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow);
+  background: #fff;
+}
+.card-preview[hidden] { display: none; }
+.card-modal .modal-actions { flex-wrap: wrap; }
+#printArea { display: none; }
+@media print {
+  @page { size: 85.6mm 54mm; margin: 0; }
+  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+  body > *:not(#printArea) { display: none !important; }
+  #printArea {
+    display: block !important; position: absolute; left: 0; top: 0;
+    width: 85.6mm; height: 54mm; margin: 0; padding: 0; overflow: hidden;
+  }
+  #printImg { display: block; width: 85.6mm; height: 54mm; }
+}
+
+/* ملاحظات النماذج (حالات فارغة، معاينة المرفق) وكتلة الخطأ مع إعادة المحاولة */
+.form-note { margin: 4px 0 10px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--gold-soft); color: var(--ink); border: 1px solid var(--line); line-height: 1.7; }
+.form-note[hidden] { display: none; }
+.form-note .linkbtn { margin-inline-start: 6px; }
+.err .btn { margin-top: 8px; }

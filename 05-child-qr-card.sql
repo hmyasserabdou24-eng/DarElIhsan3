@@ -104,6 +104,7 @@ begin
     'found', true,
     'full_name', r.full_name,
     'center', r.center,
+    'membership_no', r.membership_no,
     'member_no', r.member_no,
     'enrolled_on', r.enrolled_on,
     'section', case when r.qr_show_extra then r.section else null end

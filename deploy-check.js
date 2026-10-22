@@ -4,7 +4,7 @@
   var EXPECT_BUILD = '2026-10-19.3';
   var FILES = [
     ['index.html', 0], ['style.css', 0], ['script.js', 0], ['i18n-data.js', 0], ['cms.js', 0], ['cms.css', 0], ['cms-config.js', 0],
-    ['manage.html', 0], ['manage.js', 1], ['parent.html', 0], ['parent.js', 1], ['portal.css', 0], ['de-core.js', 1], ['xlsx-writer.js', 1],
+    ['manage.html', 0], ['manage.js', 1], ['parent.html', 0], ['parent.js', 1], ['portal.css', 0], ['de-core.js', 1], ['xlsx-writer.js', 1], ['card.js', 1], ['centers.js', 0], ['qr-encoder.js', 0], ['qr.js', 1],
     ['logo.png', 0], ['logo-sq.png', 0]
   ];
   var h = DE.h, out = document.getElementById('out');

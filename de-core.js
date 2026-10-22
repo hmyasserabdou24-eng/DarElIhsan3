@@ -111,6 +111,7 @@
     var s = String(raw || '') + ' ' + String(code || '');
     for (var i = 0; i < MSG.length; i++) if (MSG[i][0].test(s)) return MSG[i][1];
     if (raw && /[\u0600-\u06FF]/.test(raw) && !/violates|SQLSTATE|stack|syntax/i.test(raw)) return raw;
+    if (status === 300) return 'تعذّر تنفيذ الطلب لأن الخادم وجد أكثر من دالة مطابقة (تعارض في قاعدة البيانات). أبلغ المسؤول التقني، ولم تُحذف أي بيانات.';
     return 'حدث خطأ غير متوقع (' + status + '). حاول مرة أخرى.';
   }
 

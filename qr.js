@@ -1,62 +1,66 @@
-/* التحقق من بطاقة التلميذ عبر رمز QR العام
-   يقرأ فقط 5 حقول أساسية عبر RPC آمن get_public_child دون تسريب أي بيانات شخصية أو حساسة. */
+/* صفحة التحقق العامة لبطاقة التلميذ (تُفتح عند مسح رمز QR).
+   - الرابط الجديد: qr.html?c=<رمز البطاقة السري 32 حرفًا>  ← يُستدعى public_child_card
+   - الروابط القديمة المطبوعة: qr.html?id=<public_uuid>      ← يُستدعى get_public_child
+   في الحالتين تُعرض الحقول العامة فقط: رقم المنخرط، الاسم، المركز (والقسم إن سمح به المدير).
+   لا يُعرض تاريخ الميلاد ولا الإعاقة ولا أي معلومة صحية. */
 (function () {
   'use strict';
   var CFG = window.DE_CONFIG || {};
   var $ = function (s) { return document.querySelector(s); };
 
-  function setField(id, text) {
-    var el = $('#' + id);
-    if (el) el.textContent = text || '—';
+  function setField(id, text) { var el = $('#' + id); if (el) el.textContent = text || '—'; }
+  function centerName(key) {
+    var c = (window.DE_CENTERS || {})[key] || (window.DE_CENTERS || {}).main;
+    return c ? c.name : 'المركز النفسي البيداغوجي دار الإحسان';
+  }
+  function showError(msg) {
+    $('#loading').hidden = true;
+    $('#studentData').hidden = true;
+    var err = $('#errorState');
+    err.textContent = msg;
+    err.hidden = false;
+  }
+  function showCard(d) {
+    setField('f_num', d.membership_no || '—');
+    setField('f_name', d.full_name);
+    setField('f_center', d.centerLabel || centerName(d.center));
+    if (d.section) { setField('f_section', d.section); $('#row_section').hidden = false; }
+    $('#loading').hidden = true;
+    $('#studentData').hidden = false;
   }
 
-  function showError(msg) {
-    var l = $('#loading'), err = $('#errorState'), data = $('#studentData');
-    if (l) l.hidden = true;
-    if (data) data.hidden = true;
-    if (err) {
-      err.textContent = msg;
-      err.hidden = false;
-    }
-  }
+  var NOT_FOUND = 'لم يتم العثور على بيانات مطابقة لهذه البطاقة. قد تكون البطاقة قديمة أو ملغاة، أو الملف غير نشط. راجع إدارة المركز.';
+  var INVALID = 'رابط البطاقة غير صالح أو ناقص. يرجى مسح رمز الاستجابة السريعة (QR) الموجود على بطاقة التلميذ الرسمية.';
 
   async function init() {
     var params = new URLSearchParams(window.location.search);
-    var publicUuid = params.get('id');
+    var token = params.get('c');
+    var legacyId = params.get('id');
 
-    if (!publicUuid || !DE.isUuid(publicUuid)) {
-      showError('رابط البطاقة غير صالح أو مفقود. يرجى مسح رمز الاستجابة السريعة (QR) الموجود على بطاقة التلميذ الرسمية.');
-      return;
-    }
-
-    if (!CFG.supabaseUrl || !CFG.supabaseKey) {
-      showError('إعدادات الاتصال غير مضبوطة.');
-      return;
-    }
+    if (!token && !legacyId) return showError(INVALID);
+    if (token && !/^[0-9a-f]{32}$/.test(token)) return showError(INVALID);
+    if (!token && !(window.DE && DE.isUuid(legacyId))) return showError(INVALID);
+    if (!CFG.supabaseUrl || !CFG.supabaseKey) return showError('إعدادات الاتصال غير مضبوطة.');
 
     try {
       var client = DE.Client(CFG, 'de_qr_session');
-      var res = await client.rpc('get_public_child', { p_uuid: publicUuid });
-
-      if (!res || !res.full_name) {
-        showError('لم يتم العثور على بيانات تلميذ مطابقة لهذا الرمز، أو أن الملف غير نشط حالياً.');
-        return;
+      if (token) {
+        var res = await client.rpc('public_child_card', { p_token: token });
+        if (!res || res.found !== true) return showError(NOT_FOUND);
+        showCard({
+          membership_no: res.membership_no || res.member_no,
+          full_name: res.full_name,
+          center: res.center,
+          section: res.section
+        });
+      } else {
+        // رابط قديم مطبوع قبل التحديث: نعرض الحقول العامة نفسها فقط
+        var old = await client.rpc('get_public_child', { p_uuid: legacyId });
+        if (!old || !old.full_name) return showError(NOT_FOUND);
+        showCard({ membership_no: old.membership_no, full_name: old.full_name, centerLabel: old.branch, section: null });
       }
-
-      setField('f_name', res.full_name);
-      setField('f_dob', res.dob || '—');
-
-      var claimBtn = $('#btnClaim');
-      if (claimBtn) {
-        claimBtn.href = 'parent.html?child=' + encodeURIComponent(publicUuid);
-      }
-
-      var l = $('#loading'), data = $('#studentData');
-      if (l) l.hidden = true;
-      if (data) data.hidden = false;
-
     } catch (err) {
-      showError('تعذّر التحقق من بيانات البطاقة. يرجى التأكد من اتصال الإنترنت والمحاولة ثانية.');
+      showError('تعذّر التحقق من البطاقة. تأكد من اتصال الإنترنت ثم أعد تحميل الصفحة.');
     }
   }
 
