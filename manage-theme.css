@@ -5,6 +5,12 @@
    =================================================================== */
 
 :root {
+  /* ألوان تحقق WCAG AA (نسبة تباين >= 4.5:1 للنص) — الذهبي الأصلي #B4873A
+     يبقى للتفاصيل الزخرفية فقط (--brand-gold) */
+  --brand-gold: #B4873A;
+  --gold: #8A6420;          /* أزرار ونصوص ذهبية: 5.35:1 مع الأبيض */
+  --gold-hover: #6F4F18;
+  --muted: #56667A;         /* نص ثانوي: 5.47:1 على الخلفية الفاتحة */
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
@@ -30,7 +36,7 @@ body {
   min-height: 42px;
 }
 .side nav button[aria-current="page"] {
-  box-shadow: inset 3px 0 0 var(--gold);
+  box-shadow: inset 3px 0 0 var(--brand-gold);
 }
 .side .sep {
   letter-spacing: .02em;
@@ -150,3 +156,10 @@ button, a, input, select, textarea {
 #app.side-collapsed .side .sep {
   font-size: 0;
 }
+
+/* ---------- أزرار ذهبية بتباين مقبول ---------- */
+.btn.gold:hover:not(:disabled) { background: var(--gold-hover); }
+
+/* ---------- المؤشرات والتفاعل (من قائمة فحص المهارة) ---------- */
+button, a, [role="button"], summary { cursor: pointer; }
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
