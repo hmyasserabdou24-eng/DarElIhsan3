@@ -839,10 +839,47 @@
   /* =====================================================================
      5. إدارة الأولياء (Parents)
      ===================================================================== */
-  /* ---- إخفاء/إظهار أزرار صف الولي (حالة في الذاكرة لصفحة مفتوحة فقط؛ لا تُخزَّن في المتصفح) ---- */
-  var HIDDEN_ACTS = {};
-  function isHiddenActs(id) { return !!HIDDEN_ACTS[String(id)]; }
-  function setHiddenActs(id, on) { HIDDEN_ACTS[String(id)] = !!on; }
+
+  /* ---- قائمة إجراءات منبثقة (⋯): تُثبَّت فوق الجدول فلا تُقصّ داخل الحاوية ---- */
+  function rowMenu(items) {
+    var list = items.filter(Boolean);
+    var wrap = h('div', { class: 'row-menu' });
+    var trig = h('button', { class: 'icon-btn row-menu-trigger', type: 'button', text: '⋯' });
+    trig.setAttribute('aria-haspopup', 'menu');
+    trig.setAttribute('aria-expanded', 'false');
+    trig.setAttribute('aria-label', 'إجراءات إضافية');
+    trig.setAttribute('title', 'إجراءات إضافية');
+    var pop = h('div', { class: 'row-menu-pop' }, list);
+    pop.setAttribute('role', 'menu');
+    pop.hidden = true;
+    list.forEach(function (b) { b.setAttribute('role', 'menuitem'); });
+    wrap.appendChild(trig);
+    wrap.appendChild(pop);
+
+    function onDocDown(e) { if (!wrap.contains(e.target)) close(); }
+    function onKey(e) { if (e.key === 'Escape') { close(); trig.focus(); } }
+    function open() {
+      var r = trig.getBoundingClientRect();
+      pop.style.position = 'fixed';
+      pop.style.top = (r.bottom + 6) + 'px';
+      pop.style.left = Math.max(8, r.right - 230) + 'px';
+      pop.hidden = false;
+      trig.setAttribute('aria-expanded', 'true');
+      document.addEventListener('mousedown', onDocDown, true);
+      document.addEventListener('keydown', onKey, true);
+      if (list[0]) list[0].focus();
+    }
+    function close() {
+      if (pop.hidden) return;
+      pop.hidden = true;
+      trig.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('mousedown', onDocDown, true);
+      document.removeEventListener('keydown', onKey, true);
+    }
+    trig.addEventListener('click', function (e) { e.stopPropagation(); if (pop.hidden) open(); else close(); });
+    pop.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('button')) close(); });
+    return wrap;
+  }
 
   /* ---- توليد كلمة مرور عشوائية: حروف وأرقام بالتناوب، لا تُرتبط بالطفل ---- */
   function genPassword() {
@@ -1003,12 +1040,8 @@
         { label: 'الحالة', get: function (r) { return badge(r.disabled ? 'معطّل' : 'نشط', r.disabled ? 'bad' : 'ok'); } }
       ],
       actions: function (r) {
-        var hid = isHiddenActs(r.user_id);
-        var toggle = rbtn(hid ? 'إظهار الأزرار' : 'إخفاء الأزرار', function () { setHiddenActs(r.user_id, !hid); go('parents'); }, 'light');
-        if (hid) return [toggle];
-        return [
-          toggle,
-          rbtn('تعديل', function () { return edit(r); }),
+        var edit_btn = rbtn('تعديل', function () { return edit(r); });
+        var menu = [
           r.username ? rbtn('كلمة مرور جديدة', async function () {
             if (!(await ask({ title: 'توليد كلمة مرور جديدة؟', msg: 'ستُلغى كلمة المرور الحالية ويُعرض الجديدة مرة واحدة فقط. سلّمها للولي فورًا.', ok: 'توليد', danger: true }))) return;
             var pw = genPassword();
@@ -1022,9 +1055,9 @@
                 toast('تم نسخ كلمة المرور.', 'ok');
               }})
             ));
-          }, 'gold') : null,
-          r.username ? rbtn('تغيير كلمة المرور', function () { return setPassword(r); }, 'light') : null,
-          rbtn(r.disabled ? 'تفعيل' : 'تعطيل', async function () {
+          }) : null,
+          r.username ? rbtn('تغيير كلمة المرور', function () { return setPassword(r); }) : null,
+          rbtn(r.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
             if (!r.disabled && !(await ask({ title: 'تعطيل حساب الولي؟', msg: 'سيفقد الولي إمكانية تسجيل الدخول فورًا حتى إعادة تفعيله.', ok: 'تعطيل', danger: true }))) return;
             await C.rest('PATCH', '/parent_profiles?user_id=eq.' + uid(r.user_id), { disabled: !r.disabled });
             bust(); toast(r.disabled ? 'تم تفعيل الحساب.' : 'تم تعطيل الحساب.', 'ok'); go('parents');
@@ -1046,6 +1079,7 @@
             }
           })
         ];
+        return [edit_btn, rowMenu(menu)];
       }
     });
   }
@@ -1420,7 +1454,8 @@
      ===================================================================== */
   async function secAudit(v) {
     var rows = await C.rpc('admin_audit_list', { p_limit: 100 });
-    var accountsData = await C.rpc('admin_list').catch(function () { return { can_manage: false }; });
+    var accountsData = null, permError = null;
+    try { accountsData = await C.rpc('admin_list'); } catch (e) { permError = e; }
     var isOwner = !!(accountsData && accountsData.can_manage);
 
     var card = h('div', { class: 'card' },
@@ -1441,10 +1476,15 @@
               msg: 'سيتم حذف جميع سجلات العمليات التي مضى عليها أكثر من 30 يومًا نهائيًا.',
               ok: 'تأكيد الحذف'
             }))) return;
-            var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
-            var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
-            toast('تم حذف ' + deleted + ' سجل تدقيق قديم. (تم تسجيل عملية الحذف نفسها كسجل جديد للمراجعة.)', 'ok');
-            go('audit');
+            try {
+              var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
+              var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
+              if (!deleted) toast('لا توجد سجلات أقدم من 30 يومًا، لذلك لم يُحذف شيء.');
+              else toast('تم حذف ' + deleted + ' سجل تدقيق قديم. (تم تسجيل عملية الحذف نفسها كسجل جديد للمراجعة.)', 'ok');
+              go('audit');
+            } catch (e) {
+              toast('تعذّر الحذف: ' + (e && e.message ? e.message : 'خطأ غير معروف'), 'bad');
+            }
           }
         }),
         h('button', {
@@ -1457,13 +1497,21 @@
               msg: 'سيتم مسح سجل العمليات والتدقيق كاملاً. هذه العملية لا يمكن التراجع عنها!',
               ok: 'مسح شامل', danger: true
             }))) return;
-            var deleted = await C.rpc('admin_delete_audit', {});
-            toast('تم مسح ' + deleted + ' سجل. تم تسجيل عملية المسح نفسها كسجل واحد للمراجعة.', 'ok');
-            go('audit');
+            try {
+              var deleted = await C.rpc('admin_delete_audit', {});
+              toast('تم مسح ' + deleted + ' سجل. تم تسجيل عملية المسح نفسها كسجل واحد للمراجعة.', 'ok');
+              go('audit');
+            } catch (e) {
+              toast('تعذّر المسح: ' + (e && e.message ? e.message : 'خطأ غير معروف'), 'bad');
+            }
           }
         })
       );
       card.appendChild(superAdminActions);
+    } else {
+      card.appendChild(h('p', { class: 'muted small', text: permError
+        ? 'تعذّر التحقق من صلاحياتك لعرض أزرار الحذف. حدّث الصفحة أو أعد تسجيل الدخول.'
+        : 'أزرار مسح السجل متاحة للمدير الرئيسي (المالك) فقط. الحساب الحالي مدير غير مالك.' }));
     }
 
     v.appendChild(card);

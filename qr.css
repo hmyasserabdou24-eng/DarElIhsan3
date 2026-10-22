@@ -3,7 +3,7 @@
   .qr-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px 16px; background: #0f1c30 linear-gradient(180deg, #0b1525 0%, #162a4a 100%); color: #fff; }
   .qr-box { width: 100%; max-width: 520px; background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 24px 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); }
   .qr-header { text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 16px; margin-bottom: 20px; }
-  .qr-header .republic { font-size: 13px; color: rgba(255, 255, 255, 0.7); font-weight: 600; margin-bottom: 4px; }
+  .qr-header .republic { font-size: 13px; color: rgba(255, 255, 255, 0.7); font-weight: 600; margin-bottom: 4px; word-spacing: .18em; line-height: 1.6; }
   .qr-header .assoc { font-size: 14px; color: var(--gold-soft, #f0ca7d); font-weight: 700; margin-bottom: 8px; }
   .qr-logo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold, #b8860b); margin: 6px auto; box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: block; }
   .qr-center { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.4; margin-top: 6px; }

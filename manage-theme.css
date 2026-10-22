@@ -163,3 +163,40 @@ button, a, input, select, textarea {
 /* ---------- المؤشرات والتفاعل (من قائمة فحص المهارة) ---------- */
 button, a, [role="button"], summary { cursor: pointer; }
 button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+
+/* ---------- قائمة الإجراءات المنبثقة (⋯) في صفوف الجداول ---------- */
+.row-menu { position: relative; display: inline-block; }
+.row-menu-trigger {
+  min-width: 40px; min-height: 40px;
+  font-size: 22px; line-height: 1; font-weight: 700;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: #fff; color: var(--navy);
+}
+.row-menu-trigger:hover { background: #f0f4fa; }
+.row-menu-trigger[aria-expanded="true"] { background: var(--navy); color: #fff; }
+.row-menu-pop {
+  position: fixed; z-index: 60;
+  min-width: 220px; padding: 6px;
+  display: grid; gap: 4px;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  animation: rowMenuIn 140ms ease-out;
+}
+.row-menu-pop[hidden] { display: none !important; }
+.row-menu-pop .btn {
+  width: 100%; justify-content: flex-start;
+  border-radius: var(--radius-sm);
+  background: transparent; color: var(--ink);
+  border: 0; box-shadow: none;
+}
+.row-menu-pop .btn:hover:not(:disabled) { background: #f0f4fa; }
+.row-menu-pop .btn.danger { color: var(--danger); }
+@keyframes rowMenuIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-menu-pop { animation: none; }
+}
