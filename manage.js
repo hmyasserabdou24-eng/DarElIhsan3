@@ -865,6 +865,31 @@
   /* =====================================================================
      5. إدارة الأولياء (Parents)
      ===================================================================== */
+  /* ---- إخفاء/إظهار أزرار صف الولي (يُحفظ في المتصفح فقط) ---- */
+  var HIDE_KEY = 'de_hidden_parent_actions';
+  function hiddenSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(HIDE_KEY) || '[]')); } catch (e) { return new Set(); }
+  }
+  function isHiddenActs(id) { return hiddenSet().has(String(id)); }
+  function setHiddenActs(id, on) {
+    var set = hiddenSet();
+    if (on) set.add(String(id)); else set.delete(String(id));
+    try { localStorage.setItem(HIDE_KEY, JSON.stringify(Array.from(set))); } catch (e) { /* المتصفح يمنع التخزين */ }
+  }
+
+  /* ---- توليد كلمة مرور عشوائية: حروف وأرقام بالتناوب، لا تُرتبط بالطفل ---- */
+  function genPassword() {
+    var L = 'abcdefghjkmnpqrstuvwxyz', D = '23456789';
+    var a = new Uint32Array(12);
+    crypto.getRandomValues(a);
+    var out = '';
+    for (var i = 0; i < 12; i++) {
+      var set = i % 2 ? D : L;
+      out += set.charAt(a[i] % set.length);
+    }
+    return out;
+  }
+
   async function secParents(v) {
     var d = await getMany('parents', 'links', 'children');
     var rows = d[0], links = d[1], kids = d[2];
@@ -941,12 +966,12 @@
           { k: 'username', label: 'اسم المستخدم (حروف لاتينية صغيرة وأرقام و . _ -)', req: true, max: 30, hint: 'مثال: ali.benyahia — يستعمله الولي للدخول.' },
           { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'password', req: true, max: 72, hint: 'سلّمها للولي مباشرة؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' },
           { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 },
-          { k: 'child_ids', label: 'الأبناء المرتبطون بالحساب (لن يرى الولي غيرهم)', type: 'multi', opts: kidOpts, req: true }
+          { k: 'child_id', label: 'الطفل المرتبط بالحساب (طفل واحد فقط لكل حساب)', type: 'select', opts: kidOpts, req: true }
         ],
         onSubmit: async function (x) {
           var un = String(x.username).trim().toLowerCase();
           if (!/^[a-z0-9._-]{3,30}$/.test(un)) throw new Error('اسم المستخدم: 3 إلى 30 حرفًا لاتينيًا صغيرًا أو أرقامًا أو (. _ -) فقط.');
-          var body = { action: 'create', username: un, password: x.password, full_name: x.full_name, child_ids: x.child_ids };
+          var body = { action: 'create', username: un, password: x.password, full_name: x.full_name, child_ids: [x.child_id] };
           if (x.phone) body.phone = x.phone;
           await C.fn('parent-accounts', body);
           bust();
@@ -978,7 +1003,7 @@
         fields: [
           { k: 'full_name', label: 'الاسم الكامل', req: true, min: 2, max: 120 },
           { k: 'phone', label: 'الهاتف', type: 'tel', kind: 'phone', max: 25 },
-          { k: 'child_ids', label: 'الأبناء المرتبطون بحسابه', type: 'multi', opts: kidOpts, maxItems: 10 }
+          { k: 'child_ids', label: 'الطفل المرتبط بحسابه (طفل واحد فقط)', type: 'multi', opts: kidOpts, maxItems: 1 }
         ],
         onSubmit: async function (x) {
           await C.rest('PATCH', '/parent_profiles?user_id=eq.' + uid(p.user_id), { full_name: x.full_name, phone: x.phone || null });
@@ -1011,8 +1036,26 @@
         { label: 'الحالة', get: function (r) { return badge(r.disabled ? 'معطّل' : 'نشط', r.disabled ? 'bad' : 'ok'); } }
       ],
       actions: function (r) {
+        var hid = isHiddenActs(r.user_id);
+        var toggle = rbtn(hid ? 'إظهار الأزرار' : 'إخفاء الأزرار', function () { setHiddenActs(r.user_id, !hid); go('parents'); }, 'light');
+        if (hid) return [toggle];
         return [
+          toggle,
           rbtn('تعديل', function () { return edit(r); }),
+          r.username ? rbtn('كلمة مرور جديدة', async function () {
+            if (!(await ask({ title: 'توليد كلمة مرور جديدة؟', msg: 'ستُلغى كلمة المرور الحالية ويُعرض الجديدة مرة واحدة فقط. سلّمها للولي فورًا.', ok: 'توليد', danger: true }))) return;
+            var pw = genPassword();
+            await C.fn('parent-accounts', { action: 'set_password', user_id: uid(r.user_id), password: pw });
+            info('كلمة المرور الجديدة', h('div', null,
+              h('p', { text: 'اسم المستخدم: ' + r.username }),
+              h('div', { class: 'link-box', text: pw }),
+              h('p', { class: 'muted small', text: 'تظهر هذه الكلمة مرة واحدة فقط ولا تُحفظ في النظام.' }),
+              h('button', { class: 'btn gold', type: 'button', text: 'نسخ كلمة المرور', onclick: function () {
+                if (navigator.clipboard) navigator.clipboard.writeText(pw);
+                toast('تم نسخ كلمة المرور.', 'ok');
+              }})
+            ));
+          }, 'gold') : null,
           r.username ? rbtn('تغيير كلمة المرور', function () { return setPassword(r); }, 'light') : null,
           rbtn(r.disabled ? 'تفعيل' : 'تعطيل', async function () {
             if (!r.disabled && !(await ask({ title: 'تعطيل حساب الولي؟', msg: 'سيفقد الولي إمكانية تسجيل الدخول فورًا حتى إعادة تفعيله.', ok: 'تعطيل', danger: true }))) return;
@@ -1433,7 +1476,7 @@
             }))) return;
             var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
             var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
-            toast('تم حذف ' + deleted + ' سجل تدقيق قديم بنجاح.', 'ok');
+            toast('تم حذف ' + deleted + ' سجل تدقيق قديم. (تم تسجيل عملية الحذف نفسها كسجل جديد للمراجعة.)', 'ok');
             go('audit');
           }
         }),
@@ -1448,7 +1491,7 @@
               ok: 'مسح شامل', danger: true
             }))) return;
             var deleted = await C.rpc('admin_delete_audit', {});
-            toast('تم مسح السجلات بنجاح (' + deleted + ' سجل).', 'ok');
+            toast('تم مسح ' + deleted + ' سجل. تم تسجيل عملية المسح نفسها كسجل واحد للمراجعة.', 'ok');
             go('audit');
           }
         })

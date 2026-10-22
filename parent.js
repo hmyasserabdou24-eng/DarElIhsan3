@@ -513,8 +513,7 @@
   /* تبويب أبنائي */
   function vChildren(v) {
     var topRow = h('div', { class: 'bar-sub' },
-      h('h2', { text: t('tabChildren') }),
-      h('button', { class: 'btn small gold', type: 'button', text: t('btnLinkCode'), onclick: openRedeemModal })
+      h('h2', { text: t('tabChildren') })
     );
     v.appendChild(topRow);
 
