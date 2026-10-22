@@ -1,8 +1,8 @@
 /* صفحة التحقق العامة لبطاقة التلميذ (تُفتح عند مسح رمز QR).
    - الرابط الجديد: qr.html?c=<رمز البطاقة السري 32 حرفًا>  ← يُستدعى public_child_card
    - الروابط القديمة المطبوعة: qr.html?id=<public_uuid>      ← يُستدعى get_public_child
-   في الحالتين تُعرض الحقول العامة فقط: رقم المنخرط، الاسم، المركز (والقسم إن سمح به المدير).
-   لا يُعرض تاريخ الميلاد ولا الإعاقة ولا أي معلومة صحية. */
+   تُعرض الحقول: رقم المنخرط، الاسم، المركز، الفوج/القسم، تاريخ الميلاد، طبيعة الإعاقة، الموسم الدراسي.
+   لا تُعرض ملاحظات الولي (basic_info) ولا أي بيانات أخرى. */
 (function () {
   'use strict';
   var CFG = window.DE_CONFIG || {};
@@ -20,11 +20,19 @@
     err.textContent = msg;
     err.hidden = false;
   }
+  function formatDob(iso) {
+    if (!iso) return '—';
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    return m ? (m[1] + '/' + m[2] + '/' + m[3]) : iso;
+  }
   function showCard(d) {
     setField('f_num', d.membership_no || '—');
     setField('f_name', d.full_name);
     setField('f_center', d.centerLabel || centerName(d.center));
     if (d.section) { setField('f_section', d.section); $('#row_section').hidden = false; }
+    setField('f_dob', formatDob(d.dob));
+    setField('f_disability', d.disability || '—');
+    setField('f_period', d.academic_year ? ('السنة التربوية ' + d.academic_year.replace('-', '–')) : 'السنة التربوية 2026–2027');
     $('#loading').hidden = true;
     $('#studentData').hidden = false;
   }
@@ -51,7 +59,10 @@
           membership_no: res.membership_no || res.member_no,
           full_name: res.full_name,
           center: res.center,
-          section: res.section
+          section: res.section,
+          dob: res.dob,
+          disability: res.disability,
+          academic_year: res.academic_year
         });
       } else {
         // رابط قديم مطبوع قبل التحديث: نعرض الحقول العامة نفسها فقط

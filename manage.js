@@ -444,7 +444,7 @@
     function editChild(c) {
       return openForm({
         title: c ? 'تعديل بيانات تلميذ' : 'إضافة تلميذ جديد إلى المركز',
-        values: c || { active: true, academic_year: '2026-2027' },
+        values: c ? Object.assign({}, c, { created_at: c.created_at ? String(c.created_at).slice(0, 10) : '' }) : { active: true, academic_year: '2026-2027' },
         fields: [
           { k: 'membership_no', label: 'رقم القيد / العضوية (مثال: 004، 082)', max: 20, hint: 'الرقم المعتمد بالقائمة الرسمية (مع الحفاظ على الأصفار الأولى).' },
           { k: 'full_name', label: 'اسم ولقب التلميذ(ة)', req: true, min: 2, max: 120 },
@@ -455,7 +455,7 @@
           { k: 'section_id', label: 'الفوج / القسم التربوي', type: 'select', opts: secOpts },
           { k: 'academic_year', label: 'الموسم الدراسي', max: 20, hint: 'افتراضي: 2026-2027' },
           { k: 'basic_info', label: 'معلومات وتوجيهات خاصة بالولي', type: 'textarea', max: 1000 },
-          { k: 'photo_consent', label: 'يوجد إذن مكتوب من الولي بنشر الصور', type: 'checkbox' },
+          { k: 'created_at', label: 'تاريخ إنشاء الملف', type: 'date', hint: 'يمكن تعديله عند الحاجة (مثلًا لتصحيح تاريخ إدخال قديم).' },
           { k: 'active', label: 'الملف نشط (إلغاء التحديد يؤرشف الملف)', type: 'checkbox' }
         ],
         onSubmit: async function (x) {
@@ -477,9 +477,9 @@
             center: centerKey,
             academic_year: x.academic_year || '2026-2027',
             basic_info: x.basic_info || null,
-            photo_consent: !!x.photo_consent,
             active: !!x.active
           };
+          if (x.created_at) body.created_at = x.created_at + 'T12:00:00Z';
 
           if (c) {
             await C.rest('PATCH', '/children?id=eq.' + uid(c.id), body);
@@ -592,7 +592,6 @@
           ['رقم هاتف الاتصال', r.phone || '—'],
           ['طبيعة الإعاقة', r.disability || '—'],
           ['الموسم الدراسي', r.academic_year || '—'],
-          ['إذن نشر الصور', r.photo_consent ? 'نعم' : 'لا'],
           ['تاريخ إنشاء الملف', fmt(r.created_at)],
           ['معلومات وتوجيهات خاصة بالولي', r.basic_info || '—', true]
         ];
@@ -603,7 +602,7 @@
       exportXlsx: {
         file: 'قائمة_الأطفال_دار_الإحسان',
         sheet: 'الأطفال',
-        widths: [14, 30, 14, 30, 30, 28, 18, 16, 14, 12, 40],
+        widths: [14, 30, 14, 30, 30, 28, 18, 16, 12, 40],
         cols: [
           { label: 'رقم القيد', value: function (r) { return r.membership_no || ''; } },
           { label: 'اسم ولقب التلميذ', value: function (r) { return r.full_name || ''; } },
@@ -613,7 +612,6 @@
           { label: 'طبيعة الإعاقة', value: function (r) { return r.disability || ''; } },
           { label: 'رقم الهاتف', value: function (r) { return r.phone || ''; } },
           { label: 'الموسم الدراسي', value: function (r) { return r.academic_year || ''; } },
-          { label: 'إذن نشر الصور', value: function (r) { return r.photo_consent ? 'نعم' : 'لا'; } },
           { label: 'الحالة', value: function (r) { return r.active ? 'نشط' : 'مؤرشف'; } },
           { label: 'توجيهات الولي', value: function (r) { return r.basic_info || ''; } }
         ]
@@ -636,30 +634,6 @@
         { label: 'الفرع', get: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'; }, sort: function (r) { return nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || ''; } },
         { label: 'الفوج / القسم', get: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || '—'; }, sort: function (r) { return nameOf(sections, r.section_id, 'name') || r.section || ''; } },
         { label: 'الإعاقة', get: function (r) { return r.disability || '—'; }, sort: function (r) { return r.disability || ''; } },
-        {
-          label: 'رمز التسجيل',
-          get: function (r) {
-            var c = getCodeForChild(r.id);
-            if (c) {
-              return h('button', {
-                class: 'reg-code-chip',
-                type: 'button',
-                title: 'اضغط لنسخ رمز التسجيل',
-                text: c + ' 📋',
-                onclick: function () {
-                  if (navigator.clipboard) navigator.clipboard.writeText(c);
-                  toast('تم نسخ الرمز: ' + c, 'ok');
-                }
-              });
-            }
-            return h('button', {
-              class: 'btn small light',
-              type: 'button',
-              text: 'توليد رمز',
-              onclick: function () { manageChildCode(r); }
-            });
-          }
-        },
         { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); }, sort: function (r) { return r.active ? 1 : 0; } }
       ],
       actions: function (r) {
@@ -865,17 +839,10 @@
   /* =====================================================================
      5. إدارة الأولياء (Parents)
      ===================================================================== */
-  /* ---- إخفاء/إظهار أزرار صف الولي (يُحفظ في المتصفح فقط) ---- */
-  var HIDE_KEY = 'de_hidden_parent_actions';
-  function hiddenSet() {
-    try { return new Set(JSON.parse(localStorage.getItem(HIDE_KEY) || '[]')); } catch (e) { return new Set(); }
-  }
-  function isHiddenActs(id) { return hiddenSet().has(String(id)); }
-  function setHiddenActs(id, on) {
-    var set = hiddenSet();
-    if (on) set.add(String(id)); else set.delete(String(id));
-    try { localStorage.setItem(HIDE_KEY, JSON.stringify(Array.from(set))); } catch (e) { /* المتصفح يمنع التخزين */ }
-  }
+  /* ---- إخفاء/إظهار أزرار صف الولي (حالة في الذاكرة لصفحة مفتوحة فقط؛ لا تُخزَّن في المتصفح) ---- */
+  var HIDDEN_ACTS = {};
+  function isHiddenActs(id) { return !!HIDDEN_ACTS[String(id)]; }
+  function setHiddenActs(id, on) { HIDDEN_ACTS[String(id)] = !!on; }
 
   /* ---- توليد كلمة مرور عشوائية: حروف وأرقام بالتناوب، لا تُرتبط بالطفل ---- */
   function genPassword() {
@@ -1698,6 +1665,13 @@
     });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
     $('#menuBtn').addEventListener('click', function () { $('#app').classList.toggle('nav-toggled'); });
+    /* طي القائمة الجانبية على الشاشات الكبيرة (حالة في الذاكرة فقط) */
+    var collapseBtn = $('#collapseBtn');
+    if (collapseBtn) collapseBtn.addEventListener('click', function () {
+      var on = !$('#app').classList.contains('side-collapsed');
+      $('#app').classList.toggle('side-collapsed', on);
+      collapseBtn.setAttribute('aria-expanded', String(!on));
+    });
     $('#scrim').addEventListener('click', function () { $('#app').classList.remove('nav-toggled'); });
     $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });
     $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });

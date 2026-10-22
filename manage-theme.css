@@ -1,0 +1,152 @@
+/* ===================================================================
+   طبقة تصميم لوحة الإدارة (manage.html فقط)
+   تُحمَّل بعد portal.css، ولا تغيّر أي سلوك أو بنية أو وظيفة.
+   لا تُحمَّل في الموقع الرئيسي أو فضاء الأولياء أو صفحة QR.
+   =================================================================== */
+
+:root {
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(12, 45, 85, .06);
+  --shadow-card: 0 2px 10px rgba(12, 45, 85, .06);
+  --shadow-pop: 0 14px 36px rgba(12, 45, 85, .18);
+  --focus: 0 0 0 3px rgba(180, 135, 58, .35);
+  --transition: 160ms ease;
+}
+
+body {
+  font-family: "Cairo", "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  background: var(--paper);
+}
+
+/* ---------- الشريط الجانبي ---------- */
+.side nav button,
+.side nav a {
+  border-radius: var(--radius-sm);
+  transition: background var(--transition), color var(--transition);
+  min-height: 42px;
+}
+.side nav button[aria-current="page"] {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.side .sep {
+  letter-spacing: .02em;
+}
+
+/* ---------- الأزرار ---------- */
+.btn {
+  border-radius: var(--radius-sm);
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  font-weight: 600;
+}
+.btn:hover:not(:disabled) { box-shadow: var(--shadow-sm); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.btn.small { min-height: 36px; }
+
+/* ---------- البطاقات والنوافذ ---------- */
+.card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.modal-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+}
+
+/* ---------- الجداول ---------- */
+.tbl-wrap, .table-wrap {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+table.tbl th {
+  background: #f0f4fa;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+table.tbl td {
+  vertical-align: middle;
+}
+table.tbl tbody tr {
+  transition: background var(--transition);
+}
+table.tbl tbody tr:hover {
+  background: #f7f9fc;
+}
+
+/* ---------- الحقول ---------- */
+.fld input, .fld textarea, .fld select {
+  border-radius: var(--radius-sm);
+}
+.fld input:focus, .fld textarea:focus, .fld select:focus {
+  box-shadow: var(--focus);
+}
+
+/* ---------- الشارات والحالات ---------- */
+.chip {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ---------- إمكانية الوصول ---------- */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- الهاتف: أهداف لمسية مناسبة وعدم تجاوز الشاشة ---------- */
+@media (max-width: 860px) {
+  .btn, .icon-btn, .side nav button, .side nav a {
+    min-height: 44px;
+  }
+  .main, .content {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
+/* ---------- تقليل الحركة عند تفعيل الإعداد في الجهاز ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- طي القائمة الجانبية (الشاشات الكبيرة فقط) ---------- */
+.desk-only { display: inline-flex; }
+@media (max-width: 860px) {
+  .desk-only { display: none !important; }
+}
+#app.side-collapsed .side {
+  width: 76px !important;
+}
+#app.side-collapsed .side nav button,
+#app.side-collapsed .side nav a {
+  font-size: 0;
+  justify-content: center;
+  padding-inline: 0;
+  gap: 0;
+}
+#app.side-collapsed .side nav button .i,
+#app.side-collapsed .side nav a .i {
+  font-size: initial;
+}
+#app.side-collapsed .side .brand strong,
+#app.side-collapsed .side .brand span,
+#app.side-collapsed .side .sep {
+  font-size: 0;
+}
