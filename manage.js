@@ -910,7 +910,7 @@
 
   /* ---- بيانات دخول الولي تلقائيًا من بيانات الطفل ----
      الاسم: parent.dar. + لقب الطفل (أول كلمة من الاسم المسجَّل) بالحروف اللاتينية
-     الكلمة: أول حرف من اللقب + أول حرف من الاسم + تاريخ الميلاد ddmmyyyy (مثال: hm04081989) */
+     الكلمة: DI + تاريخ الميلاد ddmmyyyy (مثال: DI08031996) */
   var AR_LAT = { 'ا': 'a', 'أ': 'a', 'إ': 'a', 'آ': 'a', 'ٱ': 'a', 'ء': 'a', 'ؤ': 'o', 'ئ': 'i', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'ch', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h', 'ة': 'h', 'و': 'w', 'ي': 'y', 'ى': 'y', 'گ': 'g', 'پ': 'p', 'ڤ': 'v' };
   function toLatin(word) {
     var s = String(word || '').replace(/[ً-ٟـ]/g, ''), o = '';
@@ -932,7 +932,7 @@
     var un = base.slice(0, 30), n = 1, taken = takenNames || {};
     var extra = String(child.membership_no || '').replace(/[^0-9a-z]/gi, '').toLowerCase();
     while (taken[un]) { n++; un = (base.slice(0, 26) + (extra && n === 2 ? extra : n)).slice(0, 30); if (n > 200) break; }
-    return { username: un, password: sur.charAt(0) + fn.charAt(0) + d[2] + d[1] + d[0] };
+    return { username: un, password: 'DI' + d[2] + d[1] + d[0] };
   }
 
   function parentLoginLink(un) {
@@ -1027,7 +1027,7 @@
           { k: 'child_id', label: 'الطفل المرتبط بالحساب (اختره أولًا — طفل واحد فقط لكل حساب)', type: 'select', opts: kidOpts, req: true },
           { k: 'full_name', label: 'اسم ولي الأمر الكامل', req: true, max: 120 },
           { k: 'username', label: 'اسم المستخدم (حروف لاتينية صغيرة وأرقام و . _ -)', req: true, max: 30, hint: 'يُعبَّأ تلقائيًا: parent.dar. + لقب الطفل. يستعمله الولي للدخول.' },
-          { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'text', req: true, max: 72, hint: 'تُعبَّأ تلقائيًا: أول حرف من اللقب + أول حرف من الاسم + تاريخ الميلاد (ddmmyyyy). سلّمها للولي مباشرة.' },
+          { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'text', req: true, max: 72, hint: 'تُعبَّأ تلقائيًا: DI + تاريخ ميلاد الطفل (ddmmyyyy)، مثل DI08031996. سلّمها للولي مباشرة.' },
           { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 }
         ],
         onSubmit: async function (x) {
