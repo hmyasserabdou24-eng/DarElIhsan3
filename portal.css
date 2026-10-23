@@ -514,15 +514,21 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
-  padding: 0 24px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   position: sticky;
   top: 0;
   z-index: 50;
   box-shadow: var(--shadow-xs);
+}
+.bar .logo, .bar img.logo {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .bar .ttl {
@@ -918,9 +924,53 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
   border: 1px solid var(--line);
   border-right: 5px solid var(--brand-gold);
   box-shadow: var(--shadow-sm);
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 20px;
   transition: all var(--transition);
+}
+
+.child-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--line-subtle);
+  margin-bottom: 14px;
+}
+
+.child-card-name h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.child-center-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 10px 0 14px;
+}
+
+.meta span {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--navy);
 }
 
 html[lang="fr"] .child-card {
@@ -1131,4 +1181,25 @@ html[lang="fr"] .child-card {
   background: #FFFFFF;
   outline: none;
   box-shadow: var(--focus);
+}
+
+/* حقل للقراءة فقط (مثل اسم المستخدم/البريد في شاشة التسجيل وتعيين كلمة المرور) */
+.fld-readonly {
+  background: var(--bg) !important;
+  color: var(--navy) !important;
+  font-weight: 700 !important;
+  cursor: not-allowed !important;
+  border-color: var(--line) !important;
+  user-select: all;
+  opacity: 0.9;
+}
+
+/* حقل إدخال رمز تسجيل الطفل */
+.code-input {
+  text-transform: uppercase;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 2px;
 }

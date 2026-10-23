@@ -478,7 +478,7 @@
 
   /* نافذة استرداد رمز التسجيل لربط طفل */
   function openRedeemModal() {
-    var codeInput = h('input', { type: 'text', placeholder: t('codePlaceholder'), maxlength: 20, dir: 'ltr', style: 'text-transform:uppercase; font-family:monospace; font-weight:700; font-size:16px; text-align:center;' });
+    var codeInput = h('input', { type: 'text', class: 'code-input', placeholder: t('codePlaceholder'), maxlength: 20, dir: 'ltr' });
     var errEl = h('p', { class: 'err', role: 'alert' }); errEl.hidden = true;
     var confirmBtn = h('button', { class: 'btn gold', type: 'button', text: t('btnConfirmLink') });
 
@@ -523,23 +523,30 @@
     S.d.children.forEach(function (c) {
       var centerLabel = t('center_' + c.center) || c.center;
       var card = h('div', { class: 'card child-card' },
-        h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;' },
-          h('h2', { text: c.full_name }),
-          c.membership_no ? h('span', { class: 'badge gold', text: 'N° ' + c.membership_no }) : null
+        h('div', { class: 'child-card-header' },
+          h('div', { class: 'child-card-name' },
+            h('h2', { text: c.full_name }),
+            h('span', { class: 'child-center-tag', text: centerLabel })
+          ),
+          c.membership_no ? h('span', { class: 'sic-num', text: 'N° ' + c.membership_no }) : null
         ),
-        h('div', { class: 'meta' },
-          h('span', { text: centerLabel }),
-          c.section ? h('span', { text: t('sectionPrefix') + c.section }) : null,
-          c.dob ? h('span', { text: t('dobPrefix') + fmtDate(c.dob) }) : null,
-          c.disability ? h('span', { text: t('disabilityPrefix') + c.disability }) : null
-        )
+        h('div', { class: 'child-details' }, [
+          c.section ? ['الفوج / القسم', c.section] : null,
+          c.dob ? ['تاريخ الميلاد', fmtDate(c.dob)] : null,
+          c.disability ? ['طبيعة الإعاقة', c.disability] : null,
+          c.academic_year ? ['الموسم الدراسي', c.academic_year] : ['الموسم الدراسي', '2026–2027']
+        ].filter(Boolean).map(function (it) {
+          return h('div', { class: 'cd-item' }, h('span', { text: it[0] }), h('b', { text: it[1] }));
+        }))
       );
 
       if (c.basic_info) {
-        card.appendChild(h('h3', { text: t('basicInfoTitle') }));
-        card.appendChild(h('p', { class: 'txt', text: c.basic_info }));
+        card.appendChild(h('div', { class: 'cd-item wide', style: 'margin-top:12px; background:var(--bg);' },
+          h('span', { text: t('basicInfoTitle') }),
+          h('b', { text: c.basic_info })
+        ));
       } else {
-        card.appendChild(h('p', { class: 'muted small', text: t('noExtraInfo') }));
+        card.appendChild(h('p', { class: 'muted small', style: 'margin-top:10px;', text: t('noExtraInfo') }));
       }
       v.appendChild(card);
     });
@@ -768,6 +775,9 @@
     if (hash && hash.error) { showLogin(hash.error); return; }
     if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {
       show('login');
+      var userEmail = hash.email || '';
+      if ($('#setEmail')) $('#setEmail').value = userEmail;
+      if ($('#email')) $('#email').value = userEmail;
       setMode('set', hash.type === 'invite' ? t('hintInvite') : t('hintSet'));
       return;
     }

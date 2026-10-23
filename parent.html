@@ -40,6 +40,7 @@
       <label class="fld"><span id="lblFEmail">البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
     </div>
     <div id="stSet" hidden>
+      <label class="fld"><span id="lblSetEmail">اسم المستخدم (البريد الإلكتروني)</span><input id="setEmail" type="email" autocomplete="username" dir="ltr" readonly class="fld-readonly"></label>
       <label class="fld"><span id="lblNp1">كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وصغير ورقم.</small></label>
       <label class="fld"><span id="lblNp2">أعد كتابتها</span><input id="np2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
     </div>
@@ -54,7 +55,7 @@
 
 <div id="app" hidden>
   <header class="bar">
-    <img src="logo-sq.png" alt="" class="logo">
+    
     <div class="ttl"><strong id="barTitle">فضاء الأولياء</strong><span class="chip" id="who">—</span></div>
     <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج"><svg class="i"><use href="#i-out"/></svg></button>
   </header>

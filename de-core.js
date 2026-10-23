@@ -236,9 +236,18 @@
         return { error: friendly(400, p.get('error_description') || '', p.get('error_code')) };
       }
       if (!p.get('access_token') || !p.get('refresh_token')) return null;
+      var tok = p.get('access_token');
+      var email = '';
+      try {
+        var b64 = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var atobFn = typeof root.atob === 'function' ? root.atob : (typeof atob === 'function' ? atob : function (s) { return Buffer.from(s, 'base64').toString('binary'); });
+        var payload = JSON.parse(atobFn(b64));
+        email = payload.email || '';
+      } catch (e) {}
       root.history.replaceState(null, '', root.location.pathname + root.location.search);
-      save({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token'), expires_in: Number(p.get('expires_in')) || 3600 });
-      return { type: p.get('type') || '' };
+      save({ access_token: tok, refresh_token: p.get('refresh_token'), expires_in: Number(p.get('expires_in')) || 3600 });
+      return { type: p.get('type') || '', email: email };
     };
     api.setPassword = function (pw) { return authed('PUT', '/auth/v1/user', { password: pw }); };
     api.rest = function (method, path, body, prefer) { return authed(method, '/rest/v1' + path, body, prefer ? { Prefer: prefer } : {}); };

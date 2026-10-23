@@ -47,18 +47,13 @@
     <div id="stMfa" hidden>
       <label class="fld"><span>رمز المصادقة الثنائية (6 أرقام)</span><input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr"></label>
     </div>
-    <div id="stForgot1" hidden>
+    <div id="stForgot" hidden>
       <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" maxlength="254" dir="ltr"></label>
     </div>
-    <div id="stForgot2" hidden>
-      <label class="fld"><span>الرمز الذي وصلك على البريد</span><input id="rCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr"></label>
-      <label class="fld"><span>كلمة المرور الجديدة</span><input id="rPass" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
-      <label class="fld"><span>أعد كتابة كلمة المرور الجديدة</span><input id="rPass2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
-      <button id="resendBtn" class="linkbtn" type="button">إعادة إرسال الرمز</button>
-    </div>
     <div id="stSet" hidden>
-      <label class="fld"><span id="lblNp1">كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وصغير ورقم.</small></label>
-      <label class="fld"><span id="lblNp2">أعد كتابتها</span><input id="np2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span id="lblSetEmail">اسم المستخدم (البريد الإلكتروني)</span><input id="setEmail" type="email" autocomplete="username" dir="ltr" readonly class="fld-readonly"></label>
+      <label class="fld"><span id="lblNp1">إنشاء كلمة المرور</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.</small></label>
+      <label class="fld"><span id="lblNp2">تأكيد كلمة المرور</span><input id="np2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
     </div>
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
