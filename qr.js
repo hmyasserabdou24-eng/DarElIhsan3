@@ -33,6 +33,13 @@
     setField('f_dob', formatDob(d.dob));
     setField('f_disability', d.disability || '—');
     setField('f_period', d.academic_year ? ('السنة التربوية ' + d.academic_year.replace('-', '–')) : 'السنة التربوية 2026–2027');
+    // زر دخول الولي: اسم المستخدم (اسم الطالب بالفرنسية + رقم قيده) يُملأ تلقائيًا في صفحة الدخول
+    try {
+      var un = window.DEUser && DEUser.username(d.full_name, d.membership_no);
+      var claim = $('#btnClaim');
+      if (un && claim) claim.setAttribute('href', 'parent.html?u=' + encodeURIComponent(un));
+      if (un) { setField('f_user', un); var ur = $('#userRow'); if (ur) ur.hidden = false; }
+    } catch (e) { /* يبقى الرابط العام */ }
     $('#loading').hidden = true;
     $('#studentData').hidden = false;
   }
