@@ -324,6 +324,7 @@
           else if (!DE.isEmail(em)) return setMsg($('#lErr'), t('enterCredsErr'));
           if (!pw || pw.length > 72) return setMsg($('#lErr'), t('enterCredsErr'));
           await C.signIn(em, pw);
+          try { localStorage.setItem('de_parent_user', DE.clean($('#email').value, 254).toLowerCase()); } catch (e2) { /* تجاهل */ }
           $('#password').value = '';
           await enter();
         } else if (mode === 'forgot') {
@@ -755,6 +756,13 @@
       var pu = (new URLSearchParams(window.location.search).get('u') || '').trim().toLowerCase();
       if (/^[a-z0-9._-]{3,30}$/.test(pu) && $('#email')) { $('#email').value = pu; var pwEl = $('#password'); if (pwEl) setTimeout(function () { pwEl.focus(); }, 0); }
     } catch (e) { /* تجاهل */ }
+    // بدون رابط شخصي: نتذكّر اسم المستخدم الذي دخل به هذا الجهاز آخر مرة
+    try {
+      if (!new URLSearchParams(window.location.search).get('u')) {
+        var last = (localStorage.getItem('de_parent_user') || '').trim().toLowerCase();
+        if (last && last.length <= 254 && $('#email')) $('#email').value = last;
+      }
+    } catch (e3) { /* تجاهل */ }
 
     var hash = C.adoptHash();
     if (hash && hash.error) { showLogin(hash.error); return; }
