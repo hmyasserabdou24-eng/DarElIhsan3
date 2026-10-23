@@ -26,6 +26,7 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('resend_parent_invite'), user_id: uuid }),
   z.object({ action: z.literal('set_parent_disabled'), user_id: uuid, disabled: z.boolean() }),
   z.object({ action: z.literal('invite_admin'), email, role: z.enum(['admin', 'editor']) }),
+  z.object({ action: z.literal('resend_admin_invite'), user_id: uuid }),
   z.object({ action: z.literal('set_admin_disabled'), user_id: uuid, disabled: z.boolean() }),
   z.object({ action: z.literal('remove_admin'), user_id: uuid }),
 ]);
@@ -42,6 +43,32 @@ function logDiag(stage: string, details: Record<string, unknown> = {}) {
     }
   }
   console.log(`[admin-users:diag] ${JSON.stringify(clean)}`);
+}
+
+// تصنيف صادق لخطأ إرسال البريد (بلا كشف نصوص داخلية للمتصفح)
+function classifyMailError(e: unknown): 'rate_limited' | 'smtp_rejected' | 'unknown' {
+  const x = (e ?? {}) as { message?: string; status?: number; code?: string };
+  const msg = (x.message ?? '').toLowerCase();
+  if (x.code === 'over_email_send_rate_limit' || x.status === 429 || /rate limit|too many/.test(msg)) return 'rate_limited';
+  if (/smtp|error sending|535|mail/.test(msg)) return 'smtp_rejected';
+  return 'unknown';
+}
+const mailErrorText = (st: string) =>
+  st === 'rate_limited' ? 'بلغتَ حدّ الرسائل في الساعة. انتظر بضع دقائق ثم أعد المحاولة.'
+    : st === 'smtp_rejected' ? 'رفضت خدمة البريد (SMTP) الرسالة. راجع إعدادات SMTP في Supabase.'
+      : 'تعذّر إرسال الدعوة.';
+
+// البحث عن مستخدم بالبريد (عددهم صغير؛ نمسح حتى 10 صفحات × 200)
+// deno-lint-ignore no-explicit-any
+async function findUserByEmail(svc: any, mail: string) {
+  for (let page = 1; page <= 10; page++) {
+    const { data, error } = await svc.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const hit = data.users.find((x: { email?: string }) => (x.email ?? '').toLowerCase() === mail);
+    if (hit) return hit;
+    if (data.users.length < 200) break;
+  }
+  return null;
 }
 
 function cors(origin: string | null): Record<string, string> {
@@ -305,27 +332,61 @@ Deno.serve(async (req) => {
     if (isOwner !== true) return json(403, { error: 'هذه العملية للمالك فقط.' }, origin);
 
     if (input.action === 'invite_admin') {
+      // الرابط في البريد يفتح لوحة الإدارة، وهناك تُطلَب من المدعو كلمة مرور خاصة به.
+      // ملاحظة مهمّة: لا نستدعي generateLink هنا إطلاقًا — كل توليد رابط يصدر رمزًا جديدًا
+      // ويُبطل الرمز الموجود في الرسالة المُرسَلة، فيصل المدير إلى «الرابط منتهٍ».
       const redirectUrl = redirect('/manage.html');
-      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirectUrl });
-      if (inv.error || !inv.data.user) {
-        const exists = /already|registered|exists/i.test(inv.error?.message ?? '');
-        return fail(inv.error, exists ? 'هذا البريد مسجَّل مسبقًا.' : 'تعذّر إرسال الدعوة.', exists ? 409 : 500);
+      logDiag('invite_admin_start', { email: input.email, role: input.role });
+
+      let existing: { id: string; email_confirmed_at?: string | null } | null = null;
+      try { existing = await findUserByEmail(svc, input.email); } catch (e) { return fail(e, 'تعذّر التحقق من البريد. حاول لاحقًا.'); }
+
+      if (existing?.email_confirmed_at) {
+        const { data: row } = await svc.from('admins').select('user_id').eq('user_id', existing.id).maybeSingle();
+        return json(409, {
+          error: row ? 'هذا البريد مدير مفعَّل بالفعل.' : 'هذا البريد مسجَّل ومفعَّل كحساب آخر (ولي أمر مثلًا). استعمل بريدًا آخر.',
+          email_status: 'already_registered'
+        }, origin);
       }
-      const ins = await svc.from('admins').insert({ user_id: inv.data.user.id, role: input.role });
-      if (ins.error) { await svc.auth.admin.deleteUser(inv.data.user.id); return fail(ins.error, 'تعذّر إنشاء الحساب.'); }
-      await audit('admin:invite', inv.data.user.id + ':' + input.role);
 
-      let actionLink: string | null = null;
-      try {
-        const linkRes = await svc.auth.admin.generateLink({
-          type: 'invite',
-          email: input.email,
-          options: { redirectTo: redirectUrl }
-        });
-        actionLink = linkRes.data?.properties?.action_link ?? null;
-      } catch (_) {}
+      // مستخدم لم يقبل دعوته بعد (أو غير موجود): تُرسَل رسالة دعوة واحدة فقط
+      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirectUrl });
+      if (inv.error || !inv.data?.user) {
+        const st = classifyMailError(inv.error);
+        logDiag('invite_admin_mail_failed', { email_status: st, code: (inv.error as { code?: string } | null)?.code ?? '' });
+        return json(st === 'rate_limited' ? 429 : 502, { error: mailErrorText(st), email_status: st }, origin);
+      }
 
-      return json(200, { ok: true, user_id: inv.data.user.id, action_link: actionLink }, origin);
+      const uid = inv.data.user.id;
+      const up = await svc.from('admins').upsert({ user_id: uid, role: input.role }, { onConflict: 'user_id' });
+      if (up.error) {
+        if (!existing) await svc.auth.admin.deleteUser(uid);
+        return fail(up.error, 'تعذّر إنشاء الحساب.');
+      }
+      await audit('admin:invite', uid + ':' + input.role);
+      // email_dispatched = قبلت خدمة SMTP الرسالة؛ لا يعني أنها وصلت إلى الوارد
+      return json(200, { ok: true, user_id: uid, email: input.email, email_dispatched: true, email_status: 'accepted', resent: !!existing }, origin);
+    }
+
+    if (input.action === 'resend_admin_invite') {
+      const { data: row } = await svc.from('admins').select('user_id, disabled').eq('user_id', input.user_id).maybeSingle();
+      if (!row) return json(404, { error: 'الحساب غير موجود في قائمة المديرين.' }, origin);
+      if (row.disabled) return json(400, { error: 'الحساب معطَّل. فعّله أولًا ثم أعد الإرسال.' }, origin);
+      const { data: uo } = await svc.auth.admin.getUserById(input.user_id);
+      const target = uo?.user;
+      if (!target?.email) return json(404, { error: 'تعذّر العثور على بريد هذا الحساب.' }, origin);
+
+      const redirectUrl = redirect('/manage.html');
+      const sent = target.email_confirmed_at
+        ? await svc.auth.resetPasswordForEmail(target.email, { redirectTo: redirectUrl })   // فعّل حسابه سابقًا: رابط تعيين كلمة مرور جديدة
+        : await svc.auth.admin.inviteUserByEmail(target.email, { redirectTo: redirectUrl }); // لم يقبل الدعوة: دعوة جديدة
+      if (sent.error) {
+        const st = classifyMailError(sent.error);
+        logDiag('resend_admin_mail_failed', { email_status: st, code: (sent.error as { code?: string }).code ?? '' });
+        return json(st === 'rate_limited' ? 429 : 502, { error: mailErrorText(st), email_status: st }, origin);
+      }
+      await audit('admin:resend_invite', input.user_id);
+      return json(200, { ok: true, email: target.email, email_dispatched: true, email_status: 'accepted' }, origin);
     }
 
     if (input.action === 'set_admin_disabled') {

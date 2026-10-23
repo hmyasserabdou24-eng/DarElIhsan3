@@ -1328,24 +1328,13 @@
             }, 50);
             return;
           }
-          var res = null;
-          try {
-            res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
-          } catch (fnErr) {
-            var redirectUrl = location.origin + location.pathname;
-            await C.recover(email, redirectUrl);
-          }
+          // لا نبدّل إلى مسار بديل صامت: إن فشل الإرسال نعرض السبب الحقيقي ولا نُظهر «نجاحًا» وهميًا
+          var res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
           bust();
-          var actionLink = res && res.action_link;
-          if (actionLink) {
-            info('تمت دعوة المدير بنجاح', h('div', null,
-              h('p', { text: 'أُرسلت الدعوة إلى البريد: ' + email }),
-              h('p', { class: 'muted small', text: 'يمكنك أيضًا نسخ رابط التفعيل المباشر هذا وإرساله للمدير فورًا:' }),
-              h('div', { class: 'link-box', dir: 'ltr', text: actionLink }),
-              h('button', { class: 'btn gold', type: 'button', text: 'نسخ الرابط المباشر', onclick: function () { try { navigator.clipboard.writeText(actionLink); toast('تم نسخ رابط التفعيل.', 'ok'); } catch (e) {} } })
-            ));
+          if (res && res.email_dispatched) {
+            toast((res.resent ? 'أُعيد إرسال الدعوة إلى ' : 'قبلت خدمة البريد الدعوة المرسلة إلى ') + email + '. إن لم تصل خلال دقائق فابحث في Spam.', 'ok');
           } else {
-            toast('أُرسلت دعوة تفعيل الحساب إلى بريد المدير بنجاح.', 'ok');
+            toast('لم يؤكد الخادم إرسال الدعوة. راجع حالة الحساب ثم أعد الإرسال.', 'err');
           }
           go('accounts');
         }
@@ -1365,10 +1354,9 @@
         if (!canManage || a.is_owner || a.is_me) return [];
         var actList = [];
         if (!a.last_sign_in_at) {
-          actList.push(rbtn('📩 إرسال رابط التفعيل', async function () {
-            var redirectUrl = location.origin + location.pathname;
-            await C.recover(a.email, redirectUrl);
-            toast('تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى ' + a.email, 'ok');
+          actList.push(rbtn('📩 إعادة إرسال الدعوة', async function () {
+            var rs = await C.fn('admin-users', { action: 'resend_admin_invite', user_id: uid(a.id) });
+            toast(rs && rs.email_dispatched ? 'قبلت خدمة البريد الدعوة المرسلة إلى ' + a.email + '. تنبيه: انتظر دقيقة قبل أي محاولة أخرى.' : 'لم يؤكد الخادم إرسال الدعوة.', rs && rs.email_dispatched ? 'ok' : 'err');
           }, 'gold'));
         }
         return actList.concat([
@@ -1395,7 +1383,7 @@
             }
             bust(); toast('تم حذف حساب المدير نهائيًا.', 'ok'); go('accounts');
           }, 'danger')
-        ];
+        ]);
       }
     });
   }
@@ -1550,6 +1538,13 @@
     window.scrollTo(0, 0);
   }
 
+  /* علامة «لم تُعيَّن كلمة المرور بعد»: تمنع الدخول إلى اللوحة بجلسة الدعوة وحدها عند إعادة تحميل الصفحة */
+  var PW_FLAG = 'de_must_set_pw';
+  function mustSetPw(v) {
+    try { if (v === true) sessionStorage.setItem(PW_FLAG, '1'); else if (v === false) sessionStorage.removeItem(PW_FLAG); else return sessionStorage.getItem(PW_FLAG) === '1'; } catch (e) { return false; }
+    return v === true;
+  }
+
   var mode = 'creds';
   var MODE_UI = {
     creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
@@ -1573,21 +1568,23 @@
     $('#backBtn').hidden = m === 'creds';
     if (m === 'set') { setTimeout(function () { var p = $('#np1'); if (p) p.focus(); }, 0); }
   }
-  function showLogin(m) {
+  function showLogin(m, okMsg) {
     S.stopIdle && S.stopIdle();
+    mustSetPw(false);
     show('login');
     setMode('creds');
     msg($('#lErr'), m);
-    msg($('#lOk'), '');
+    msg($('#lOk'), okMsg || '');
   }
 
-  async function enter() {
+  async function enter(afterSet) {
     show('boot');
     try {
       var ok = await C.rpc('can_manage_families');
       if (ok !== true) {
         var anyAdmin = await C.rpc('is_admin');
         await C.signOut();
+        if (afterSet && anyAdmin === true) return showLogin('', 'تم إنشاء كلمة المرور بنجاح. حسابك «محرّر محتوى»: سجّل الدخول من لوحة إدارة المحتوى (admin.html) وليس من هذه اللوحة.');
         return showLogin(anyAdmin === true ? 'حسابك محرّر: لا يملك صلاحية بيانات الأطفال والأولياء.' : 'هذا الحساب غير مخوّل بالدخول إلى هذه اللوحة.');
       }
       S.me = await C.me();
@@ -1637,9 +1634,10 @@
           if (DE.pwProblem(a)) return msg($('#lErr'), 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.');
           if (a !== b) return msg($('#lErr'), 'كلمتا المرور غير متطابقتين.');
           await C.setPassword(a);
+          mustSetPw(false);
           $('#np1').value = $('#np2').value = '';
           msg($('#lOk'), 'تم إنشاء كلمة المرور وتفعيل حسابك بنجاح! جارٍ الدخول…');
-          await enter();
+          await enter(true);
         }
       } catch (er) { msg($('#lErr'), er.message); }
     });
@@ -1677,6 +1675,7 @@
     if (hash && hash.error) { showLogin(hash.error); return; }
     if (hash && (hash.token || hash.type === 'invite' || hash.type === 'recovery' || hash.type === 'signup')) {
       show('login');
+      mustSetPw(true);
       var userEmail = hash.email || '';
       if (!userEmail) {
         try { var u = await C.me(); if (u && u.email) userEmail = u.email; } catch (e) {}
@@ -1684,6 +1683,16 @@
       if ($('#setEmail')) $('#setEmail').value = userEmail;
       if ($('#email')) $('#email').value = userEmail;
       setMode('set', 'مرحبًا بك في لوحة الإدارة! بريدك الإلكتروني معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بحسابك وتأكيدها للمتابعة.');
+      return;
+    }
+    if (C.load() && mustSetPw()) {
+      // أُعيد تحميل الصفحة قبل تعيين كلمة المرور: نعود إلى شاشة «إنشاء كلمة المرور» ولا ندخل اللوحة
+      show('login');
+      var em2 = '';
+      try { var u2 = await C.me(); em2 = (u2 && u2.email) || ''; } catch (e) {}
+      if (!em2) return showLogin('انتهت صلاحية جلسة الدعوة. اطلب من المالك إعادة إرسال الدعوة.');
+      if ($('#setEmail')) $('#setEmail').value = em2;
+      setMode('set', 'لم تُنشئ كلمة مرور بعد. يرجى إنشاء كلمة المرور الخاصة بحسابك وتأكيدها للمتابعة.');
       return;
     }
     if (C.load()) enter(); else showLogin();
