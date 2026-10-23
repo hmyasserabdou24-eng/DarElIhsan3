@@ -120,8 +120,26 @@
       input = h('textarea', { id: id, maxlength: f.max || 2000, rows: 4 }); input.value = val || '';
       getv = function () { return DE.clean(input.value, f.max || 2000); };
     } else if (f.type === 'select') {
-      input = h('select', { id: id }, h('option', { value: '', text: '— اختر —' }), (f.opts || []).map(function (o) { return h('option', { value: o[0], text: o[1] }); }));
+      var allOpts = (f.opts || []).slice();
+      input = h('select', { id: id }, h('option', { value: '', text: '— اختر —' }), allOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); }));
       input.value = val == null ? '' : val; getv = function () { return input.value; };
+      var searchIn = null;
+      if (f.searchable) {
+        searchIn = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 بحث سريع في القائمة...', autocomplete: 'off' });
+        searchIn.addEventListener('input', function () {
+          var q = (searchIn.value || '').trim().toLowerCase();
+          var curVal = input.value;
+          var opts = f.opts || allOpts;
+          while (input.firstChild) input.removeChild(input.firstChild);
+          input.appendChild(h('option', { value: '', text: '— اختر —' }));
+          opts.forEach(function (o) {
+            if (!q || (o[1] || '').toLowerCase().indexOf(q) >= 0 || (o[0] || '').toLowerCase().indexOf(q) >= 0) {
+              input.appendChild(h('option', { value: o[0], text: o[1] }));
+            }
+          });
+          if (curVal && opts.some(function (o) { return o[0] === curVal; })) input.value = curVal;
+        });
+      }
     } else if (f.type === 'checkbox') {
       input = h('input', { id: id, type: 'checkbox' }); input.checked = !!val;
       getv = function () { return input.checked; };
@@ -147,7 +165,7 @@
         input.value = f.gen(); input.dispatchEvent(new Event('input', { bubbles: true }));
       } });
     }
-    var row = h('label', { class: 'fld', for: id }, h('span', { text: f.label + (f.req ? ' *' : '') }), input, genBtn, f.hint ? hint : null);
+    var row = h('label', { class: 'fld', for: id }, h('span', { text: f.label + (f.req ? ' *' : '') }), searchIn, input, genBtn, f.hint ? hint : null);
     return { row: row, input: input, get: getv, def: f };
   }
 
@@ -163,12 +181,17 @@
     var api = {
       input: function (k) { return byKey[k] ? byKey[k].input : null; },
       setOpts: function (k, opts) {
-        var sel = api.input(k); if (!sel) return;
+        var p = byKey[k]; if (!p) return;
+        var sel = p.input; if (!sel) return;
+        p.def.opts = (opts || []).slice();
+        var parentLabel = sel.parentElement;
+        var sIn = parentLabel ? parentLabel.querySelector('.fld-search') : null;
+        if (sIn) sIn.value = '';
         var keep = sel.value;
         while (sel.firstChild) sel.removeChild(sel.firstChild);
         sel.appendChild(h('option', { value: '', text: '— اختر —' }));
-        opts.forEach(function (o) { sel.appendChild(h('option', { value: o[0], text: o[1] })); });
-        sel.value = opts.some(function (o) { return o[0] === keep; }) ? keep : '';
+        (opts || []).forEach(function (o) { sel.appendChild(h('option', { value: o[0], text: o[1] })); });
+        sel.value = (opts || []).some(function (o) { return o[0] === keep; }) ? keep : '';
       },
       note: function (slot, content) {
         var el = noteEls[slot]; while (el.firstChild) el.removeChild(el.firstChild);
@@ -399,14 +422,11 @@
     var items = [
       ['children', 'أطفال نشطون بالمركز'],
       ['children_all', 'إجمالي الطلبة بالقائمة'],
-      ['parents_active', 'أولياء أمور نشطون'],
-      ['parents_total', 'إجمالي حسابات الأولياء'],
       ['reports_published', 'تقارير تربوية معتمدة'],
       ['reports_draft', 'مسودات تقارير قيد المراجعة'],
       ['appointments_upcoming', 'مواعيد وأنشطة قادمة'],
       ['messages_published', 'إعلانات ورسائل منشورة'],
-      ['documents_total', 'إجمالي الوثائق الخاصة'],
-      ['documents_shared', 'وثائق مشاركة مع العائلات']
+      ['documents_total', 'إجمالي الوثائق والملفات الرسمية']
     ];
     v.appendChild(h('div', { class: 'stats' }, items.map(function (i) {
       return h('div', { class: 'stat' },
@@ -514,7 +534,6 @@
     function openStudentCard(child) {
       var status = h('p', { class: 'muted small', text: 'جارٍ إنشاء البطاقة…' });
       var preview = h('img', { class: 'card-preview', alt: 'معاينة بطاقة انخراط التلميذ ' + (child.full_name || ''), hidden: true });
-      var pdfBtn = h('button', { class: 'btn gold', type: 'button', text: '📄 تنزيل PDF', disabled: true });
       var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: '🖼️ تنزيل JPG', disabled: true });
       var printBtn = h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة البطاقة', disabled: true });
       var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: '🔗 فتح صفحة التلميذ' });
@@ -527,7 +546,7 @@
         status,
         h('div', { class: 'modal-actions', style: 'margin-top:12px;' },
           h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-          openLink, jpgBtn, pdfBtn, printBtn)
+          openLink, jpgBtn, printBtn)
       ));
 
       var url;
@@ -541,7 +560,7 @@
           card = c;
           preview.src = c.url; preview.hidden = false;
           status.textContent = 'رمز QR يفتح: صفحة التلميذ العامة (بدون بيانات حساسة).';
-          jpgBtn.disabled = false; pdfBtn.disabled = false; printBtn.disabled = false;
+          jpgBtn.disabled = false; printBtn.disabled = false;
         })
         .catch(function (e) { status.textContent = e.message; status.className = 'err small'; });
 
@@ -555,14 +574,7 @@
         exportJpg(card, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.jpg');
         toast('تم تنزيل صورة البطاقة بصيغة JPG.', 'ok');
       });
-      pdfBtn.addEventListener('click', function () {
-        if (!card) return;
-        DECARD.toPdf(card).then(function (blob) {
-          var safe = String(child.full_name || 'تلميذ').replace(/\s+/g, '_');
-          DECARD.download(blob, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.pdf');
-          toast('تم إنشاء ملف PDF بمقاس البطاقة 85.6 × 54 مم.', 'ok');
-        }).catch(function (e) { toast(e.message, 'bad'); });
-      });
+
       printBtn.addEventListener('click', function () {
         if (!card) return;
         DECARD.print(card.url).catch(function (e) { toast(e.message, 'bad'); });
@@ -775,27 +787,69 @@
     var rows = d[0], sections = d[1];
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
 
+    var CURR = window.DE_CURRICULUM || {};
+    var domainKeys = Object.keys(CURR);
+    var domainOpts = domainKeys.map(function (d) { return [d, d]; });
+
     function editProgram(p) {
+      var initialDomain = '', initialSkill = '';
+      if (p && p.title) {
+        var parts = p.title.split(' — ');
+        if (parts.length >= 2 && CURR[parts[0]]) {
+          initialDomain = parts[0];
+          initialSkill = parts.slice(1).join(' — ');
+        } else if (CURR[p.title]) {
+          initialDomain = p.title;
+        } else {
+          initialDomain = domainKeys[0] || '';
+          initialSkill = p.title;
+        }
+      } else {
+        initialDomain = domainKeys[0] || '';
+      }
+      var skillList = (CURR[initialDomain] || []);
+      var skillOpts = skillList.map(function (s) { return [s, s]; });
+      if (initialSkill && !skillList.some(function (s) { return s === initialSkill; })) {
+        skillOpts.unshift([initialSkill, initialSkill]);
+      }
+
+      var formVals = Object.assign({}, p || {}, {
+        academic_year: (p && p.academic_year) || '2026-2027',
+        status: (p && p.status) || 'draft',
+        domain: initialDomain,
+        skill: initialSkill || (skillList[0] || '')
+      });
+
       return openForm({
         title: p ? 'تعديل برنامج تربوي' : 'إضافة برنامج تربوي لقسم',
-        values: p || { academic_year: '2026-2027', status: 'draft' },
+        values: formVals,
         submits: p && p.status === 'published'
-          ? [{ key: 'save', label: 'حفظ التعديلات (منشور)' }]
-          : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'نشر للأولياء الآن' }],
+          ? [{ key: 'save', label: 'حفظ التعديلات (معتمد)' }]
+          : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'اعتماد ونشر البرنامج' }],
         fields: [
-          { k: 'section_id', label: 'القسم / الفوج المستهدف', type: 'select', opts: secOpts, req: true, hint: 'البرنامج سيظهر فقط لأولياء أطفال هذا القسم بفضل سياسة RLS الصارمة.' },
-          { k: 'title', label: 'عنوان البرنامج التربوي', req: true, min: 2, max: 160 },
+          { k: 'section_id', label: 'القسم / الفوج التربوي المستهدف', type: 'select', opts: secOpts, req: true, hint: 'القسم الذي يُطبَّق عليه البرنامج التربوي.' },
+          { k: 'domain', label: 'المجال التربوي', type: 'select', searchable: true, opts: domainOpts, req: true, hint: 'اختر أحد المجالات التربوية المعتمدة من الدليل البيداغوجي.' },
+          { k: 'skill', label: 'المهارة المستهدفة', type: 'select', searchable: true, opts: skillOpts, req: true, hint: 'اختر المهارة المستهدفة (يمكنك البحث السريع بالكتابة في خانة البحث أعلاها).' },
           { k: 'academic_year', label: 'الموسم الدراسي', req: true, max: 20 },
-          { k: 'description', label: 'وصف البرنامج والمحاور الرئيسية', type: 'textarea', max: 5000 },
-          { k: 'goals', label: 'الأهداف والمهارات المكتسبة المستهدفة', type: 'textarea', max: 5000 }
+          { k: 'description', label: 'وصف البرنامج وخطة الأنشطة البيداغوجية', type: 'textarea', max: 5000 },
+          { k: 'goals', label: 'الأهداف الإجرائية والملاحظات التربوية', type: 'textarea', max: 5000 }
         ],
+        onChange: function (changed, cur, formApi) {
+          if (changed === 'domain') {
+            var selectedDomain = cur.domain;
+            var skills = (CURR[selectedDomain] || []);
+            var newSkillOpts = skills.map(function (s) { return [s, s]; });
+            formApi.setOpts('skill', newSkillOpts);
+          }
+        },
         onSubmit: async function (x, key) {
+          var progTitle = (x.domain || '') + (x.skill ? (' — ' + x.skill) : '');
           var body = {
             section_id: x.section_id,
-            title: x.title,
+            title: progTitle || 'برنامج تربوي',
             academic_year: x.academic_year || '2026-2027',
             description: x.description || null,
-            goals: x.goals || null,
+            goals: x.goals || (x.skill || null),
             status: key === 'publish' ? 'published' : (p ? p.status : 'draft'),
             published_at: key === 'publish' ? new Date().toISOString() : (p ? p.published_at : null)
           };
@@ -806,7 +860,7 @@
             await C.rest('POST', '/educational_programs', body);
           }
           bust();
-          toast(key === 'publish' ? 'تم نشر البرنامج لأولياء القسم بنجاح.' : 'تم حفظ البرنامج كمسودة.', 'ok');
+          toast(key === 'publish' ? 'تم اعتماد ونشر البرنامج بنجاح.' : 'تم حفظ البرنامج كمسودة.', 'ok');
           go('programs');
         }
       });
@@ -821,13 +875,13 @@
       search: function (p) { return p.title + ' ' + nameOf(sections, p.section_id, 'name'); },
       filters: [
         { label: 'القسم', opts: secOpts, test: function (p, x) { return p.section_id === x; } },
-        { label: 'الحالة', opts: [['published', 'منشور للأولياء'], ['draft', 'مسودة']], test: function (p, x) { return p.status === x; } }
+        { label: 'الحالة', opts: [['published', 'معتمد ومنشور'], ['draft', 'مسودة']], test: function (p, x) { return p.status === x; } }
       ],
       cols: [
-        { label: 'عنوان البرنامج', get: function (p) { return p.title; }, sort: function (p) { return p.title; } },
+        { label: 'المجال والمهارة التربوية', get: function (p) { return p.title; }, sort: function (p) { return p.title; } },
         { label: 'القسم المستهدف', get: function (p) { return nameOf(sections, p.section_id, 'name'); } },
         { label: 'الموسم', get: function (p) { return p.academic_year || '2026-2027'; } },
-        { label: 'الحالة', get: function (p) { return badge(p.status === 'published' ? 'منشور للأولياء' : 'مسودة', p.status === 'published' ? 'ok' : 'gray'); } },
+        { label: 'الحالة', get: function (p) { return badge(p.status === 'published' ? 'معتمد ومنشور' : 'مسودة', p.status === 'published' ? 'ok' : 'gray'); } },
         { label: 'تاريخ النشر', get: function (p) { return p.published_at ? fmt(p.published_at) : '—'; } }
       ],
       actions: function (p) {
@@ -838,7 +892,7 @@
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'draft', published_at: null });
               bust(); toast('تم إلغاء النشر وتحويل البرنامج لمسودة.', 'ok'); go('programs');
             }, 'light')
-            : rbtn('نشر للأولياء', async function () {
+            : rbtn('اعتماد ونشر', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'published', published_at: new Date().toISOString() });
               bust(); toast('تم نشر البرنامج لأولياء القسم بنجاح.', 'ok'); go('programs');
             }, 'gold'),
@@ -1281,9 +1335,27 @@
         return [
           rbtn(a.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
             if (!a.disabled && !(await ask({ title: 'تعطيل هذا المدير؟', msg: 'سيفقد صلاحياته فورًا ولن يستطيع الدخول إلى لوحة الإدارة.', ok: 'تعطيل', danger: true }))) return;
-            await C.fn('admin-users', { action: 'set_admin_disabled', user_id: uid(a.id), disabled: !a.disabled });
+            try {
+              await C.fn('admin-users', { action: 'set_admin_disabled', user_id: uid(a.id), disabled: !a.disabled });
+            } catch (e) {
+              await C.rest('PATCH', '/admins?user_id=eq.' + uid(a.id), { disabled: !a.disabled });
+            }
             bust(); toast('تم تعديل حالة الحساب.', 'ok'); go('accounts');
-          }, a.disabled ? 'gold' : 'danger')
+          }, a.disabled ? 'gold' : 'light'),
+          rbtn('🗑️ حذف المدير', async function () {
+            if (!(await ask({
+              title: 'حذف حساب المدير نهائيًا؟',
+              msg: 'سيتم حذف حساب المدير (' + a.email + ') وسحب جميع صلاحياته فورًا. هذه العملية لا يمكن التراجع عنها!',
+              ok: 'حذف نهائي',
+              danger: true
+            }))) return;
+            try {
+              await C.rpc('admin_remove_user', { p_user_id: uid(a.id) });
+            } catch (rpcErr) {
+              await C.fn('admin-users', { action: 'remove_admin', user_id: uid(a.id) });
+            }
+            bust(); toast('تم حذف حساب المدير نهائيًا.', 'ok'); go('accounts');
+          }, 'danger')
         ];
       }
     });
@@ -1320,10 +1392,10 @@
               var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
               var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
               if (!deleted) toast('لا توجد سجلات أقدم من 30 يومًا، لذلك لم يُحذف شيء.');
-              else toast('تم حذف ' + deleted + ' سجل تدقيق قديم. (تم تسجيل عملية الحذف نفسها كسجل جديد للمراجعة.)', 'ok');
+              else toast('تم حذف ' + deleted + ' سجل تدقيق قديم.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر الحذف: ' + (e && e.message ? e.message : 'خطأ غير معروف'), 'bad');
+              toast('تعذّر الحذف. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
             }
           }
         }),
@@ -1339,10 +1411,10 @@
             }))) return;
             try {
               var deleted = await C.rpc('admin_delete_audit', {});
-              toast('تم مسح ' + deleted + ' سجل. تم تسجيل عملية المسح نفسها كسجل واحد للمراجعة.', 'ok');
+              toast('تم مسح ' + deleted + ' سجل تدقيق بنجاح.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر المسح: ' + (e && e.message ? e.message : 'خطأ غير معروف'), 'bad');
+              toast('تعذّر المسح. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
             }
           }
         })
@@ -1562,13 +1634,12 @@
       catch (ex) { msg($('#lErr'), ex.message); }
     });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
-    $('#menuBtn').addEventListener('click', function () { $('#app').classList.toggle('nav-toggled'); });
-    /* طي القائمة الجانبية على الشاشات الكبيرة (حالة في الذاكرة فقط) */
-    var collapseBtn = $('#collapseBtn');
-    if (collapseBtn) collapseBtn.addEventListener('click', function () {
-      var on = !$('#app').classList.contains('side-collapsed');
-      $('#app').classList.toggle('side-collapsed', on);
-      collapseBtn.setAttribute('aria-expanded', String(!on));
+    $('#menuBtn').addEventListener('click', function () {
+      if (window.innerWidth <= 860) {
+        $('#app').classList.toggle('nav-toggled');
+      } else {
+        $('#app').classList.toggle('side-collapsed');
+      }
     });
     $('#scrim').addEventListener('click', function () { $('#app').classList.remove('nav-toggled'); });
     $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });

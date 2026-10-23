@@ -1114,3 +1114,21 @@ html[lang="fr"] .child-card {
   outline: 2.5px solid var(--brand-gold);
   outline-offset: 2px;
 }
+
+/* حقل البحث السريع في القوائم المنسدلة */
+.fld-search {
+  margin-bottom: 6px;
+  background: var(--bg);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--navy);
+  transition: all var(--transition);
+}
+.fld-search:focus {
+  border-color: var(--brand-gold);
+  background: #FFFFFF;
+  outline: none;
+  box-shadow: var(--focus);
+}

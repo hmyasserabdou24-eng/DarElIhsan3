@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
-<title>إدارة الأطفال والأولياء – دار الإحسان</title>
+<title>لوحة إدارة المركز – دار الإحسان</title>
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-card" novalidate>
     <img src="logo-sq.png" alt="" class="login-logo">
-    <h1>إدارة الأطفال والأولياء</h1>
+    <h1>لوحة إدارة المركز</h1>
     <p class="muted" id="lHint">للحسابات الإدارية المخوّلة فقط.</p>
     <div id="stCreds">
       <label class="fld"><span>البريد الإلكتروني</span><input id="email" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
@@ -70,7 +70,7 @@
 
 <div id="app" class="shell" hidden>
   <aside id="side" class="side" aria-label="القائمة الرئيسية">
-    <div class="brand"><img src="logo-sq.png" alt=""><strong>دار الإحسان<br><span class="small">الإدارة</span></strong></div>
+    <div class="brand"><img src="logo-sq.png" alt=""><strong>دار الإحسان<br><span class="small">لوحة إدارة المركز</span></strong></div>
     <nav id="nav">
       <button type="button" data-sec="dash"><svg class="i"><use href="#s-home"/></svg>لوحة التحكم</button>
       <button type="button" data-sec="children"><svg class="i"><use href="#s-child"/></svg>الأطفال والطلبة</button>
@@ -90,7 +90,6 @@
   <div class="main">
     <header class="bar">
       <button id="menuBtn" class="icon-btn" type="button" aria-label="القائمة"><svg class="i"><use href="#s-menu"/></svg></button>
-      <button id="collapseBtn" class="icon-btn desk-only" type="button" aria-label="طي القائمة الجانبية" aria-expanded="true" title="طي القائمة الجانبية"><svg class="i"><use href="#s-menu"/></svg></button>
       <div class="ttl"><strong id="secTitle">لوحة التحكم</strong><span id="who" class="chip">—</span></div>
       <a href="index.html" target="_blank" rel="noopener" class="icon-btn" aria-label="الموقع العام" title="زيارة الموقع العام"><svg class="i"><use href="#s-web"/></svg></a>
       <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج"><svg class="i"><use href="#s-out"/></svg></button>
@@ -110,6 +109,7 @@
 <script src="qr-gen.js?v=9"></script>
 <script src="qr-encoder.js?v=1"></script>
 <script src="card.js?v=1"></script>
+<script src="curriculum.js?v=1"></script>
 <script src="manage.js?v=13"></script>
 </body>
 </html>

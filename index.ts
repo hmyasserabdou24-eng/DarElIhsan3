@@ -27,6 +27,7 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('set_parent_disabled'), user_id: uuid, disabled: z.boolean() }),
   z.object({ action: z.literal('invite_admin'), email, role: z.enum(['admin', 'editor']) }),
   z.object({ action: z.literal('set_admin_disabled'), user_id: uuid, disabled: z.boolean() }),
+  z.object({ action: z.literal('remove_admin'), user_id: uuid }),
 ]);
 
 function logDiag(stage: string, details: Record<string, unknown> = {}) {
@@ -324,6 +325,19 @@ Deno.serve(async (req) => {
       await svc.auth.admin.updateUserById(input.user_id, { ban_duration: input.disabled ? '876000h' : 'none' });
       await audit(input.disabled ? 'admin:disable' : 'admin:enable', input.user_id);
       return json(200, { ok: true }, origin);
+    }
+
+    if (input.action === 'remove_admin') {
+      if (input.user_id === actor.id) return json(400, { error: 'لا يمكنك حذف حسابك أنت (المالك).' }, origin);
+      const { data: first } = await svc.from('admins').select('user_id').order('created_at', { ascending: true }).order('user_id', { ascending: true }).limit(1).single();
+      if (first?.user_id === input.user_id) return json(400, { error: 'لا يمكن حذف حساب المالك الرئيسي.' }, origin);
+      const { data: u } = await svc.auth.admin.getUserById(input.user_id);
+      const email = u?.user?.email ?? input.user_id;
+      await svc.from('admins').delete().eq('user_id', input.user_id);
+      const del = await svc.auth.admin.deleteUser(input.user_id);
+      if (del.error) return fail(del.error, 'تعذّر حذف المستخدم: ' + del.error.message, 500);
+      await audit('admin:remove', email);
+      return json(200, { ok: true, deleted_email: email }, origin);
     }
   } catch (e: any) {
     return fail(e, 'حدث خطأ غير متوقع: ' + (e?.message ?? ''));
