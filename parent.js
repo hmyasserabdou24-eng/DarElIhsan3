@@ -750,6 +750,12 @@
       if (e.key === 'Escape' && m && !m.hidden) closeModal();
     });
 
+    // رابط الدخول الشخصي: parent.html?u=parent.dar.لقب ← يملأ اسم المستخدم كاملًا تلقائيًا
+    try {
+      var pu = (new URLSearchParams(window.location.search).get('u') || '').trim().toLowerCase();
+      if (/^[a-z0-9._-]{3,30}$/.test(pu) && $('#email')) { $('#email').value = pu; var pwEl = $('#password'); if (pwEl) setTimeout(function () { pwEl.focus(); }, 0); }
+    } catch (e) { /* تجاهل */ }
+
     var hash = C.adoptHash();
     if (hash && hash.error) { showLogin(hash.error); return; }
     if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {

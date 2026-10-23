@@ -517,6 +517,7 @@
       var status = h('p', { class: 'muted small', text: 'جارٍ إنشاء البطاقة…' });
       var preview = h('img', { class: 'card-preview', alt: 'معاينة بطاقة انخراط التلميذ ' + (child.full_name || ''), hidden: true });
       var pdfBtn = h('button', { class: 'btn gold', type: 'button', text: '📄 تنزيل PDF', disabled: true });
+      var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: '🖼️ تنزيل JPG', disabled: true });
       var printBtn = h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة البطاقة', disabled: true });
       var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: '🔗 فتح صفحة التلميذ' });
       var warn = !child.membership_no ? h('p', { class: 'err small', text: 'تنبيه: لا يوجد رقم قيد رسمي لهذا الطفل؛ أكمله في ملف الطفل قبل طباعة البطاقة.' }) : null;
@@ -528,7 +529,7 @@
         status,
         h('div', { class: 'modal-actions', style: 'margin-top:12px;' },
           h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-          openLink, pdfBtn, printBtn)
+          openLink, jpgBtn, pdfBtn, printBtn)
       ));
 
       var url;
@@ -542,10 +543,16 @@
           card = c;
           preview.src = c.url; preview.hidden = false;
           status.textContent = 'رمز QR يفتح: صفحة التلميذ العامة (بدون بيانات حساسة).';
-          pdfBtn.disabled = false; printBtn.disabled = false;
+          jpgBtn.disabled = false; pdfBtn.disabled = false; printBtn.disabled = false;
         })
         .catch(function (e) { status.textContent = e.message; status.className = 'err small'; });
 
+      jpgBtn.addEventListener('click', function () {
+        if (!card) return;
+        var safe = String(child.full_name || 'تلميذ').replace(/\s+/g, '_');
+        DECARD.download(card.jpeg, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.jpg');
+        toast('تم تنزيل صورة البطاقة بصيغة JPG.', 'ok');
+      });
       pdfBtn.addEventListener('click', function () {
         if (!card) return;
         DECARD.toPdf(card).then(function (blob) {
@@ -901,6 +908,42 @@
     return out;
   }
 
+  /* ---- بيانات دخول الولي تلقائيًا من بيانات الطفل ----
+     الاسم: parent.dar. + لقب الطفل (أول كلمة من الاسم المسجَّل) بالحروف اللاتينية
+     الكلمة: أول حرف من اللقب + أول حرف من الاسم + تاريخ الميلاد ddmmyyyy (مثال: hm04081989) */
+  var AR_LAT = { 'ا': 'a', 'أ': 'a', 'إ': 'a', 'آ': 'a', 'ٱ': 'a', 'ء': 'a', 'ؤ': 'o', 'ئ': 'i', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'ch', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h', 'ة': 'h', 'و': 'w', 'ي': 'y', 'ى': 'y', 'گ': 'g', 'پ': 'p', 'ڤ': 'v' };
+  function toLatin(word) {
+    var s = String(word || '').replace(/[ً-ٟـ]/g, ''), o = '';
+    if (/^[اأإ]محمد$/.test(s)) return 'mhmd'; // امحمد = محمد
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (AR_LAT[ch]) o += AR_LAT[ch];
+      else if (/[A-Za-z0-9]/.test(ch)) o += ch.toLowerCase();
+    }
+    return o;
+  }
+  function parentCreds(child, takenNames) {
+    if (!child || !child.full_name || !/^\d{4}-\d{2}-\d{2}/.test(String(child.dob || ''))) return null;
+    var w = String(child.full_name).trim().split(/\s+/);
+    var sur = toLatin(w[0]), fn = toLatin(w.length > 1 ? w[1] : w[0]);
+    if (!sur || !fn) return null;
+    var d = String(child.dob).slice(0, 10).split('-');
+    var base = 'parent.dar.' + sur;
+    var un = base.slice(0, 30), n = 1, taken = takenNames || {};
+    var extra = String(child.membership_no || '').replace(/[^0-9a-z]/gi, '').toLowerCase();
+    while (taken[un]) { n++; un = (base.slice(0, 26) + (extra && n === 2 ? extra : n)).slice(0, 30); if (n > 200) break; }
+    return { username: un, password: sur.charAt(0) + fn.charAt(0) + d[2] + d[1] + d[0] };
+  }
+
+  function parentLoginLink(un) {
+    var u = new URL('parent.html', window.location.href); u.search = ''; u.hash = ''; u.searchParams.set('u', un);
+    return u.href;
+  }
+  function copyLoginLink(un) {
+    var link = parentLoginLink(un);
+    try { navigator.clipboard.writeText(link); toast('تم نسخ رابط الدخول.', 'ok'); } catch (e) { info('رابط الدخول', h('div', { class: 'link-box', dir: 'ltr', text: link })); }
+  }
+
   async function secParents(v) {
     var d = await getMany('parents', 'links', 'children');
     var rows = d[0], links = d[1], kids = d[2];
@@ -972,12 +1015,20 @@
       return openForm({
         title: 'إنشاء حساب ولي (اسم مستخدم + كلمة مرور)',
         submits: [{ key: 'go', label: 'إنشاء الحساب' }],
+        onChange: function (changed, cur, api) {
+          if (changed !== 'child_id' || !cur.child_id) return;
+          var taken = {}; rows.forEach(function (p) { if (p.username) taken[String(p.username).toLowerCase()] = true; });
+          var k = kids.filter(function (x) { return x.id === cur.child_id; })[0], c = parentCreds(k, taken);
+          if (!c) { api.note('pick', 'تعذّر التوليد التلقائي: تاريخ ميلاد الطفل غير مسجَّل. أدخل البيانات يدويًا.'); return; }
+          api.note('pick', 'عُبِّئ اسم المستخدم وكلمة المرور تلقائيًا (يمكن تعديلهما).');
+          api.input('username').value = c.username; api.input('password').value = c.password;
+        },
         fields: [
+          { k: 'child_id', label: 'الطفل المرتبط بالحساب (اختره أولًا — طفل واحد فقط لكل حساب)', type: 'select', opts: kidOpts, req: true },
           { k: 'full_name', label: 'اسم ولي الأمر الكامل', req: true, max: 120 },
-          { k: 'username', label: 'اسم المستخدم (حروف لاتينية صغيرة وأرقام و . _ -)', req: true, max: 30, hint: 'مثال: ali.benyahia — يستعمله الولي للدخول.' },
-          { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'password', req: true, max: 72, hint: 'سلّمها للولي مباشرة؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' },
-          { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 },
-          { k: 'child_id', label: 'الطفل المرتبط بالحساب (طفل واحد فقط لكل حساب)', type: 'select', opts: kidOpts, req: true }
+          { k: 'username', label: 'اسم المستخدم (حروف لاتينية صغيرة وأرقام و . _ -)', req: true, max: 30, hint: 'يُعبَّأ تلقائيًا: parent.dar. + لقب الطفل. يستعمله الولي للدخول.' },
+          { k: 'password', label: 'كلمة المرور (8 أحرف على الأقل، فيها أحرف وأرقام)', type: 'text', req: true, max: 72, hint: 'تُعبَّأ تلقائيًا: أول حرف من اللقب + أول حرف من الاسم + تاريخ الميلاد (ddmmyyyy). سلّمها للولي مباشرة.' },
+          { k: 'phone', label: 'رقم الهاتف (اختياري)', type: 'tel', kind: 'phone', max: 25 }
         ],
         onSubmit: async function (x) {
           var un = String(x.username).trim().toLowerCase();
@@ -990,6 +1041,9 @@
           setTimeout(function () {
             info('تم إنشاء حساب الولي', h('div', null,
               h('p', { text: 'اسم المستخدم: ' + un }),
+              h('p', { class: 'muted small', text: 'رابط دخول شخصي (اسم المستخدم فيه جاهز، يكفي أن يكتب الولي كلمة المرور):' }),
+              h('div', { class: 'link-box', dir: 'ltr', text: parentLoginLink(un) }),
+              h('button', { class: 'btn gold', type: 'button', text: 'نسخ رابط الدخول', onclick: function () { copyLoginLink(un); } }),
               h('p', { class: 'muted small', text: 'سلّم الولي كلمة المرور مباشرة. يدخل من صفحة «فضاء الأولياء» ولا يرى إلا أبناءه المرتبطين.' })));
           }, 0);
         }
@@ -1051,7 +1105,8 @@
         var menu = [
           r.username ? rbtn('كلمة مرور جديدة', async function () {
             if (!(await ask({ title: 'توليد كلمة مرور جديدة؟', msg: 'ستُلغى كلمة المرور الحالية ويُعرض الجديدة مرة واحدة فقط. سلّمها للولي فورًا.', ok: 'توليد', danger: true }))) return;
-            var pw = genPassword();
+            var myKid = kids.filter(function (x) { return x.id === kidsOf(r.user_id)[0]; })[0], auto = parentCreds(myKid, { [String(r.username).toLowerCase()]: false });
+            var pw = auto ? auto.password : genPassword();
             await C.fn('parent-accounts', { action: 'set_password', user_id: uid(r.user_id), password: pw });
             info('كلمة المرور الجديدة', h('div', null,
               h('p', { text: 'اسم المستخدم: ' + r.username }),
@@ -1063,6 +1118,7 @@
               }})
             ));
           }) : null,
+          r.username ? rbtn('نسخ رابط الدخول', function () { copyLoginLink(String(r.username)); }, 'light') : null,
           r.username ? rbtn('تغيير كلمة المرور', function () { return setPassword(r); }) : null,
           rbtn(r.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
             if (!r.disabled && !(await ask({ title: 'تعطيل حساب الولي؟', msg: 'سيفقد الولي إمكانية تسجيل الدخول فورًا حتى إعادة تفعيله.', ok: 'تعطيل', danger: true }))) return;
