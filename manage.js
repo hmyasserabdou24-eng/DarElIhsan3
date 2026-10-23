@@ -1328,8 +1328,26 @@
             }, 50);
             return;
           }
-          await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
-          bust(); toast('أُرسلت الدعوة بنجاح.', 'ok'); go('accounts');
+          var res = null;
+          try {
+            res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
+          } catch (fnErr) {
+            var redirectUrl = location.origin + location.pathname;
+            await C.recover(email, redirectUrl);
+          }
+          bust();
+          var actionLink = res && res.action_link;
+          if (actionLink) {
+            info('تمت دعوة المدير بنجاح', h('div', null,
+              h('p', { text: 'أُرسلت الدعوة إلى البريد: ' + email }),
+              h('p', { class: 'muted small', text: 'يمكنك أيضًا نسخ رابط التفعيل المباشر هذا وإرساله للمدير فورًا:' }),
+              h('div', { class: 'link-box', dir: 'ltr', text: actionLink }),
+              h('button', { class: 'btn gold', type: 'button', text: 'نسخ الرابط المباشر', onclick: function () { try { navigator.clipboard.writeText(actionLink); toast('تم نسخ رابط التفعيل.', 'ok'); } catch (e) {} } })
+            ));
+          } else {
+            toast('أُرسلت دعوة تفعيل الحساب إلى بريد المدير بنجاح.', 'ok');
+          }
+          go('accounts');
         }
       });
     }
@@ -1345,7 +1363,15 @@
       ],
       actions: function (a) {
         if (!canManage || a.is_owner || a.is_me) return [];
-        return [
+        var actList = [];
+        if (!a.last_sign_in_at) {
+          actList.push(rbtn('📩 إرسال رابط التفعيل', async function () {
+            var redirectUrl = location.origin + location.pathname;
+            await C.recover(a.email, redirectUrl);
+            toast('تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى ' + a.email, 'ok');
+          }, 'gold'));
+        }
+        return actList.concat([
           rbtn(a.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
             if (!a.disabled && !(await ask({ title: 'تعطيل هذا المدير؟', msg: 'سيفقد صلاحياته فورًا ولن يستطيع الدخول إلى لوحة الإدارة.', ok: 'تعطيل', danger: true }))) return;
             try {
@@ -1528,8 +1554,9 @@
   var MODE_UI = {
     creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
     mfa: { btn: 'تأكيد الرمز', hint: 'أدخل الرمز من تطبيق المصادقة.' },
+    invite: { btn: 'إرسال رابط إنشاء كلمة المرور', hint: 'أدخل بريدك الإلكتروني المدعو به وسنرسل لك رابطًا لإنشاء كلمة المرور وتفعيل حسابك مباشرة.' },
     forgot: { btn: 'إرسال رابط استعادة كلمة المرور', hint: 'أدخل بريد حسابك وسنرسل إليه رابطًا آمنًا لإعادة تعيين كلمة المرور.' },
-    set: { btn: 'حفظ كلمة المرور والدخول', hint: 'مرحبًا بك! يرجى إنشاء كلمة مرور لحسابك وتأكيدها للمتابعة.' }
+    set: { btn: 'إنشاء كلمة المرور وتفعيل الحساب', hint: 'مرحبًا بك! يرجى إنشاء كلمة مرور لحسابك وتأكيدها للمتابعة.' }
   };
   function setMode(m, hint) {
     mode = m;
@@ -1537,9 +1564,11 @@
     $('#stCreds').hidden = m !== 'creds';
     $('#stMfa').hidden = m !== 'mfa';
     if ($('#stForgot')) $('#stForgot').hidden = m !== 'forgot';
+    if ($('#stInvite')) $('#stInvite').hidden = m !== 'invite';
     if ($('#stSet')) $('#stSet').hidden = m !== 'set';
     $('#lBtn').textContent = u.btn;
     $('#lHint').textContent = hint || u.hint;
+    if ($('#firstTimeBtn')) $('#firstTimeBtn').hidden = m !== 'creds';
     $('#forgotBtn').hidden = m !== 'creds';
     $('#backBtn').hidden = m === 'creds';
     if (m === 'set') { setTimeout(function () { var p = $('#np1'); if (p) p.focus(); }, 0); }
@@ -1591,6 +1620,12 @@
           await C.verifyMfa(code);
           $('#mfaCode').value = '';
           await enter();
+        } else if (mode === 'invite') {
+          var emInv = DE.clean($('#invEmail').value, 254).toLowerCase();
+          if (!DE.isEmail(emInv)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
+          var redirectUrl = location.origin + location.pathname;
+          await C.recover(emInv, redirectUrl);
+          msg($('#lOk'), 'تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى بريدك (' + emInv + ') بنجاح. تفقد صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam)، واضغط على الرابط لتحديد كلمة مرورك والدخول فورًا.');
         } else if (mode === 'forgot') {
           var em1 = DE.clean($('#fEmail').value, 254).toLowerCase();
           if (!DE.isEmail(em1)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
@@ -1603,17 +1638,26 @@
           if (a !== b) return msg($('#lErr'), 'كلمتا المرور غير متطابقتين.');
           await C.setPassword(a);
           $('#np1').value = $('#np2').value = '';
-          msg($('#lOk'), 'تم حفظ كلمة المرور بنجاح!');
+          msg($('#lOk'), 'تم إنشاء كلمة المرور وتفعيل حسابك بنجاح! جارٍ الدخول…');
           await enter();
         }
       } catch (er) { msg($('#lErr'), er.message); }
     });
   }
 
-  function init() {
+  async function init() {
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
     $('#loginForm').addEventListener('submit', submitLogin);
+    var ftBtn = $('#firstTimeBtn');
+    if (ftBtn) {
+      ftBtn.addEventListener('click', function () {
+        msg($('#lErr'), ''); msg($('#lOk'), '');
+        $('#invEmail').value = ($('#email').value || '').trim();
+        setMode('invite');
+        $('#invEmail').focus();
+      });
+    }
     $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot'); $('#fEmail').focus(); });
     $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
@@ -1628,16 +1672,18 @@
     $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });
     $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
-    var hash = C.adoptHash();
+
+    var hash = await C.adoptHash();
     if (hash && hash.error) { showLogin(hash.error); return; }
-    if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {
+    if (hash && (hash.token || hash.type === 'invite' || hash.type === 'recovery' || hash.type === 'signup')) {
       show('login');
       var userEmail = hash.email || '';
+      if (!userEmail) {
+        try { var u = await C.me(); if (u && u.email) userEmail = u.email; } catch (e) {}
+      }
       if ($('#setEmail')) $('#setEmail').value = userEmail;
       if ($('#email')) $('#email').value = userEmail;
-      setMode('set', hash.type === 'invite'
-        ? 'مرحبًا بك! تم تأكيد دعوتك الإدارية. اسم المستخدم هو بريدك أدناه، يرجى إنشاء كلمة مرور لحسابك وتأكيدها للمتابعة.'
-        : 'تم التحقق من رابط الاستعادة بنجاح. اسم المستخدم هو بريدك أدناه، يرجى إنشاء كلمة المرور الجديدة وتأكيدها.');
+      setMode('set', 'مرحبًا بك في لوحة الإدارة! بريدك الإلكتروني معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بحسابك وتأكيدها للمتابعة.');
       return;
     }
     if (C.load()) enter(); else showLogin();

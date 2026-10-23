@@ -5,7 +5,7 @@
   var FILES = [
     ['index.html', 0], ['style.css', 0], ['script.js', 0], ['i18n-data.js', 0], ['cms.js', 0], ['cms.css', 0], ['cms-config.js', 0],
     ['manage.html', 0], ['manage.js', 1], ['parent.html', 0], ['parent.js', 1], ['portal.css', 0], ['de-core.js', 1], ['xlsx-writer.js', 1], ['card.js', 1], ['centers.js', 0], ['qr-encoder.js', 0], ['qr.js', 1],
-    ['logo.png', 0], ['logo-sq.png', 0]
+    ['logo.png', 0], ['logo-sq.png', 0], ['manifest.webmanifest', 0], ['sw.js', 0], ['pwa.js', 0], ['pwa.css', 0], ['icon-192.png', 0], ['icon-512.png', 0]
   ];
   var h = DE.h, out = document.getElementById('out');
   function row(name, ok, note) { out.appendChild(h('div', { class: 'card' }, h('strong', { text: (ok ? '✅ ' : '❌ ') + name }), h('div', { class: 'muted small', text: note }))); }

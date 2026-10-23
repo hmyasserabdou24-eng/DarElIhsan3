@@ -226,17 +226,43 @@
       try { await raw(v.access_token, 'PUT', '/auth/v1/user', { password: newPassword }); }
       finally { try { await raw(v.access_token, 'POST', '/auth/v1/logout?scope=local', {}); } catch (e) { /* تجاهل */ } }
     };
-    // روابط الدعوة/الاستعادة تأتي برموز في #hash: نلتقطها ثم نزيلها من الشريط فورًا
-    api.adoptHash = function () {
-      var m = String(root.location.hash || '').replace(/^#/, '');
-      if (!m) return null;
-      var p = new URLSearchParams(m);
+    // روابط الدعوة/الاستعادة تأتي برموز في #hash أو في ?search: نلتقطها ونستخرج الجلسة
+    api.adoptHash = async function () {
+      var hStr = String(root.location.hash || '').replace(/^#/, '');
+      var sStr = String(root.location.search || '').replace(/^\?/, '');
+      if (!hStr && !sStr) return null;
+
+      var p = new URLSearchParams(hStr);
+      var sp = new URLSearchParams(sStr);
+      for (var pair of sp.entries()) {
+        if (!p.has(pair[0])) p.set(pair[0], pair[1]);
+      }
+
       if (p.get('error') || p.get('error_code')) {
-        root.history.replaceState(null, '', root.location.pathname + root.location.search);
+        root.history.replaceState(null, '', root.location.pathname);
         return { error: friendly(400, p.get('error_description') || '', p.get('error_code')) };
       }
-      if (!p.get('access_token') || !p.get('refresh_token')) return null;
+
       var tok = p.get('access_token');
+      var ref = p.get('refresh_token') || '';
+      var type = p.get('type') || '';
+      var tokenHash = p.get('token_hash') || p.get('token') || '';
+
+      // إذا وصلنا رابط تفعيل بـ token_hash من Supabase verify
+      if (!tok && tokenHash) {
+        try {
+          var v = await raw(null, 'POST', '/auth/v1/verify', { token_hash: tokenHash, type: type || 'invite' });
+          if (v && v.access_token) { tok = v.access_token; ref = v.refresh_token || ''; }
+        } catch (e1) {
+          try {
+            var v2 = await raw(null, 'POST', '/auth/v1/verify', { token_hash: tokenHash, type: 'recovery' });
+            if (v2 && v2.access_token) { tok = v2.access_token; ref = v2.refresh_token || ''; type = 'recovery'; }
+          } catch (e2) {}
+        }
+      }
+
+      if (!tok) return null;
+
       var email = '';
       try {
         var b64 = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -245,9 +271,10 @@
         var payload = JSON.parse(atobFn(b64));
         email = payload.email || '';
       } catch (e) {}
-      root.history.replaceState(null, '', root.location.pathname + root.location.search);
-      save({ access_token: tok, refresh_token: p.get('refresh_token'), expires_in: Number(p.get('expires_in')) || 3600 });
-      return { type: p.get('type') || '', email: email };
+
+      root.history.replaceState(null, '', root.location.pathname);
+      save({ access_token: tok, refresh_token: ref, expires_in: Number(p.get('expires_in')) || 3600 });
+      return { type: type || 'invite', email: email, token: tok };
     };
     api.setPassword = function (pw) { return authed('PUT', '/auth/v1/user', { password: pw }); };
     api.rest = function (method, path, body, prefer) { return authed(method, '/rest/v1' + path, body, prefer ? { Prefer: prefer } : {}); };

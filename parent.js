@@ -737,7 +737,7 @@
   }
 
   /* ---------- التشغيل والربط ---------- */
-  function init() {
+  async function init() {
     applyLang();
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
@@ -771,7 +771,7 @@
       }
     } catch (e3) { /* تجاهل */ }
 
-    var hash = C.adoptHash();
+    var hash = await C.adoptHash();
     if (hash && hash.error) { showLogin(hash.error); return; }
     if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {
       show('login');

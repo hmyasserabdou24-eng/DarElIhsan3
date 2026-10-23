@@ -8,7 +8,7 @@ import { z } from 'npm:zod@3';
 const SB_URL = Deno.env.get('SUPABASE_URL')!;
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const DEFAULT_SITE_URL = 'https://hmyasserabdou24-eng.github.io';
+const DEFAULT_SITE_URL = 'https://hmyasserabdou24-eng.github.io/DarElIhsan3';
 const SITE_URL = (Deno.env.get('SITE_URL') ?? DEFAULT_SITE_URL).replace(/\/$/, '');
 const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') ?? 'https://hmyasserabdou24-eng.github.io').split(',').map((s) => s.trim()).filter(Boolean);
 const MAX_BODY = 10_000;
@@ -305,7 +305,8 @@ Deno.serve(async (req) => {
     if (isOwner !== true) return json(403, { error: 'هذه العملية للمالك فقط.' }, origin);
 
     if (input.action === 'invite_admin') {
-      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirect('/manage.html') });
+      const redirectUrl = redirect('/manage.html');
+      const inv = await svc.auth.admin.inviteUserByEmail(input.email, { redirectTo: redirectUrl });
       if (inv.error || !inv.data.user) {
         const exists = /already|registered|exists/i.test(inv.error?.message ?? '');
         return fail(inv.error, exists ? 'هذا البريد مسجَّل مسبقًا.' : 'تعذّر إرسال الدعوة.', exists ? 409 : 500);
@@ -313,7 +314,18 @@ Deno.serve(async (req) => {
       const ins = await svc.from('admins').insert({ user_id: inv.data.user.id, role: input.role });
       if (ins.error) { await svc.auth.admin.deleteUser(inv.data.user.id); return fail(ins.error, 'تعذّر إنشاء الحساب.'); }
       await audit('admin:invite', inv.data.user.id + ':' + input.role);
-      return json(200, { ok: true, user_id: inv.data.user.id }, origin);
+
+      let actionLink: string | null = null;
+      try {
+        const linkRes = await svc.auth.admin.generateLink({
+          type: 'invite',
+          email: input.email,
+          options: { redirectTo: redirectUrl }
+        });
+        actionLink = linkRes.data?.properties?.action_link ?? null;
+      } catch (_) {}
+
+      return json(200, { ok: true, user_id: inv.data.user.id, action_link: actionLink }, origin);
     }
 
     if (input.action === 'set_admin_disabled') {
