@@ -124,7 +124,8 @@ const navToggle = document.querySelector('.nav-toggle');
 const nav = document.querySelector('.main-nav');
 
 if (navToggle && nav) {
-  navToggle.addEventListener('click', () => {
+  navToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
     const isOpen = nav.classList.toggle('open');
     navToggle.setAttribute('aria-expanded', String(isOpen));
   });
@@ -134,6 +135,13 @@ if (navToggle && nav) {
       nav.classList.remove('open');
       navToggle.setAttribute('aria-expanded', 'false');
     });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !navToggle.contains(e.target)) {
+      nav.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
   });
 }
 
