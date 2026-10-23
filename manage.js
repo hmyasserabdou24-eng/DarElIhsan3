@@ -44,7 +44,7 @@
     'parent_children:insert': 'ربط ولي بطفل', 'parent_children:delete': 'فك ربط ولي بطفل', 'progress_reports:insert': 'إنشاء تقرير', 'progress_reports:delete': 'حذف تقرير',
     'report:publish': 'نشر تقرير', 'report:unpublish': 'إلغاء نشر تقرير', 'appointments:insert': 'إضافة موعد', 'appointments:update': 'تعديل موعد', 'appointments:delete': 'حذف موعد',
     'messages:insert': 'إنشاء رسالة/إعلان', 'messages:delete': 'حذف رسالة/إعلان', 'documents:insert': 'رفع وثيقة', 'documents:delete': 'حذف وثيقة',
-    'admin:invite': 'دعوة مدير', 'admin:disable': 'تعطيل مدير', 'admin:enable': 'تفعيل مدير',
+    'admin:invite': 'دعوة مدير', 'admin:create': 'إنشاء مدير بكلمة مرور', 'admin:disable': 'تعطيل مدير', 'admin:enable': 'تفعيل مدير',
     'branches:insert': 'إضافة فرع', 'sections:insert': 'إضافة قسم', 'educational_programs:insert': 'إضافة برنامج تربوي',
     'educational_programs:delete': 'حذف برنامج تربوي', 'registration_code:generate': 'توليد رمز تسجيل طفل',
     'parent:redeem_code': 'استرداد رمز تسجيل من ولي', 'audit:delete': 'حذف سجلات التدقيق'
@@ -141,7 +141,14 @@
       input.value = val || '';
       getv = function () { return t === 'datetime' ? isoFromLocal(input.value) : DE.clean(input.value, f.max || 200); };
     }
-    var row = h('label', { class: 'fld', for: id }, h('span', { text: f.label + (f.req ? ' *' : '') }), input, f.hint ? hint : null);
+    var genBtn = null;
+    if (f.gen) {
+      genBtn = h('button', { class: 'btn light small', type: 'button', text: 'توليد كود قوي', onclick: function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        input.value = f.gen(); input.dispatchEvent(new Event('input', { bubbles: true }));
+      } });
+    }
+    var row = h('label', { class: 'fld', for: id }, h('span', { text: f.label + (f.req ? ' *' : '') }), input, genBtn, f.hint ? hint : null);
     return { row: row, input: input, get: getv, def: f };
   }
 
@@ -1413,15 +1420,41 @@
       h('p', { class: 'muted', text: canManage ? 'أنت المدير الرئيسي (المالك): تملك صلاحيات دعوة المديرين، إدارة الأدوار، وتصفية سجلات العمليات والتدقيق.' : 'صلاحية العرض فقط. إدارة حسابات المديرين محصورة بالمدير الرئيسي للمركز.' })
     ));
 
+    function genAdminCode() {
+      var al = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789', o;
+      do {
+        var a = new Uint32Array(14); crypto.getRandomValues(a); o = '';
+        for (var i = 0; i < a.length; i++) o += al.charAt(a[i] % al.length);
+      } while (!/[A-Z]/.test(o) || !/[0-9]/.test(o));
+      return o;
+    }
     function invite() {
       return openForm({
-        title: 'دعوة مدير جديد', submits: [{ key: 'go', label: 'إرسال الدعوة' }],
+        title: 'إضافة مدير جديد',
+        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: 'إنشاء الحساب بكلمة المرور', light: true }],
         fields: [
           { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254 },
-          { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] }
+          { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] },
+          { k: 'password', label: 'كلمة المرور (اختياري — للزر الثاني فقط)', type: 'text', max: 72, gen: genAdminCode,
+            hint: 'للإنشاء المباشر دون بريد: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم. سلّمها للمدير يدويًا؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' }
         ],
-        onSubmit: async function (x) {
-          await C.fn('admin-users', { action: 'invite_admin', email: x.email.toLowerCase(), role: x.role });
+        onSubmit: async function (x, key) {
+          var email = x.email.toLowerCase();
+          if (key === 'pw') {
+            var pw = x.password || '';
+            if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw) || new TextEncoder().encode(pw).length > 72) throw new Error('كلمة المرور: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم واحد على الأقل.');
+            await C.fn('admin-users', { action: 'create_admin', email: email, role: x.role, password: pw });
+            bust(); toast('أُنشئ الحساب بنجاح.', 'ok'); go('accounts');
+            setTimeout(function () {
+              var box = h('div', { class: 'link-box', dir: 'ltr', text: 'Email: ' + email + '\nPassword: ' + pw });
+              box.style.whiteSpace = 'pre-wrap';
+              info('بيانات دخول المدير الجديد', h('div', null, box,
+                h('p', { class: 'muted small', text: 'تظهر هذه البيانات مرة واحدة فقط ولا تُحفظ في النظام.' }),
+                h('button', { class: 'btn gold', type: 'button', text: 'نسخ', onclick: function () { try { navigator.clipboard.writeText('Email: ' + email + '\nPassword: ' + pw); toast('تم النسخ.', 'ok'); } catch (e) {} } })));
+            }, 50);
+            return;
+          }
+          await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
           bust(); toast('أُرسلت الدعوة بنجاح.', 'ok'); go('accounts');
         }
       });
