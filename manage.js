@@ -1440,20 +1440,23 @@
     creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
     mfa: { btn: 'تأكيد الرمز', hint: 'أدخل الرمز من تطبيق المصادقة.' },
     forgot1: { btn: 'إرسال الرمز إلى بريدي', hint: 'أدخل بريد حسابك وسنرسل إليه رمز استعادة.' },
-    forgot2: { btn: 'تعيين كلمة المرور والدخول', hint: 'أدخل الرمز الذي وصلك واختر كلمة مرور جديدة.' }
+    forgot2: { btn: 'تعيين كلمة المرور والدخول', hint: 'أدخل الرمز الذي وصلك واختر كلمة مرور جديدة.' },
+    set: { btn: 'حفظ كلمة المرور والدخول', hint: 'مرحبًا بك! اختر كلمة مرور قوية لتفعيل حسابك الإداري.' }
   };
-  function setMode(m) {
+  function setMode(m, hint) {
     mode = m;
     var u = MODE_UI[m] || MODE_UI.creds;
     $('#stCreds').hidden = m !== 'creds';
     $('#stMfa').hidden = m !== 'mfa';
     $('#stForgot1').hidden = m !== 'forgot1';
     $('#stForgot2').hidden = m !== 'forgot2';
+    if ($('#stSet')) $('#stSet').hidden = m !== 'set';
     $('#lBtn').textContent = u.btn;
-    $('#lHint').textContent = u.hint;
+    $('#lHint').textContent = hint || u.hint;
     $('#forgotBtn').hidden = m !== 'creds';
     $('#backBtn').hidden = m === 'creds';
-    if (m !== 'forgot2') { clearInterval(resendT); $('#resendBtn').disabled = false; $('#resendBtn').textContent = 'إعادة إرسال الرمز'; }
+    if (m !== 'forgot2') { clearInterval(resendT); if ($('#resendBtn')) { $('#resendBtn').disabled = false; $('#resendBtn').textContent = 'إعادة إرسال الرمز'; } }
+    if (m === 'set') { setTimeout(function () { var p = $('#np1'); if (p) p.focus(); }, 0); }
   }
   function showLogin(m) {
     S.stopIdle && S.stopIdle();
@@ -1530,6 +1533,14 @@
           var r2 = await C.signIn(resetEmail, p1);
           if (r2.mfa) { setMode('mfa'); $('#mfaCode').focus(); return; }
           await enter();
+        } else if (mode === 'set') {
+          var a = String($('#np1').value || '').trim(), b = String($('#np2').value || '').trim();
+          if (DE.pwProblem(a)) return msg($('#lErr'), 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.');
+          if (a !== b) return msg($('#lErr'), 'كلمتا المرور غير متطابقتين.');
+          await C.setPassword(a);
+          $('#np1').value = $('#np2').value = '';
+          msg($('#lOk'), '');
+          await enter();
         }
       } catch (er) { msg($('#lErr'), er.message); }
     });
@@ -1559,6 +1570,13 @@
     $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });
     $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
+    var hash = C.adoptHash();
+    if (hash && hash.error) { showLogin(hash.error); return; }
+    if (hash && (hash.type === 'invite' || hash.type === 'recovery')) {
+      show('login');
+      setMode('set', hash.type === 'invite' ? 'مرحبًا بك! اختر كلمة مرور لتفعيل حسابك الإداري.' : 'اختر كلمة مرور جديدة لحسابك الإداري.');
+      return;
+    }
     if (C.load()) enter(); else showLogin();
   }
 

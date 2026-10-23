@@ -318,7 +318,7 @@
     await lockBtn($('#lBtn'), async function () {
       try {
         if (mode === 'login') {
-          var em = DE.clean($('#email').value, 254).toLowerCase(), pw = $('#password').value;
+          var em = DE.clean($('#email').value, 254).toLowerCase(), pw = String($('#password').value || '').trim();
           // اسم مستخدم بسيط (بلا @) ← يُحوَّل إلى عنوان الدخول الداخلي الذي أنشأته لوحة الإدارة
           if (/^[a-z0-9._-]{3,30}$/.test(em)) em = em + '@parents.darelihsan.invalid';
           else if (!DE.isEmail(em)) return setMsg($('#lErr'), t('enterCredsErr'));
@@ -334,7 +334,7 @@
           catch (er) { if (er.status === 429) throw er; }
           setMsg($('#lOk'), t('forgotSentOk'));
         } else {
-          var a = $('#np1').value, b = $('#np2').value;
+          var a = String($('#np1').value || '').trim(), b = String($('#np2').value || '').trim();
           if (DE.pwProblem(a)) return setMsg($('#lErr'), DE.PW_MSG);
           if (a !== b) return setMsg($('#lErr'), t('passMismatchErr'));
           await C.setPassword(a);
