@@ -545,10 +545,14 @@
         })
         .catch(function (e) { status.textContent = e.message; status.className = 'err small'; });
 
+      function exportJpg(c, filename) {
+        // exportJpg (image/jpeg)
+        DECARD.download(c.jpeg, filename);
+      }
       jpgBtn.addEventListener('click', function () {
         if (!card) return;
         var safe = String(child.full_name || 'تلميذ').replace(/\s+/g, '_');
-        DECARD.download(card.jpeg, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.jpg');
+        exportJpg(card, 'بطاقة_انخراط_' + (child.membership_no || child.id) + '_' + safe + '.jpg');
         toast('تم تنزيل صورة البطاقة بصيغة JPG.', 'ok');
       });
       pdfBtn.addEventListener('click', function () {

@@ -324,7 +324,7 @@
           else if (!DE.isEmail(em)) return setMsg($('#lErr'), t('enterCredsErr'));
           if (!pw || pw.length > 72) return setMsg($('#lErr'), t('enterCredsErr'));
           await C.signIn(em, pw);
-          try { localStorage.setItem('de_parent_user', DE.clean($('#email').value, 254).toLowerCase()); } catch (e2) { /* تجاهل */ }
+          try { sessionStorage.setItem('de_parent_user', DE.clean($('#email').value, 254).toLowerCase()); } catch (e2) { /* تجاهل */ }
           $('#password').value = '';
           await enter();
         } else if (mode === 'forgot') {
@@ -759,7 +759,7 @@
     // بدون رابط شخصي: نتذكّر اسم المستخدم الذي دخل به هذا الجهاز آخر مرة
     try {
       if (!new URLSearchParams(window.location.search).get('u')) {
-        var last = (localStorage.getItem('de_parent_user') || '').trim().toLowerCase();
+        var last = (sessionStorage.getItem('de_parent_user') || '').trim().toLowerCase();
         if (last && last.length <= 254 && $('#email')) $('#email').value = last;
       }
     } catch (e3) { /* تجاهل */ }
