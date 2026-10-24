@@ -792,8 +792,16 @@
   }
 
   /* =====================================================================
-     4. إدارة البرامج التربوية للأقسام (Educational Programs)
+     4. إدارة البرامج التربوية للأقسام والجدول الأسبوعي (Educational Programs)
      ===================================================================== */
+  var WEEK_DAYS = [
+    { key: 'sun', label: 'الأحد' },
+    { key: 'mon', label: 'الاثنين' },
+    { key: 'tue', label: 'الثلاثاء' },
+    { key: 'wed', label: 'الأربعاء' },
+    { key: 'thu', label: 'الخميس' }
+  ];
+
   async function secPrograms(v) {
     var d = await getMany('programs', 'sections');
     var rows = d[0], sections = d[1];
@@ -801,116 +809,896 @@
 
     var CURR = (window && window.DE_CURRICULUM) || EMBEDDED_CURRICULUM || {};
     var domainKeys = Object.keys(CURR);
-    var domainOpts = domainKeys.map(function (d) { return [d, d]; });
+    var domainOpts = domainKeys.map(function (dk) { return [dk, dk]; });
 
-    function editProgram(p) {
-      var initialDomain = '', initialSkill = '';
-      if (p && p.title) {
-        var parts = p.title.split(' — ');
-        if (parts.length >= 2 && CURR[parts[0]]) {
-          initialDomain = parts[0];
-          initialSkill = parts.slice(1).join(' — ');
-        } else if (CURR[p.title]) {
-          initialDomain = p.title;
-        } else {
-          initialDomain = domainKeys[0] || '';
-          initialSkill = p.title;
-        }
-      } else {
-        initialDomain = domainKeys[0] || '';
-      }
-      var skillList = (CURR[initialDomain] || []);
-      var skillOpts = skillList.map(function (s) { return [s, s]; });
-      if (initialSkill && !skillList.some(function (s) { return s === initialSkill; })) {
-        skillOpts.unshift([initialSkill, initialSkill]);
-      }
+    function addHour(timeStr) {
+      var parts = String(timeStr || '08:30').split(':');
+      var hh = parseInt(parts[0], 10);
+      var mm = parts[1] || '00';
+      if (isNaN(hh)) hh = 8;
+      var nextH = Math.min(23, hh + 1);
+      return String(nextH).padStart(2, '0') + ':' + mm;
+    }
 
-      var formVals = Object.assign({}, p || {}, {
+    function parseProgState(p) {
+      var st = {
+        id: p ? p.id : null,
+        section_id: (p && p.section_id) || (sections[0] ? sections[0].id : ''),
         academic_year: (p && p.academic_year) || '2026-2027',
         status: (p && p.status) || 'draft',
-        domain: initialDomain,
-        skill: initialSkill || (skillList[0] || '')
-      });
+        published_at: (p && p.published_at) || null,
+        notes: '',
+        domains: [],
+        days: WEEK_DAYS.map(function (wd) {
+          return { day: wd.key, label: wd.label, sessions: [] };
+        })
+      };
 
-      return openForm({
-        title: p ? 'تعديل برنامج تربوي' : 'إضافة برنامج تربوي لقسم',
-        values: formVals,
-        submits: p && p.status === 'published'
-          ? [{ key: 'save', label: 'حفظ التعديلات (معتمد)' }]
-          : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'اعتماد ونشر البرنامج' }],
-        fields: [
-          { k: 'section_id', label: 'القسم / الفوج التربوي المستهدف', type: 'select', opts: secOpts, req: true, hint: 'القسم الذي يُطبَّق عليه البرنامج التربوي.' },
-          { k: 'domain', label: 'المجال التربوي', type: 'select', searchable: true, opts: domainOpts, req: true, hint: 'اختر أحد المجالات التربوية المعتمدة من الدليل البيداغوجي.' },
-          { k: 'skill', label: 'المهارة المستهدفة', type: 'select', searchable: true, opts: skillOpts, req: true, hint: 'اختر المهارة المستهدفة (يمكنك البحث السريع بالكتابة في خانة البحث أعلاها).' },
-          { k: 'academic_year', label: 'الموسم الدراسي', req: true, max: 20 },
-          { k: 'description', label: 'وصف البرنامج وخطة الأنشطة البيداغوجية', type: 'textarea', max: 5000 },
-          { k: 'goals', label: 'الأهداف الإجرائية والملاحظات التربوية', type: 'textarea', max: 5000 }
-        ],
-        onChange: function (changed, cur, formApi) {
-          if (changed === 'domain') {
-            var selectedDomain = cur.domain;
-            var skills = (CURR[selectedDomain] || []);
-            var newSkillOpts = skills.map(function (s) { return [s, s]; });
-            formApi.setOpts('skill', newSkillOpts);
-          }
-        },
-        onSubmit: async function (x, key) {
-          var progTitle = (x.domain || '') + (x.skill ? (' — ' + x.skill) : '');
-          var body = {
-            section_id: x.section_id,
-            title: progTitle || 'برنامج تربوي',
-            academic_year: x.academic_year || '2026-2027',
-            description: x.description || null,
-            goals: x.goals || (x.skill || null),
-            status: key === 'publish' ? 'published' : (p ? p.status : 'draft'),
-            published_at: key === 'publish' ? new Date().toISOString() : (p ? p.published_at : null)
-          };
+      var rawSched = null;
+      if (p && p.schedule) {
+        try {
+          rawSched = typeof p.schedule === 'string' ? JSON.parse(p.schedule) : p.schedule;
+        } catch (e) { rawSched = null; }
+      }
 
-          if (p) {
-            await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), body);
-          } else {
-            await C.rest('POST', '/educational_programs', body);
-          }
-          bust();
-          toast(key === 'publish' ? 'تم اعتماد ونشر البرنامج بنجاح.' : 'تم حفظ البرنامج كمسودة.', 'ok');
-          go('programs');
+      if (Array.isArray(rawSched) && rawSched.length) {
+        if (rawSched[0] && Array.isArray(rawSched[0].domains)) {
+          st.domains = rawSched[0].domains.map(function (dm) {
+            return {
+              domain: dm.domain || (domainKeys[0] || ''),
+              skills: Array.isArray(dm.skills) ? dm.skills.slice() : []
+            };
+          });
         }
+        if (rawSched[0] && typeof rawSched[0].notes === 'string') {
+          st.notes = rawSched[0].notes;
+        }
+        st.days = WEEK_DAYS.map(function (wd) {
+          var found = rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label); })[0];
+          var sessList = (found && Array.isArray(found.sessions)) ? found.sessions.map(function (s) {
+            return {
+              start: s.start || '08:30',
+              end: s.end || '09:30',
+              items: Array.isArray(s.items) ? s.items.map(function (it) {
+                return { domain: it.domain || '', skill: it.skill || '' };
+              }).filter(function (it) { return it.domain || it.skill; }) : []
+            };
+          }) : [];
+          return { day: wd.key, label: wd.label, sessions: sessList };
+        });
+      } else if (p) {
+        st.notes = p.description || '';
+        if (p.title) {
+          var parts = p.title.split(' — ');
+          if (parts.length >= 2 && CURR[parts[0]]) {
+            st.domains.push({ domain: parts[0], skills: [parts.slice(1).join(' — ')] });
+          } else if (CURR[p.title]) {
+            st.domains.push({ domain: p.title, skills: [] });
+          }
+        }
+      }
+
+      // مزامنة أي مجالات أو مهارات موجودة داخل الحصص مع قائمة المجالات المختارة
+      st.days.forEach(function (dy) {
+        (dy.sessions || []).forEach(function (s) {
+          (s.items || []).forEach(function (it) {
+            if (!it.domain) return;
+            var dEntry = st.domains.filter(function (dm) { return dm.domain === it.domain; })[0];
+            if (!dEntry) {
+              dEntry = { domain: it.domain, skills: [] };
+              st.domains.push(dEntry);
+            }
+            if (it.skill && dEntry.skills.indexOf(it.skill) < 0) {
+              dEntry.skills.push(it.skill);
+            }
+          });
+        });
       });
+
+      if (!st.domains.length) {
+        st.domains.push({ domain: domainKeys[0] || '', skills: [] });
+      }
+
+      // إذا كان برنامجًا جديدًا تمامًا، نجهز حصة أولية (08:30 - 09:30) في كل يوم لسهولة التعديل الفوري
+      if (!p) {
+        st.days.forEach(function (dy) {
+          if (!dy.sessions.length) {
+            dy.sessions.push({ start: '08:30', end: '09:30', items: [] });
+          }
+        });
+      }
+
+      return st;
+    }
+
+    function buildWeeklySheet(st, secName, statusText) {
+      var logo = h('img', { class: 'wk-sheet-logo', alt: 'شعار المركز النفسي البيداغوجي دار الإحسان' });
+      logo.setAttribute('src', 'logo-sq.png');
+
+      var head = h('div', { class: 'wk-sheet-head' },
+        h('div', { class: 'wk-sheet-brand' },
+          logo,
+          h('div', { class: 'wk-sheet-titles' },
+            h('span', { class: 'wk-sheet-org', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي دار الإحسان' }),
+            h('h2', { class: 'wk-sheet-title', text: 'البرنامج الأسبوعي' })
+          )
+        ),
+        h('div', { class: 'wk-sheet-meta' },
+          h('div', { class: 'wk-meta-pill gold' },
+            h('span', { class: 'wk-meta-lbl', text: 'القسم / الفوج التربوي:' }),
+            h('strong', { text: secName || 'غير محدد' })
+          ),
+          h('div', { class: 'wk-meta-pill' },
+            h('span', { class: 'wk-meta-lbl', text: 'الموسم الدراسي:' }),
+            h('strong', { text: st.academic_year || '2026-2027' })
+          ),
+          statusText ? h('div', { class: 'wk-meta-pill ok' },
+            h('strong', { text: statusText })
+          ) : null
+        )
+      );
+
+      var activeDomains = (st.domains || []).filter(function (dm) { return dm && dm.domain && dm.skills && dm.skills.length; });
+      var domSummary = null;
+      if (activeDomains.length) {
+        domSummary = h('div', { class: 'wk-domains-bar' },
+          h('div', { class: 'wk-domains-title', text: '📚 المجالات والمهارات التربوية المستهدفة في هذا البرنامج (' + activeDomains.length + ' مجالات):' }),
+          h('div', { class: 'wk-domains-grid' }, activeDomains.map(function (dm) {
+            return h('div', { class: 'wk-domain-box' },
+              h('strong', { class: 'wk-domain-name', text: '📘 ' + dm.domain }),
+              h('div', { class: 'wk-domain-skills' }, dm.skills.map(function (sk) {
+                return h('span', { class: 'wk-skill-tag', text: '🎯 ' + sk });
+              }))
+            );
+          }))
+        );
+      }
+
+      var tbody = h('tbody');
+      WEEK_DAYS.forEach(function (wd) {
+        var dayObj = (st.days || []).filter(function (dy) { return dy.day === wd.key; })[0] || { day: wd.key, label: wd.label, sessions: [] };
+        var nonEmptySessions = (dayObj.sessions || []).filter(function (s) { return s && s.items && s.items.length; });
+
+        var sessCell;
+        if (nonEmptySessions.length) {
+          sessCell = h('div', { class: 'wk-sessions-grid' }, nonEmptySessions.map(function (sess, idx) {
+            return h('div', { class: 'wk-session-box' },
+              h('div', { class: 'wk-session-hdr' },
+                h('span', { class: 'wk-sess-badge', text: 'الحصة ' + (idx + 1) }),
+                h('span', { class: 'wk-sess-time', dir: 'ltr', text: '⏰ ' + (sess.start || '08:30') + ' – ' + (sess.end || '09:30') })
+              ),
+              h('div', { class: 'wk-session-body' }, (sess.items || []).map(function (it) {
+                return h('div', { class: 'wk-cell-item' },
+                  h('div', { class: 'wk-cell-domain' },
+                    h('span', { class: 'wk-lbl', text: 'المجال:' }),
+                    h('strong', { text: ' ' + (it.domain || '—') })
+                  ),
+                  h('div', { class: 'wk-cell-skill' },
+                    h('span', { class: 'wk-lbl', text: 'المهارة:' }),
+                    h('span', { text: ' ' + (it.skill || '—') })
+                  )
+                );
+              }))
+            );
+          }));
+        } else {
+          sessCell = h('div', { class: 'wk-no-sessions', text: '— لا توجد حصص مبرمجة في هذا اليوم —' });
+        }
+
+        tbody.appendChild(h('tr', null,
+          h('td', { class: 'wk-day-td' }, h('strong', { class: 'wk-day-name', text: wd.label })),
+          h('td', { class: 'wk-sessions-td' }, sessCell)
+        ));
+      });
+
+      var tableWrap = h('div', { class: 'wk-table-wrap' },
+        h('table', { class: 'wk-table' },
+          h('thead', null,
+            h('tr', null,
+              h('th', { class: 'wk-th-day', text: 'اليوم' }),
+              h('th', { class: 'wk-th-sessions', text: 'الحصص اليومية والتوقيت (المجال والمهارة في نفس الخانة)' })
+            )
+          ),
+          tbody
+        )
+      );
+
+      var notesEl = st.notes ? h('div', { class: 'wk-sheet-notes' },
+        h('strong', { text: 'ملاحظات وتوجيهات بيداغوجية: ' }),
+        h('span', { text: st.notes })
+      ) : null;
+
+      return h('div', { class: 'wk-sheet' }, head, domSummary, tableWrap, notesEl);
+    }
+
+    function printWeeklySheet(st, secName, statusText) {
+      var sheetNode = buildWeeklySheet(st, secName, statusText);
+      openModal(h('div', { class: 'modal-body wk-modal-print' },
+        sheetNode,
+        h('div', { class: 'modal-actions no-print' },
+          h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
+          h('button', { class: 'btn gold', type: 'button', text: '🖨️ طباعة الجدول الأسبوعي', onclick: function () { window.print(); } })
+        )
+      ));
+    }
+
+    function openProgramBuilder(p) {
+      var st = parseProgState(p);
+      v.textContent = '';
+
+      var topBar = h('div', { class: 'bar-sub' },
+        h('h2', { text: p ? '✏️ تعديل البرنامج الأسبوعي للقسم' : '➕ إعداد برنامج أسبوعي جديد للقسم' }),
+        h('div', { class: 'row-actions' },
+          h('button', { class: 'btn light', type: 'button', text: '🔙 رجوع لقائمة البرامج', onclick: function () { go('programs'); } })
+        )
+      );
+      v.appendChild(topBar);
+
+      var previewHost = h('div', { class: 'wk-preview-host' });
+      var domainsHost = h('div', { class: 'prog-domains-host' });
+      var daysHost = h('div', { class: 'prog-days-host' });
+
+      function getSecName() {
+        return nameOf(sections, st.section_id, 'name') || 'غير محدد';
+      }
+
+      function allSelectedPairs() {
+        var list = [];
+        (st.domains || []).forEach(function (dm) {
+          if (!dm || !dm.domain) return;
+          (dm.skills || []).forEach(function (sk) {
+            if (!list.some(function (x) { return x.domain === dm.domain && x.skill === sk; })) {
+              list.push({ domain: dm.domain, skill: sk });
+            }
+          });
+        });
+        return list;
+      }
+
+      function ensureInDomains(domain, skill) {
+        if (!domain) return;
+        var dm = st.domains.filter(function (x) { return x.domain === domain; })[0];
+        if (!dm) {
+          dm = { domain: domain, skills: [] };
+          st.domains.push(dm);
+        }
+        if (skill && dm.skills.indexOf(skill) < 0) {
+          dm.skills.push(skill);
+        }
+      }
+
+      function refreshPreview() {
+        previewHost.textContent = '';
+        previewHost.appendChild(buildWeeklySheet(st, getSecName(), st.status === 'published' ? 'معتمد ومصدَّر للأولياء' : 'معاينة قبل التصدير'));
+      }
+
+      // 1. بطاقة اختيار القسم والموسم
+      var secSelect = h('select', { id: 'prog_sec_id' },
+        h('option', { value: '', text: '— اختر القسم / الفوج التربوي —' }),
+        secOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); })
+      );
+      secSelect.value = st.section_id || '';
+      secSelect.addEventListener('change', function () {
+        st.section_id = secSelect.value;
+        refreshPreview();
+      });
+
+      var yearInput = h('input', { type: 'text', maxlength: 20, value: st.academic_year });
+      yearInput.addEventListener('input', function () {
+        st.academic_year = DE.clean(yearInput.value, 20) || '2026-2027';
+        refreshPreview();
+      });
+
+      var notesInput = h('textarea', { rows: 2, maxlength: 2000, placeholder: 'ملاحظات أو توجيهات بيداغوجية إضافية تظهر أسفل جدول البرنامج الأسبوعي (اختياري)...' });
+      notesInput.value = st.notes || '';
+      notesInput.addEventListener('input', function () {
+        st.notes = DE.clean(notesInput.value, 2000);
+        refreshPreview();
+      });
+
+      var basicCard = h('div', { class: 'card prog-step-card' },
+        h('h3', { class: 'prog-step-title', text: '1️⃣ بيانات القسم والموسم الدراسي' }),
+        h('div', { class: 'prog-grid-2' },
+          h('label', { class: 'fld' }, h('span', { text: 'القسم / الفوج التربوي المستهدف *' }), secSelect),
+          h('label', { class: 'fld' }, h('span', { text: 'الموسم الدراسي *' }), yearInput)
+        ),
+        h('label', { class: 'fld' }, h('span', { text: 'ملاحظات وتوجيهات عامة للأولياء (اختياري)' }), notesInput)
+      );
+      v.appendChild(basicCard);
+
+      // 2. بطاقة المجالات والمهارات المتعددة
+      function renderDomains() {
+        domainsHost.textContent = '';
+        st.domains.forEach(function (dm, dIdx) {
+          var curDomain = dm.domain || (domainKeys[0] || '');
+          dm.domain = curDomain;
+          var domainSkills = CURR[curDomain] || [];
+
+          var domSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن المجال التربوي...', autocomplete: 'off' });
+          var domSel = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
+          domSel.value = curDomain;
+
+          domSearch.addEventListener('input', function () {
+            var q = normAr(domSearch.value.trim());
+            var keep = domSel.value;
+            while (domSel.firstChild) domSel.removeChild(domSel.firstChild);
+            domainKeys.forEach(function (dk) {
+              if (!q || normAr(dk).indexOf(q) >= 0) {
+                domSel.appendChild(h('option', { value: dk, text: dk }));
+              }
+            });
+            if (domainKeys.indexOf(keep) >= 0 && (!q || normAr(keep).indexOf(q) >= 0)) {
+              domSel.value = keep;
+            } else if (domSel.options.length) {
+              domSel.selectedIndex = 0;
+              dm.domain = domSel.value;
+              renderDomains();
+              renderDays();
+              refreshPreview();
+            }
+          });
+
+          domSel.addEventListener('change', function () {
+            dm.domain = domSel.value;
+            renderDomains();
+            renderDays();
+            refreshPreview();
+          });
+
+          var sklSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث في مهارات هذا المجال (' + domainSkills.length + ' مهارة)...', autocomplete: 'off' });
+          var sklListBox = h('div', { class: 'prog-skills-checklist' });
+          var selectedTagsBox = h('div', { class: 'prog-selected-tags' });
+
+          function refreshSelectedTags() {
+            selectedTagsBox.textContent = '';
+            if (!dm.skills.length) {
+              selectedTagsBox.appendChild(h('span', { class: 'muted small', text: 'لم يتم تحديد مهارات من هذا المجال بعد — ضع علامة ✓ على مهارة أو أكثر من القائمة أعلاه.' }));
+              return;
+            }
+            dm.skills.forEach(function (sk) {
+              selectedTagsBox.appendChild(h('span', { class: 'prog-tag-chip' },
+                h('span', { text: '✓ ' + sk }),
+                h('button', {
+                  type: 'button',
+                  class: 'prog-tag-rm',
+                  text: '✕',
+                  title: 'إزالة المهارة',
+                  onclick: function () {
+                    dm.skills = dm.skills.filter(function (x) { return x !== sk; });
+                    renderDomains();
+                    renderDays();
+                    refreshPreview();
+                  }
+                })
+              ));
+            });
+          }
+
+          function populateSkillCheckboxes() {
+            var q = normAr(sklSearch.value.trim());
+            sklListBox.textContent = '';
+            var shown = 0;
+            domainSkills.forEach(function (sk) {
+              if (q && normAr(sk).indexOf(q) === -1) return;
+              shown++;
+              var isChecked = dm.skills.indexOf(sk) >= 0;
+              var cb = h('input', { type: 'checkbox', checked: isChecked });
+              cb.addEventListener('change', function () {
+                if (cb.checked) {
+                  if (dm.skills.indexOf(sk) < 0) dm.skills.push(sk);
+                } else {
+                  dm.skills = dm.skills.filter(function (x) { return x !== sk; });
+                }
+                refreshSelectedTags();
+                renderDays();
+                refreshPreview();
+              });
+              sklListBox.appendChild(h('label', { class: 'prog-skl-item' + (isChecked ? ' active' : '') }, cb, h('span', { text: sk })));
+            });
+            if (!shown) {
+              sklListBox.appendChild(h('p', { class: 'muted small', text: 'لا توجد مهارات مطابقة لعبارة البحث.' }));
+            }
+          }
+
+          sklSearch.addEventListener('input', populateSkillCheckboxes);
+          populateSkillCheckboxes();
+          refreshSelectedTags();
+
+          var blockCard = h('div', { class: 'prog-domain-card' },
+            h('div', { class: 'prog-domain-card-hdr' },
+              h('strong', { text: '📘 المجال التربوي رقم (' + (dIdx + 1) + ')' }),
+              h('div', { class: 'row-actions' },
+                h('span', { class: 'badge gold', text: dm.skills.length + ' مهارة محددة' }),
+                st.domains.length > 1 ? h('button', {
+                  type: 'button',
+                  class: 'btn small danger',
+                  text: '🗑️ حذف هذا المجال',
+                  onclick: function () {
+                    st.domains.splice(dIdx, 1);
+                    renderDomains();
+                    renderDays();
+                    refreshPreview();
+                  }
+                }) : null
+              )
+            ),
+            h('label', { class: 'fld' },
+              h('span', { text: 'اختر المجال التربوي:' }),
+              domSearch,
+              domSel
+            ),
+            h('div', { class: 'fld' },
+              h('span', { text: 'اختر مهارة أو أكثر من مهارات «' + curDomain + '»:' }),
+              sklSearch,
+              sklListBox
+            ),
+            h('div', { class: 'prog-selected-wrap' },
+              h('small', { class: 'muted', text: 'المهارات المختارة من هذا المجال:' }),
+              selectedTagsBox
+            )
+          );
+          domainsHost.appendChild(blockCard);
+        });
+      }
+
+      function addAnotherDomain() {
+        var used = st.domains.map(function (dm) { return dm.domain; });
+        var nextDom = domainKeys.filter(function (dk) { return used.indexOf(dk) < 0; })[0] || domainKeys[0] || '';
+        st.domains.push({ domain: nextDom, skills: [] });
+        renderDomains();
+        renderDays();
+        refreshPreview();
+        toast('تمت إضافة خانة مجال جديد — اختر المجال ومهاراته.', 'ok');
+      }
+
+      function autoDistributeToDays() {
+        var pairs = allSelectedPairs();
+        if (!pairs.length) {
+          return toast('اختر مهارة واحدة على الأقل من المجالات أعلاه أولاً لتوزيعها على الحصص.', 'bad');
+        }
+        st.days.forEach(function (dy, dIdx) {
+          if (!dy.sessions.length) {
+            dy.sessions.push({ start: '08:30', end: '09:30', items: [] });
+          }
+          var targetSess = dy.sessions[0];
+          var item = pairs[dIdx % pairs.length];
+          if (item && !targetSess.items.some(function (x) { return x.domain === item.domain && x.skill === item.skill; })) {
+            targetSess.items.push({ domain: item.domain, skill: item.skill });
+          }
+        });
+        renderDays();
+        refreshPreview();
+        toast('تم إدراج المهارات المختارة في حصص أيام الأسبوع (الأحد – الخميس). يمكنك تعديلها بحرية.', 'ok');
+      }
+
+      var domainsStepCard = h('div', { class: 'card prog-step-card' },
+        h('div', { class: 'bar-sub' },
+          h('div', null,
+            h('h3', { class: 'prog-step-title', text: '2️⃣ المجالات التربوية والمهارات المستهدفة (إمكانية إضافة أكثر من مجال)' }),
+            h('p', { class: 'muted small', text: 'يمكنك إضافة مجال أو عدة مجالات تربوية مختلفة، وعند اختيار كل مجال تظهر المهارات الخاصة به لتختار منها مهارة أو أكثر.' })
+          ),
+          h('div', { class: 'row-actions' },
+            h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال تربوي آخر', onclick: addAnotherDomain }),
+            h('button', { type: 'button', class: 'btn light small', text: '⚡ توزيع المهارات المختارة على أيام الأسبوع', onclick: autoDistributeToDays })
+          )
+        ),
+        domainsHost,
+        h('div', { class: 'prog-add-domain-bar' },
+          h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال تربوي آخر ومهاراته', onclick: addAnotherDomain })
+        )
+      );
+      v.appendChild(domainsStepCard);
+
+      // 3. بطاقة جدول البرنامج الأسبوعي (الأحد إلى الخميس)
+      function renderDays() {
+        daysHost.textContent = '';
+        var selectedPairs = allSelectedPairs();
+
+        st.days.forEach(function (dayObj) {
+          var sessListWrap = h('div', { class: 'prog-day-sessions' });
+
+          if (!dayObj.sessions.length) {
+            sessListWrap.appendChild(h('p', { class: 'muted small', text: 'لا توجد حصص مضافة ليوم ' + dayObj.label + ' بعد. اضغط «➕ إضافة حصة» لإضافة حصة وتحديد توقيتها ومهاراتها.' }));
+          }
+
+          dayObj.sessions.forEach(function (sess, sIdx) {
+            var startIn = h('input', { type: 'time', class: 'sess-time-input', dir: 'ltr', value: sess.start || '08:30' });
+            var endIn = h('input', { type: 'time', class: 'sess-time-input', dir: 'ltr', value: sess.end || '09:30' });
+
+            startIn.addEventListener('change', function () {
+              sess.start = startIn.value || '08:30';
+              refreshPreview();
+            });
+            endIn.addEventListener('change', function () {
+              sess.end = endIn.value || '09:30';
+              refreshPreview();
+            });
+
+            // الخانة التي تعرض المجال مع المهارة داخل الحصة
+            var itemsBox = h('div', { class: 'prog-sess-items-cell' });
+            if (!sess.items.length) {
+              itemsBox.appendChild(h('div', { class: 'wk-empty-cell-hint', text: 'الخانة فارغة حالياً — اختر مهارة أو أكثر من الأسفل ليظهر المجال مع المهارة في هذه الخانة.' }));
+            } else {
+              sess.items.forEach(function (it, iIdx) {
+                itemsBox.appendChild(h('div', { class: 'wk-cell-item editable' },
+                  h('div', { class: 'wk-cell-content' },
+                    h('div', { class: 'wk-cell-domain' },
+                      h('span', { class: 'wk-lbl', text: '📘 المجال:' }),
+                      h('strong', { text: ' ' + it.domain })
+                    ),
+                    h('div', { class: 'wk-cell-skill' },
+                      h('span', { class: 'wk-lbl', text: '🎯 المهارة:' }),
+                      h('span', { text: ' ' + it.skill })
+                    )
+                  ),
+                  h('button', {
+                    type: 'button',
+                    class: 'btn small danger',
+                    text: '✕ حذف',
+                    onclick: function () {
+                      sess.items.splice(iIdx, 1);
+                      renderDays();
+                      refreshPreview();
+                    }
+                  })
+                ));
+              });
+            }
+
+            // شريط الإدراج السريع من المهارات المختارة في الخطوة 2
+            var quickBar = null;
+            if (selectedPairs.length) {
+              var quickBtns = selectedPairs.map(function (pair) {
+                var alreadyIn = sess.items.some(function (x) { return x.domain === pair.domain && x.skill === pair.skill; });
+                return h('button', {
+                  type: 'button',
+                  class: 'btn small ' + (alreadyIn ? 'gold' : 'light'),
+                  text: (alreadyIn ? '✓ ' : '➕ ') + pair.domain + ' — ' + pair.skill,
+                  onclick: function () {
+                    if (alreadyIn) {
+                      sess.items = sess.items.filter(function (x) { return !(x.domain === pair.domain && x.skill === pair.skill); });
+                    } else {
+                      sess.items.push({ domain: pair.domain, skill: pair.skill });
+                    }
+                    renderDays();
+                    refreshPreview();
+                  }
+                });
+              });
+              quickBar = h('div', { class: 'prog-sess-quick' },
+                h('small', { class: 'prog-quick-lbl', text: '⚡ اختيار سريع من المجالات والمهارات المحددة أعلاه (اضغط للإدراج أو الإزالة في نفس الخانة):' }),
+                h('div', { class: 'prog-quick-btns' }, quickBtns)
+              );
+            }
+
+            // منتقي مباشر لإضافة أي مجال ومهارة أو أكثر داخل الحصة نفسها
+            var pickerDom = sess._pickerDomain || (st.domains[0] && st.domains[0].domain) || domainKeys[0] || '';
+            var pDomSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن مجال لإضافته للحصة...', autocomplete: 'off' });
+            var pDomSelect = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
+            pDomSelect.value = pickerDom;
+
+            var pSkillSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن مهارة أو أكثر لإدراجها في هذه الحصة...', autocomplete: 'off' });
+            var pSkillChecklist = h('div', { class: 'prog-sess-skill-list' });
+
+            function renderSessionSkillChoices() {
+              var activeDom = pDomSelect.value || domainKeys[0] || '';
+              sess._pickerDomain = activeDom;
+              var skList = CURR[activeDom] || [];
+              var q = normAr(pSkillSearch.value.trim());
+              pSkillChecklist.textContent = '';
+              var count = 0;
+              skList.forEach(function (sk) {
+                if (q && normAr(sk).indexOf(q) === -1) return;
+                count++;
+                var inSess = sess.items.some(function (x) { return x.domain === activeDom && x.skill === sk; });
+                var cb = h('input', { type: 'checkbox', checked: inSess });
+                cb.addEventListener('change', function () {
+                  if (cb.checked) {
+                    if (!sess.items.some(function (x) { return x.domain === activeDom && x.skill === sk; })) {
+                      sess.items.push({ domain: activeDom, skill: sk });
+                    }
+                    ensureInDomains(activeDom, sk);
+                  } else {
+                    sess.items = sess.items.filter(function (x) { return !(x.domain === activeDom && x.skill === sk); });
+                  }
+                  renderDomains();
+                  renderDays();
+                  refreshPreview();
+                });
+                pSkillChecklist.appendChild(h('label', { class: 'prog-skl-item' + (inSess ? ' active' : '') },
+                  cb,
+                  h('span', { text: sk })
+                ));
+              });
+              if (!count) {
+                pSkillChecklist.appendChild(h('p', { class: 'muted small', text: 'لا توجد مهارات مطابقة.' }));
+              }
+            }
+
+            pDomSearch.addEventListener('input', function () {
+              var q = normAr(pDomSearch.value.trim());
+              var keep = pDomSelect.value;
+              while (pDomSelect.firstChild) pDomSelect.removeChild(pDomSelect.firstChild);
+              domainKeys.forEach(function (dk) {
+                if (!q || normAr(dk).indexOf(q) >= 0) {
+                  pDomSelect.appendChild(h('option', { value: dk, text: dk }));
+                }
+              });
+              if (pDomSelect.options.length) {
+                if (domainKeys.indexOf(keep) >= 0 && (!q || normAr(keep).indexOf(q) >= 0)) pDomSelect.value = keep;
+                else pDomSelect.selectedIndex = 0;
+                renderSessionSkillChoices();
+              }
+            });
+
+            pDomSelect.addEventListener('change', renderSessionSkillChoices);
+            pSkillSearch.addEventListener('input', renderSessionSkillChoices);
+            renderSessionSkillChoices();
+
+            var directPickerDetails = h('details', { class: 'prog-sess-details' },
+              h('summary', { text: '➕ اختيار وإدراج مجال ومهارة أو أكثر مباشرة في هذه الحصة (من جميع المجالات)' }),
+              h('div', { class: 'prog-sess-picker-body' },
+                h('div', { class: 'prog-grid-2' },
+                  h('label', { class: 'fld' }, h('span', { text: '1. اختر المجال التربوي:' }), pDomSearch, pDomSelect),
+                  h('label', { class: 'fld' }, h('span', { text: '2. ابحث واختر مهارة أو أكثر (تُدرج فوراً مع المجال في نفس الخانة):' }), pSkillSearch)
+                ),
+                pSkillChecklist
+              )
+            );
+
+            var sessBox = h('div', { class: 'prog-sess-card' },
+              h('div', { class: 'prog-sess-hdr' },
+                h('span', { class: 'badge gold', text: 'الحصة ' + (sIdx + 1) + ' — يوم ' + dayObj.label }),
+                h('div', { class: 'prog-sess-times' },
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ وقت البداية (من):' }), startIn),
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ وقت النهاية (إلى):' }), endIn)
+                ),
+                h('button', {
+                  type: 'button',
+                  class: 'btn small danger',
+                  text: '🗑️ حذف الحصة',
+                  onclick: function () {
+                    dayObj.sessions.splice(sIdx, 1);
+                    renderDays();
+                    refreshPreview();
+                  }
+                })
+              ),
+              h('div', { class: 'prog-sess-cell-wrap' },
+                h('small', { class: 'muted', text: 'محتوى خانة الحصة في الجدول (المجال + المهارة في نفس الخانة):' }),
+                itemsBox
+              ),
+              quickBar,
+              directPickerDetails
+            );
+
+            sessListWrap.appendChild(sessBox);
+          });
+
+          var dayCard = h('div', { class: 'prog-day-card' },
+            h('div', { class: 'prog-day-hdr' },
+              h('div', { class: 'prog-day-title' },
+                h('strong', { text: '📅 يوم ' + dayObj.label }),
+                h('span', { class: 'badge', text: dayObj.sessions.length + ' حصة' })
+              ),
+              h('button', {
+                type: 'button',
+                class: 'btn small gold',
+                text: '➕ إضافة حصة في يوم ' + dayObj.label,
+                onclick: function () {
+                  var lastSess = dayObj.sessions[dayObj.sessions.length - 1];
+                  var nextStart = lastSess ? (lastSess.end || '09:30') : '08:30';
+                  var nextEnd = addHour(nextStart);
+                  dayObj.sessions.push({ start: nextStart, end: nextEnd, items: [] });
+                  renderDays();
+                  refreshPreview();
+                }
+              })
+            ),
+            sessListWrap
+          );
+
+          daysHost.appendChild(dayCard);
+        });
+      }
+
+      var scheduleStepCard = h('div', { class: 'card prog-step-card' },
+        h('div', { class: 'bar-sub' },
+          h('div', null,
+            h('h3', { class: 'prog-step-title', text: '3️⃣ جدول البرنامج الأسبوعي (الأيام من الأحد إلى الخميس)' }),
+            h('p', { class: 'muted small', text: 'حدد لكل يوم الحصص التربوية، وعدّل توقيت البداية والنهاية لكل حصة، واختر مهارة أو أكثر ليظهر المجال مع المهارة في نفس الخانة.' })
+          )
+        ),
+        daysHost
+      );
+      v.appendChild(scheduleStepCard);
+
+      // 4. المعاينة النهائية وأزرار الحفظ والتصدير للأولياء
+      async function saveProgram(exportToParents) {
+        if (!st.section_id) {
+          return toast('يرجى اختيار القسم / الفوج التربوي المستهدف أولاً.', 'bad');
+        }
+
+        // إذا اختار المربي مجالات ومهارات في الخطوة 2 ولم يوزعها بعد على الحصص، ندرجها تلقائياً حتى لا يُصدَّر الجدول فارغاً
+        var totalSessItems = 0;
+        st.days.forEach(function (dy) {
+          (dy.sessions || []).forEach(function (s) { totalSessItems += (s.items ? s.items.length : 0); });
+        });
+        var selectedPairs = allSelectedPairs();
+        if (totalSessItems === 0 && selectedPairs.length > 0) {
+          st.days.forEach(function (dy, idx) {
+            if (!dy.sessions.length) dy.sessions.push({ start: '08:30', end: '09:30', items: [] });
+            var pair = selectedPairs[idx % selectedPairs.length];
+            if (pair) dy.sessions[0].items.push({ domain: pair.domain, skill: pair.skill });
+          });
+          totalSessItems = selectedPairs.length;
+        }
+
+        if (totalSessItems === 0 && selectedPairs.length === 0) {
+          return toast('يرجى اختيار مجال ومهارة واحدة على الأقل أو إضافتها داخل حصص الجدول الأسبوعي.', 'bad');
+        }
+
+        var secName = getSecName();
+        var cleanDomains = st.domains.filter(function (dm) { return dm && dm.domain; }).map(function (dm) {
+          return { domain: dm.domain, skills: (dm.skills || []).slice() };
+        });
+
+        var domNames = cleanDomains.map(function (dm) { return dm.domain; });
+        var progTitle = DE.clean('البرنامج الأسبوعي — ' + secName + (domNames.length ? (' (' + domNames.join('، ') + ')') : ''), 155);
+
+        var goalsLines = [];
+        cleanDomains.forEach(function (dm) {
+          if (dm.skills && dm.skills.length) {
+            goalsLines.push('• ' + dm.domain + ': ' + dm.skills.join(' ، '));
+          } else {
+            goalsLines.push('• ' + dm.domain);
+          }
+        });
+        var goalsSummary = DE.clean(goalsLines.join('\n'), 4800) || progTitle;
+
+        var descLines = [];
+        if (st.notes) descLines.push(st.notes);
+        st.days.forEach(function (dy) {
+          var activeS = (dy.sessions || []).filter(function (s) { return s.items && s.items.length; });
+          if (activeS.length) {
+            var sTxt = activeS.map(function (s, idx) {
+              var itTxt = s.items.map(function (it) { return '[' + it.domain + ' — ' + it.skill + ']'; }).join(' + ');
+              return 'الحصة ' + (idx + 1) + ' (' + (s.start || '08:30') + '-' + (s.end || '09:30') + '): ' + itTxt;
+            }).join(' | ');
+            descLines.push(dy.label + ': ' + sTxt);
+          }
+        });
+        var descSummary = DE.clean(descLines.join('\n'), 4800) || null;
+
+        var schedulePayload = st.days.map(function (dy) {
+          return {
+            day: dy.day,
+            label: dy.label,
+            section_name: secName,
+            academic_year: st.academic_year || '2026-2027',
+            notes: st.notes || '',
+            domains: cleanDomains,
+            sessions: (dy.sessions || []).filter(function (s) { return s.items && s.items.length; }).map(function (s) {
+              return {
+                start: s.start || '08:30',
+                end: s.end || '09:30',
+                items: s.items.map(function (it) { return { domain: it.domain, skill: it.skill }; })
+              };
+            })
+          };
+        });
+
+        var isPub = exportToParents ? true : false;
+        var body = {
+          section_id: st.section_id,
+          title: progTitle,
+          academic_year: st.academic_year || '2026-2027',
+          description: descSummary,
+          goals: goalsSummary,
+          schedule: schedulePayload,
+          status: isPub ? 'published' : 'draft',
+          published_at: isPub ? new Date().toISOString() : null
+        };
+
+        if (st.id) {
+          await C.rest('PATCH', '/educational_programs?id=eq.' + uid(st.id), body);
+        } else {
+          await C.rest('POST', '/educational_programs', body);
+        }
+        bust();
+        toast(isPub ? 'تم اعتماد وتصدير البرنامج الأسبوعي إلى أولياء القسم بنجاح!' : 'تم حفظ البرنامج الأسبوعي كمسودة بنجاح.', 'ok');
+        go('programs');
+      }
+
+      var exportBtn = h('button', { type: 'button', class: 'btn gold', text: '📤 تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtn = h('button', { type: 'button', class: 'btn light', text: '💾 حفظ كمسودة' });
+      var printPreviewBtn = h('button', {
+        type: 'button',
+        class: 'btn',
+        text: '🖨️ طباعة الجدول الأسبوعي',
+        onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
+      });
+
+      var exportBtnBottom = h('button', { type: 'button', class: 'btn gold', text: '📤 تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtnBottom = h('button', { type: 'button', class: 'btn light', text: '💾 حفظ كمسودة' });
+      var printBtnBottom = h('button', {
+        type: 'button',
+        class: 'btn',
+        text: '🖨️ طباعة الجدول الأسبوعي',
+        onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
+      });
+
+      exportBtn.addEventListener('click', function () { act(exportBtn, function () { return saveProgram(true); }); });
+      draftBtn.addEventListener('click', function () { act(draftBtn, function () { return saveProgram(false); }); });
+      exportBtnBottom.addEventListener('click', function () { act(exportBtnBottom, function () { return saveProgram(true); }); });
+      draftBtnBottom.addEventListener('click', function () { act(draftBtnBottom, function () { return saveProgram(false); }); });
+
+      var previewCard = h('div', { class: 'card prog-step-card' },
+        h('div', { class: 'bar-sub' },
+          h('div', null,
+            h('h3', { class: 'prog-step-title', text: '4️⃣ معاينة الجدول الرسمي المصدَّر للأولياء (البرنامج الأسبوعي)' }),
+            h('p', { class: 'muted small', text: 'هذا هو الشكل الرسمي الذي سيظهر في فضاء الأولياء مع لوغو المركز واسم القسم وتفصيل الأيام والحصص.' })
+          ),
+          h('div', { class: 'row-actions' }, printPreviewBtn, draftBtn, exportBtn)
+        ),
+        previewHost,
+        h('div', { class: 'prog-submit-bar' },
+          h('button', { type: 'button', class: 'btn light', text: 'إلغاء والعودة', onclick: function () { go('programs'); } }),
+          printBtnBottom,
+          draftBtnBottom,
+          exportBtnBottom
+        )
+      );
+
+      v.appendChild(previewCard);
+
+      renderDomains();
+      renderDays();
+      refreshPreview();
+      window.scrollTo(0, 0);
     }
 
     listView(v, {
-      title: 'البرامج التربوية للأقسام',
-      addLabel: '➕ إضافة برنامج تربوي',
-      onAdd: function () { editProgram(null); },
+      title: 'البرامج التربوية والجداول الأسبوعية للأقسام',
+      addLabel: '➕ إعداد برنامج أسبوعي جديد',
+      onAdd: function () { openProgramBuilder(null); },
       rows: rows,
-      empty: 'لا توجد برامج تربوية مسجلة.',
-      search: function (p) { return p.title + ' ' + nameOf(sections, p.section_id, 'name'); },
+      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط «➕ إعداد برنامج أسبوعي جديد» للبدء.',
+      search: function (p) { return (p.title || '') + ' ' + (p.goals || '') + ' ' + nameOf(sections, p.section_id, 'name'); },
+      details: function (p) {
+        var st = parseProgState(p);
+        var sName = nameOf(sections, p.section_id, 'name');
+        return buildWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة');
+      },
       filters: [
         { label: 'القسم', opts: secOpts, test: function (p, x) { return p.section_id === x; } },
-        { label: 'المجال التربوي', opts: domainOpts, test: function (p, x) { return (p.title || '').indexOf(x) >= 0; } },
-        { label: 'الحالة', opts: [['published', 'معتمد ومنشور'], ['draft', 'مسودة']], test: function (p, x) { return p.status === x; } }
+        { label: 'المجال التربوي', opts: domainOpts, test: function (p, x) { return (p.title || '').indexOf(x) >= 0 || (p.goals || '').indexOf(x) >= 0 || JSON.stringify(p.schedule || []).indexOf(x) >= 0; } },
+        { label: 'الحالة', opts: [['published', 'مصدَّر ومنشور للأولياء'], ['draft', 'مسودة قيد الإعداد']], test: function (p, x) { return p.status === x; } }
       ],
       cols: [
-        { label: 'المجال والمهارة التربوية', get: function (p) { return p.title; }, sort: function (p) { return p.title; } },
-        { label: 'القسم المستهدف', get: function (p) { return nameOf(sections, p.section_id, 'name'); } },
+        { label: 'البرنامج الأسبوعي والمجالات', get: function (p) { return p.title; }, sort: function (p) { return p.title; } },
+        { label: 'القسم المستهدف', get: function (p) { return nameOf(sections, p.section_id, 'name'); }, sort: function (p) { return nameOf(sections, p.section_id, 'name'); } },
         { label: 'الموسم', get: function (p) { return p.academic_year || '2026-2027'; } },
-        { label: 'الحالة', get: function (p) { return badge(p.status === 'published' ? 'معتمد ومنشور' : 'مسودة', p.status === 'published' ? 'ok' : 'gray'); } },
-        { label: 'تاريخ النشر', get: function (p) { return p.published_at ? fmt(p.published_at) : '—'; } }
+        { label: 'حالة التصدير للأولياء', get: function (p) { return badge(p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة', p.status === 'published' ? 'ok' : 'gray'); } },
+        { label: 'تاريخ التصدير', get: function (p) { return p.published_at ? fmt(p.published_at) : '—'; } }
       ],
       actions: function (p) {
+        var st = parseProgState(p);
+        var sName = nameOf(sections, p.section_id, 'name');
         return [
-          rbtn('تعديل', function () { editProgram(p); }),
+          rbtn('📋 الجدول والطباعة', function () { printWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة'); }, 'gold'),
+          rbtn('✏️ تعديل', function () { openProgramBuilder(p); }),
           p.status === 'published'
-            ? rbtn('إلغاء النشر', async function () {
+            ? rbtn('إلغاء التصدير', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'draft', published_at: null });
-              bust(); toast('تم إلغاء النشر وتحويل البرنامج لمسودة.', 'ok'); go('programs');
+              bust(); toast('تم إلغاء التصدير وتحويل البرنامج لمسودة.', 'ok'); go('programs');
             }, 'light')
-            : rbtn('اعتماد ونشر', async function () {
+            : rbtn('📤 تصدير للأولياء', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'published', published_at: new Date().toISOString() });
-              bust(); toast('تم نشر البرنامج لأولياء القسم بنجاح.', 'ok'); go('programs');
+              bust(); toast('تم تصدير ونشر البرنامج الأسبوعي لأولياء القسم بنجاح.', 'ok'); go('programs');
             }, 'gold'),
           rbtn('حذف', async function () {
-            if (!(await ask({ title: 'حذف البرنامج التربوي؟', msg: 'سيُحذف البرنامج نهائياً.', ok: 'حذف', danger: true }))) return;
+            if (!(await ask({ title: 'حذف البرنامج الأسبوعي؟', msg: 'سيُحذف البرنامج وجدوله الأسبوعي نهائياً.', ok: 'حذف', danger: true }))) return;
             await C.rest('DELETE', '/educational_programs?id=eq.' + uid(p.id));
             bust(); toast('تم حذف البرنامج.', 'ok'); go('programs');
           }, 'danger')
@@ -1294,24 +2082,59 @@
       h('p', { class: 'muted', text: canManage ? 'أنت المدير الرئيسي (المالك): تملك صلاحيات دعوة المديرين، إدارة الأدوار، وتصفية سجلات العمليات والتدقيق.' : 'صلاحية العرض فقط. إدارة حسابات المديرين محصورة بالمدير الرئيسي للمركز.' })
     ));
 
+    function genAdminCode() {
+      var al = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789', o;
+      do {
+        var a = new Uint32Array(14); crypto.getRandomValues(a); o = '';
+        for (var i = 0; i < a.length; i++) o += al.charAt(a[i] % al.length);
+      } while (!/[A-Z]/.test(o) || !/[0-9]/.test(o));
+      return o;
+    }
     function invite() {
       return openForm({
-        title: 'دعوة مدير جديد',
-        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }],
+        title: 'إضافة مدير جديد',
+        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: 'إنشاء الحساب بكلمة المرور', light: true }],
         fields: [
-          { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254,
-            hint: 'ستصل الدعوة إلى هذا البريد. المدعو يختار كلمة مروره بنفسه عند فتح الرابط.' },
-          { k: 'role', label: 'الصلاحية', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] }
+          { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254 },
+          { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] },
+          { k: 'password', label: 'كلمة المرور (اختياري — للزر الثاني فقط)', type: 'text', max: 72, gen: genAdminCode,
+            hint: 'للإنشاء المباشر دون بريد: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم. سلّمها للمدير يدويًا؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' }
         ],
-        onSubmit: async function (x) {
+        onSubmit: async function (x, key) {
           var email = x.email.toLowerCase();
-          var res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
+          if (key === 'pw') {
+            var pw = x.password || '';
+            if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw) || new TextEncoder().encode(pw).length > 72) throw new Error('كلمة المرور: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم واحد على الأقل.');
+            await C.fn('admin-users', { action: 'create_admin', email: email, role: x.role, password: pw });
+            bust(); toast('أُنشئ الحساب بنجاح.', 'ok'); go('accounts');
+            setTimeout(function () {
+              var box = h('div', { class: 'link-box', dir: 'ltr', text: 'Email: ' + email + '\nPassword: ' + pw });
+              box.style.whiteSpace = 'pre-wrap';
+              info('بيانات دخول المدير الجديد', h('div', null, box,
+                h('p', { class: 'muted small', text: 'تظهر هذه البيانات مرة واحدة فقط ولا تُحفظ في النظام.' }),
+                h('button', { class: 'btn gold', type: 'button', text: 'نسخ', onclick: function () { try { navigator.clipboard.writeText('Email: ' + email + '\nPassword: ' + pw); toast('تم النسخ.', 'ok'); } catch (e) {} } })));
+            }, 50);
+            return;
+          }
+          var res = null;
+          try {
+            res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
+          } catch (fnErr) {
+            var redirectUrl = location.origin + location.pathname;
+            await C.recover(email, redirectUrl);
+          }
           bust();
-          info('تم إرسال الدعوة', h('div', null,
-            h('p', { text: 'أُرسلت الدعوة إلى: ' + (res.email || email) }),
-            h('p', { text: 'الصلاحية: ' + (res.role_label || '') }),
-            h('p', { class: 'muted small', text: 'عند فتح الرابط في البريد يُطلب من المدعو إنشاء كلمة مرور خاصة به، ثم يدخل مباشرة. إن لم تصل الرسالة فليتفقد مجلد الرسائل غير المرغوب فيها (Spam).' })
-          ));
+          var actionLink = res && res.action_link;
+          if (actionLink) {
+            info('تمت دعوة المدير بنجاح', h('div', null,
+              h('p', { text: 'أُرسلت الدعوة إلى البريد: ' + email }),
+              h('p', { class: 'muted small', text: 'يمكنك أيضًا نسخ رابط التفعيل المباشر هذا وإرساله للمدير فورًا:' }),
+              h('div', { class: 'link-box', dir: 'ltr', text: actionLink }),
+              h('button', { class: 'btn gold', type: 'button', text: 'نسخ الرابط المباشر', onclick: function () { try { navigator.clipboard.writeText(actionLink); toast('تم نسخ رابط التفعيل.', 'ok'); } catch (e) {} } })
+            ));
+          } else {
+            toast('أُرسلت دعوة تفعيل الحساب إلى بريد المدير بنجاح.', 'ok');
+          }
           go('accounts');
         }
       });
@@ -1394,13 +2217,12 @@
             }))) return;
             try {
               var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
-              var deleted = await C.rpc('admin_delete_audit', { p_id: null, p_older_than: pastDate });
-              bust();
+              var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
               if (!deleted) toast('لا توجد سجلات أقدم من 30 يومًا، لذلك لم يُحذف شيء.');
               else toast('تم حذف ' + deleted + ' سجل تدقيق قديم.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر الحذف: ' + (e && e.message ? e.message : 'خطأ غير معروف') + '. إن استمرت المشكلة فتأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql.', 'bad');
+              toast('تعذّر الحذف. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
             }
           }
         }),
@@ -1415,12 +2237,11 @@
               ok: 'مسح شامل', danger: true
             }))) return;
             try {
-              var deleted = await C.rpc('admin_delete_audit', { p_id: null, p_older_than: null });
-              bust();
-              toast('تم مسح ' + (deleted || 0) + ' سجل تدقيق بنجاح.', 'ok');
+              var deleted = await C.rpc('admin_delete_audit', {});
+              toast('تم مسح ' + deleted + ' سجل تدقيق بنجاح.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر المسح: ' + (e && e.message ? e.message : 'خطأ غير معروف') + '. إن استمرت المشكلة فتأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql.', 'bad');
+              toast('تعذّر المسح. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
             }
           }
         })
@@ -1521,6 +2342,7 @@
   var MODE_UI = {
     creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
     mfa: { btn: 'تأكيد الرمز', hint: 'أدخل الرمز من تطبيق المصادقة.' },
+    invite: { btn: 'إرسال رابط إنشاء كلمة المرور', hint: 'أدخل بريدك الإلكتروني المدعو به وسنرسل لك رابطًا لإنشاء كلمة المرور وتفعيل حسابك مباشرة.' },
     forgot: { btn: 'إرسال رابط استعادة كلمة المرور', hint: 'أدخل بريد حسابك وسنرسل إليه رابطًا آمنًا لإعادة تعيين كلمة المرور.' },
     set: { btn: 'إنشاء كلمة المرور وتفعيل الحساب', hint: 'مرحبًا بك! يرجى إنشاء كلمة مرور لحسابك وتأكيدها للمتابعة.' }
   };
@@ -1530,9 +2352,11 @@
     $('#stCreds').hidden = m !== 'creds';
     $('#stMfa').hidden = m !== 'mfa';
     if ($('#stForgot')) $('#stForgot').hidden = m !== 'forgot';
+    if ($('#stInvite')) $('#stInvite').hidden = m !== 'invite';
     if ($('#stSet')) $('#stSet').hidden = m !== 'set';
     $('#lBtn').textContent = u.btn;
     $('#lHint').textContent = hint || u.hint;
+    if ($('#firstTimeBtn')) $('#firstTimeBtn').hidden = m !== 'creds';
     $('#forgotBtn').hidden = m !== 'creds';
     $('#backBtn').hidden = m === 'creds';
     if (m === 'set') { setTimeout(function () { var p = $('#np1'); if (p) p.focus(); }, 0); }
@@ -1584,6 +2408,12 @@
           await C.verifyMfa(code);
           $('#mfaCode').value = '';
           await enter();
+        } else if (mode === 'invite') {
+          var emInv = DE.clean($('#invEmail').value, 254).toLowerCase();
+          if (!DE.isEmail(emInv)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
+          var redirectUrl = location.origin + location.pathname;
+          await C.recover(emInv, redirectUrl);
+          msg($('#lOk'), 'تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى بريدك (' + emInv + ') بنجاح. تفقد صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam)، واضغط على الرابط لتحديد كلمة مرورك والدخول فورًا.');
         } else if (mode === 'forgot') {
           var em1 = DE.clean($('#fEmail').value, 254).toLowerCase();
           if (!DE.isEmail(em1)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
@@ -1607,6 +2437,15 @@
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
     $('#loginForm').addEventListener('submit', submitLogin);
+    var ftBtn = $('#firstTimeBtn');
+    if (ftBtn) {
+      ftBtn.addEventListener('click', function () {
+        msg($('#lErr'), ''); msg($('#lOk'), '');
+        $('#invEmail').value = ($('#email').value || '').trim();
+        setMode('invite');
+        $('#invEmail').focus();
+      });
+    }
     $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot'); $('#fEmail').focus(); });
     $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });

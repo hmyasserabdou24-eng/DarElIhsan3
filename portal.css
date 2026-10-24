@@ -73,10 +73,13 @@
 
 /* ─── إعادة الضبط الأساسية ─── */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: hidden; width: 100%; max-width: 100%; }
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: "Cairo", "Tajawal", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -101,6 +104,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .i {
@@ -401,6 +405,15 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .shell {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* الشريط الجانبي الفخم */
@@ -523,6 +536,9 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   top: 0;
   z-index: 50;
   box-shadow: var(--shadow-xs);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .bar .logo, .bar img.logo {
   display: none !important;
@@ -534,14 +550,20 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
 .bar .ttl {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .bar .ttl strong {
   color: var(--navy);
   font-size: 1.15rem;
   font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .chip {
@@ -555,6 +577,12 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   font-size: 12.5px;
   font-weight: 700;
   border: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .chip::before {
@@ -563,6 +591,7 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   height: 7px;
   border-radius: 50%;
   background: var(--ok);
+  flex-shrink: 0;
 }
 
 .main {
@@ -570,6 +599,9 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .main .content {
@@ -577,6 +609,7 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   max-width: 1240px;
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* ─── بطاقات الإحصاءات بلوحة التحكم (KPI Dash Cards) ─── */
@@ -598,6 +631,7 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   display: flex;
   flex-direction: column;
   transition: all var(--transition);
+  min-width: 0;
 }
 
 .stat:hover {
@@ -695,7 +729,11 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
   background: var(--card);
   border-radius: var(--radius);
   border: 1px solid var(--line);
-  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
 }
@@ -874,6 +912,11 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 20px rgba(12, 45, 85, 0.08);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabs button {
@@ -1129,24 +1172,195 @@ html[lang="fr"] .child-card {
     z-index: 85;
   }
 
+  /* الشريط العلوي على الهواتف والشاشات الصغيرة */
+  .bar {
+    height: 58px;
+    padding: 0 12px;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bar .ttl {
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .bar .ttl strong {
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    max-width: 130px;
+  }
+
+  .bar .chip {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 2.5px 7px;
+    flex-shrink: 1;
+  }
+
+  .bar .icon-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  #menuBtn {
+    display: inline-flex !important;
+    flex-shrink: 0 !important;
+    min-width: 38px !important;
+  }
+
   .main .content {
-    padding: 18px 16px 84px;
+    padding: 16px 14px 84px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .wrap {
+    padding: 0 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .stats {
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .stat {
+    padding: 16px 14px;
+    min-width: 0;
+  }
+
+  .stat b {
+    font-size: 1.6rem;
+  }
+
+  .stat span {
+    font-size: 12.5px;
+  }
+
+  .filter-bar {
+    padding: 10px 12px;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .filter-bar input[type="search"], .filter-bar select {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .sheet-wrap, .tbl-wrap, .table-wrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs button {
+    flex: 1 0 auto;
+    min-width: 48px;
+    min-height: 54px;
+    padding: 4px 2px;
+    font-size: 10.5px;
+  }
+
+  .tabs .ti, .tabs .i {
+    width: 20px;
+    height: 20px;
+  }
+
+  .child-card {
+    padding: 16px 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
 @media (max-width: 540px) {
+  .bar {
+    padding: 0 8px;
+    gap: 6px;
+    height: 56px;
+  }
+
+  .bar .ttl strong {
+    font-size: 13.5px;
+    max-width: 95px;
+  }
+
+  .bar .chip {
+    max-width: 95px;
+    font-size: 10.5px;
+    padding: 2px 6px;
+  }
+
+  .bar .icon-btn {
+    width: 35px;
+    height: 35px;
+    min-width: 35px;
+  }
+
+  #menuBtn {
+    min-width: 35px !important;
+  }
+
   .stats {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
-  .filter-bar input[type="search"], .filter-bar select {
-    min-width: 100%;
+
+  .stat {
+    padding: 14px 14px;
+    min-width: 0;
   }
+
+  .filter-bar {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
   .modal-card {
-    padding: 24px 18px;
+    padding: 20px 14px;
+    max-width: calc(100vw - 20px);
+    margin: 10px auto;
+  }
+
+  .tabs button {
+    min-width: 44px;
+    font-size: 9.5px;
+    padding: 4px 1px;
   }
 }
 
@@ -1202,4 +1416,720 @@ html[lang="fr"] .child-card {
   font-size: 16px;
   text-align: center;
   letter-spacing: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   منظومة إعداد وتصدير جدول البرنامج الأسبوعي للأقسام (Weekly Program)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.prog-step-card {
+  margin-bottom: 22px;
+  border-top: 4px solid var(--blue);
+}
+
+.prog-step-title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.prog-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+/* بطاقات المجالات المتعددة والمهارات */
+.prog-domains-host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prog-domain-card {
+  background: var(--bg);
+  border: 1.5px solid var(--line-strong);
+  border-right: 4px solid var(--brand-gold);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prog-domain-card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.prog-domain-card-hdr strong {
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.prog-skills-checklist,
+.prog-sess-skill-list {
+  max-height: 220px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px;
+}
+
+.prog-skl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--line-subtle);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.prog-skl-item:hover {
+  border-color: var(--brand-gold);
+  background: var(--gold-soft);
+}
+
+.prog-skl-item.active {
+  background: var(--gold-soft);
+  border-color: var(--brand-gold);
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.prog-skl-item input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: var(--blue);
+  flex-shrink: 0;
+}
+
+.prog-selected-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prog-selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prog-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #FFFFFF;
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-full);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.prog-tag-rm {
+  border: 0;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.prog-add-domain-bar {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-strong);
+  display: flex;
+  justify-content: center;
+}
+
+/* بطاقات أيام الأسبوع والحصص (الأحد – الخميس) */
+.prog-days-host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prog-day-card {
+  background: #FFFFFF;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.prog-day-hdr {
+  background: linear-gradient(90deg, var(--navy) 0%, var(--blue) 100%);
+  color: #FFFFFF;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.prog-day-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prog-day-title strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.prog-day-sessions {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+}
+
+.prog-sess-card {
+  background: #FFFFFF;
+  border: 1.5px solid var(--line);
+  border-right: 4px solid var(--blue);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prog-sess-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.prog-sess-times {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sess-time-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.sess-time-input {
+  padding: 5px 10px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  background: var(--bg);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--navy);
+}
+
+.sess-time-input:focus {
+  border-color: var(--brand-gold);
+  background: #FFFFFF;
+  outline: none;
+}
+
+.prog-sess-cell-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prog-sess-items-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--gold-soft);
+  border: 1px dashed var(--brand-gold);
+  border-radius: var(--radius-sm);
+}
+
+.wk-empty-cell-hint {
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 6px;
+}
+
+.prog-sess-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--line-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.prog-quick-lbl {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.prog-quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prog-sess-details {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--bg);
+  padding: 8px 12px;
+}
+
+.prog-sess-details summary {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.prog-sess-picker-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prog-submit-bar {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   وثيقة وجدول البرنامج الأسبوعي المصدَّر للأولياء (Official Weekly Sheet)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.wk-sheet {
+  background: #FFFFFF;
+  border: 2px solid var(--navy);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.wk-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 3px double var(--brand-gold);
+}
+
+.wk-sheet-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wk-sheet-logo {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--brand-gold);
+  background: #FFFFFF;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.wk-sheet-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wk-sheet-org {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.wk-sheet-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: var(--navy);
+  letter-spacing: -0.3px;
+}
+
+.wk-sheet-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wk-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--line-subtle);
+  border: 1px solid var(--line-strong);
+  font-size: 13px;
+  color: var(--navy);
+}
+
+.wk-meta-pill.gold {
+  background: var(--gold-soft);
+  border-color: var(--brand-gold);
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.wk-meta-pill.ok {
+  background: var(--ok-soft);
+  border-color: var(--ok-border);
+  color: var(--ok);
+}
+
+.wk-meta-lbl {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* شريط ملخص المجالات والمهارات المستهدفة */
+.wk-domains-bar {
+  background: #F8FAFC;
+  border: 1px solid var(--line);
+  border-right: 4px solid var(--brand-gold);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wk-domains-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.wk-domains-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.wk-domain-box {
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wk-domain-name {
+  font-size: 13px;
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.wk-domain-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wk-skill-tag {
+  font-size: 12.5px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* الجدول الرسمي للبرنامج الأسبوعي */
+.wk-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1.5px solid var(--navy);
+  border-radius: var(--radius-sm);
+}
+
+table.wk-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+  background: #FFFFFF;
+}
+
+table.wk-table th {
+  background: var(--navy);
+  color: #FFFFFF;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.wk-th-day {
+  width: 115px;
+  text-align: center;
+}
+
+table.wk-table td {
+  border: 1px solid var(--line-strong);
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.wk-day-td {
+  background: #F1F5F9;
+  text-align: center;
+  width: 115px;
+}
+
+.wk-day-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--navy);
+}
+
+.wk-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.wk-session-box {
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wk-session-hdr {
+  background: var(--gold-soft);
+  border-bottom: 1px solid var(--gold-border);
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wk-sess-badge {
+  background: var(--navy);
+  color: #FFFFFF;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.wk-sess-time {
+  font-family: "Inter", "Cairo", monospace;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--gold-hover);
+}
+
+.wk-session-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* إظهار المجال مع المهارة في نفس الخانة */
+.wk-cell-item {
+  background: #F8FAFC;
+  border: 1px solid var(--line);
+  border-right: 3.5px solid var(--blue);
+  border-radius: var(--radius-xs);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wk-cell-item.editable {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+}
+
+.wk-cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wk-cell-domain {
+  font-size: 12.5px;
+  color: var(--blue);
+}
+
+.wk-cell-Skill,
+.wk-cell-skill {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wk-lbl {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.wk-no-sessions {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 4px;
+}
+
+.wk-sheet-notes {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.wk-parent-card {
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.wk-parent-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wk-modal-print {
+  max-width: 960px;
+}
+
+#modal .modal-card:has(.wk-modal-print) {
+  max-width: 960px;
+}
+
+@media (max-width: 640px) {
+  .wk-sheet {
+    padding: 14px 10px;
+  }
+  .wk-sheet-logo {
+    width: 52px;
+    height: 52px;
+  }
+  .wk-sheet-title {
+    font-size: 1.25rem;
+  }
+  .wk-th-day,
+  .wk-day-td {
+    width: 74px;
+    padding: 8px 6px;
+  }
+  .wk-day-name {
+    font-size: 13px;
+  }
+  .wk-sessions-grid {
+    grid-template-columns: 1fr;
+  }
+  .prog-skills-checklist,
+  .prog-sess-skill-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .side, .bar, .tabs, .bar-sub, .filter-bar, .no-print, .prog-step-card:not(:last-child), .prog-submit-bar, .wk-parent-actions {
+    display: none !important;
+  }
+  body, .shell, .main, .content, .wrap, #app {
+    background: #FFFFFF !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+  .modal {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .modal-card {
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .wk-sheet {
+    border: 2px solid #0C2D55 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
 }
