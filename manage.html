@@ -59,10 +59,6 @@
     <div id="stForgot" hidden>
       <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" maxlength="254" dir="ltr"></label>
     </div>
-    <div id="stInvite" hidden>
-      <p class="hint">مرحبًا بك! إذا تمت دعوتك كمدير للمركز، أدخل بريدك الإلكتروني المدعو به هنا وسنرسل لك فورًا رابطًا آمنًا لإنشاء كلمة المرور الخاصة بك وتفعيل حسابك مباشرة.</p>
-      <label class="fld"><span>البريد الإلكتروني المدعو به</span><input id="invEmail" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254" placeholder="name@example.com"></label>
-    </div>
     <div id="stSet" hidden>
       <label class="fld"><span id="lblSetEmail">اسم المستخدم (البريد الإلكتروني)</span><input id="setEmail" type="email" autocomplete="username" dir="ltr" readonly class="fld-readonly"></label>
       <label class="fld"><span id="lblNp1">إنشاء كلمة المرور</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.</small></label>
@@ -71,7 +67,6 @@
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
     <button id="lBtn" class="btn block" type="submit">دخول</button>
-    <button id="firstTimeBtn" class="linkbtn" type="button">📩 مدعو جديد؟ تفعيل الحساب وإنشاء كلمة المرور</button>
     <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
     <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
   </form>
@@ -119,6 +114,6 @@
 <script src="qr-encoder.js?v=1"></script>
 <script src="card.js?v=1"></script>
 <script src="curriculum.js?v=1"></script>
-<script src="manage.js?v=14"></script>
+<script src="manage.js?v=13"></script>
 </body>
 </html>

@@ -5,7 +5,6 @@
   'use strict';
   var CFG = window.DE_CONFIG || {};
   var CACHE_KEY = 'de_content_v1';
-  var isPreview = /[?&]cms_preview=1(&|$)/.test(location.search) && window.parent !== window;
   var DEFAULT_T = JSON.parse(JSON.stringify(T));
   var current = null;
   var SLOT_PREVIEW_TIMEOUT = 12000;
@@ -182,23 +181,12 @@
 
   /* 1) تطبيق النسخة المخزّنة محليًا فورًا (قبل script.js) لتجنّب وميض المحتوى القديم */
   var cached = null;
-  if (!isPreview) {
-    try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { cached = null; }
-    if (isObj(cached)) { current = cached; applyTexts(cached); }
-  }
+  try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { cached = null; }
+  if (isObj(cached)) { current = cached; applyTexts(cached); }
 
   /* 2) بعد تحميل الصفحة: تطبيق بقية العناصر ثم جلب النسخة المنشورة الحديثة */
   document.addEventListener('DOMContentLoaded', function () {
     dropBrokenImages();
-    if (isPreview) {
-      window.addEventListener('message', function (ev) {
-        if (ev.origin !== location.origin || ev.source !== window.parent) return;
-        var d = ev.data;
-        if (d && d.type === 'cms-preview' && isObj(d.content)) apply(d.content, true);
-      });
-      window.parent.postMessage({ type: 'cms-ready' }, location.origin);
-      return;
-    }
     if (isObj(cached)) { applyFields(cached); applyImages(cached); renderSections(); }
     if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
 

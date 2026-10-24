@@ -1294,48 +1294,24 @@
       h('p', { class: 'muted', text: canManage ? 'أنت المدير الرئيسي (المالك): تملك صلاحيات دعوة المديرين، إدارة الأدوار، وتصفية سجلات العمليات والتدقيق.' : 'صلاحية العرض فقط. إدارة حسابات المديرين محصورة بالمدير الرئيسي للمركز.' })
     ));
 
-    function genAdminCode() {
-      var al = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789', o;
-      do {
-        var a = new Uint32Array(14); crypto.getRandomValues(a); o = '';
-        for (var i = 0; i < a.length; i++) o += al.charAt(a[i] % al.length);
-      } while (!/[A-Z]/.test(o) || !/[0-9]/.test(o));
-      return o;
-    }
     function invite() {
       return openForm({
-        title: 'إضافة مدير جديد',
-        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: 'إنشاء الحساب بكلمة المرور', light: true }],
+        title: 'دعوة مدير جديد',
+        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }],
         fields: [
-          { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254 },
-          { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] },
-          { k: 'password', label: 'كلمة المرور (اختياري — للزر الثاني فقط)', type: 'text', max: 72, gen: genAdminCode,
-            hint: 'للإنشاء المباشر دون بريد: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم. سلّمها للمدير يدويًا؛ لا تُحفظ ولا تُعرض بعد الإنشاء.' }
+          { k: 'email', label: 'البريد الإلكتروني', type: 'email', req: true, kind: 'email', max: 254,
+            hint: 'ستصل الدعوة إلى هذا البريد. المدعو يختار كلمة مروره بنفسه عند فتح الرابط.' },
+          { k: 'role', label: 'الصلاحية', type: 'select', req: true, opts: [['admin', 'مدير شامل (إدارة الأطفال والأولياء والمحتوى)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] }
         ],
-        onSubmit: async function (x, key) {
+        onSubmit: async function (x) {
           var email = x.email.toLowerCase();
-          if (key === 'pw') {
-            var pw = x.password || '';
-            if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw) || new TextEncoder().encode(pw).length > 72) throw new Error('كلمة المرور: 8 أحرف على الأقل مع حرف كبير (A-Z) ورقم واحد على الأقل.');
-            await C.fn('admin-users', { action: 'create_admin', email: email, role: x.role, password: pw });
-            bust(); toast('أُنشئ الحساب بنجاح.', 'ok'); go('accounts');
-            setTimeout(function () {
-              var box = h('div', { class: 'link-box', dir: 'ltr', text: 'Email: ' + email + '\nPassword: ' + pw });
-              box.style.whiteSpace = 'pre-wrap';
-              info('بيانات دخول المدير الجديد', h('div', null, box,
-                h('p', { class: 'muted small', text: 'تظهر هذه البيانات مرة واحدة فقط ولا تُحفظ في النظام.' }),
-                h('button', { class: 'btn gold', type: 'button', text: 'نسخ', onclick: function () { try { navigator.clipboard.writeText('Email: ' + email + '\nPassword: ' + pw); toast('تم النسخ.', 'ok'); } catch (e) {} } })));
-            }, 50);
-            return;
-          }
-          // لا نبدّل إلى مسار بديل صامت: إن فشل الإرسال نعرض السبب الحقيقي ولا نُظهر «نجاحًا» وهميًا
           var res = await C.fn('admin-users', { action: 'invite_admin', email: email, role: x.role });
           bust();
-          if (res && res.email_dispatched) {
-            toast((res.resent ? 'أُعيد إرسال الدعوة إلى ' : 'قبلت خدمة البريد الدعوة المرسلة إلى ') + email + '. إن لم تصل خلال دقائق فابحث في Spam.', 'ok');
-          } else {
-            toast('لم يؤكد الخادم إرسال الدعوة. راجع حالة الحساب ثم أعد الإرسال.', 'err');
-          }
+          info('تم إرسال الدعوة', h('div', null,
+            h('p', { text: 'أُرسلت الدعوة إلى: ' + (res.email || email) }),
+            h('p', { text: 'الصلاحية: ' + (res.role_label || '') }),
+            h('p', { class: 'muted small', text: 'عند فتح الرابط في البريد يُطلب من المدعو إنشاء كلمة مرور خاصة به، ثم يدخل مباشرة. إن لم تصل الرسالة فليتفقد مجلد الرسائل غير المرغوب فيها (Spam).' })
+          ));
           go('accounts');
         }
       });
@@ -1354,9 +1330,10 @@
         if (!canManage || a.is_owner || a.is_me) return [];
         var actList = [];
         if (!a.last_sign_in_at) {
-          actList.push(rbtn('📩 إعادة إرسال الدعوة', async function () {
-            var rs = await C.fn('admin-users', { action: 'resend_admin_invite', user_id: uid(a.id) });
-            toast(rs && rs.email_dispatched ? 'قبلت خدمة البريد الدعوة المرسلة إلى ' + a.email + '. تنبيه: انتظر دقيقة قبل أي محاولة أخرى.' : 'لم يؤكد الخادم إرسال الدعوة.', rs && rs.email_dispatched ? 'ok' : 'err');
+          actList.push(rbtn('📩 إرسال رابط التفعيل', async function () {
+            var redirectUrl = location.origin + location.pathname;
+            await C.recover(a.email, redirectUrl);
+            toast('تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى ' + a.email, 'ok');
           }, 'gold'));
         }
         return actList.concat([
@@ -1538,18 +1515,10 @@
     window.scrollTo(0, 0);
   }
 
-  /* علامة «لم تُعيَّن كلمة المرور بعد»: تمنع الدخول إلى اللوحة بجلسة الدعوة وحدها عند إعادة تحميل الصفحة */
-  var PW_FLAG = 'de_must_set_pw';
-  function mustSetPw(v) {
-    try { if (v === true) sessionStorage.setItem(PW_FLAG, '1'); else if (v === false) sessionStorage.removeItem(PW_FLAG); else return sessionStorage.getItem(PW_FLAG) === '1'; } catch (e) { return false; }
-    return v === true;
-  }
-
   var mode = 'creds';
   var MODE_UI = {
     creds: { btn: 'دخول', hint: 'للحسابات الإدارية المخوّلة فقط.' },
     mfa: { btn: 'تأكيد الرمز', hint: 'أدخل الرمز من تطبيق المصادقة.' },
-    invite: { btn: 'إرسال رابط إنشاء كلمة المرور', hint: 'أدخل بريدك الإلكتروني المدعو به وسنرسل لك رابطًا لإنشاء كلمة المرور وتفعيل حسابك مباشرة.' },
     forgot: { btn: 'إرسال رابط استعادة كلمة المرور', hint: 'أدخل بريد حسابك وسنرسل إليه رابطًا آمنًا لإعادة تعيين كلمة المرور.' },
     set: { btn: 'إنشاء كلمة المرور وتفعيل الحساب', hint: 'مرحبًا بك! يرجى إنشاء كلمة مرور لحسابك وتأكيدها للمتابعة.' }
   };
@@ -1559,32 +1528,28 @@
     $('#stCreds').hidden = m !== 'creds';
     $('#stMfa').hidden = m !== 'mfa';
     if ($('#stForgot')) $('#stForgot').hidden = m !== 'forgot';
-    if ($('#stInvite')) $('#stInvite').hidden = m !== 'invite';
     if ($('#stSet')) $('#stSet').hidden = m !== 'set';
     $('#lBtn').textContent = u.btn;
     $('#lHint').textContent = hint || u.hint;
-    if ($('#firstTimeBtn')) $('#firstTimeBtn').hidden = m !== 'creds';
     $('#forgotBtn').hidden = m !== 'creds';
     $('#backBtn').hidden = m === 'creds';
     if (m === 'set') { setTimeout(function () { var p = $('#np1'); if (p) p.focus(); }, 0); }
   }
-  function showLogin(m, okMsg) {
+  function showLogin(m) {
     S.stopIdle && S.stopIdle();
-    mustSetPw(false);
     show('login');
     setMode('creds');
     msg($('#lErr'), m);
-    msg($('#lOk'), okMsg || '');
+    msg($('#lOk'), '');
   }
 
-  async function enter(afterSet) {
+  async function enter() {
     show('boot');
     try {
       var ok = await C.rpc('can_manage_families');
       if (ok !== true) {
         var anyAdmin = await C.rpc('is_admin');
         await C.signOut();
-        if (afterSet && anyAdmin === true) return showLogin('', 'تم إنشاء كلمة المرور بنجاح. حسابك «محرّر محتوى»: سجّل الدخول من لوحة إدارة المحتوى (admin.html) وليس من هذه اللوحة.');
         return showLogin(anyAdmin === true ? 'حسابك محرّر: لا يملك صلاحية بيانات الأطفال والأولياء.' : 'هذا الحساب غير مخوّل بالدخول إلى هذه اللوحة.');
       }
       S.me = await C.me();
@@ -1617,12 +1582,6 @@
           await C.verifyMfa(code);
           $('#mfaCode').value = '';
           await enter();
-        } else if (mode === 'invite') {
-          var emInv = DE.clean($('#invEmail').value, 254).toLowerCase();
-          if (!DE.isEmail(emInv)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
-          var redirectUrl = location.origin + location.pathname;
-          await C.recover(emInv, redirectUrl);
-          msg($('#lOk'), 'تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى بريدك (' + emInv + ') بنجاح. تفقد صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam)، واضغط على الرابط لتحديد كلمة مرورك والدخول فورًا.');
         } else if (mode === 'forgot') {
           var em1 = DE.clean($('#fEmail').value, 254).toLowerCase();
           if (!DE.isEmail(em1)) return msg($('#lErr'), 'اكتب بريدًا إلكترونيًا صالحًا.');
@@ -1634,10 +1593,9 @@
           if (DE.pwProblem(a)) return msg($('#lErr'), 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.');
           if (a !== b) return msg($('#lErr'), 'كلمتا المرور غير متطابقتين.');
           await C.setPassword(a);
-          mustSetPw(false);
           $('#np1').value = $('#np2').value = '';
           msg($('#lOk'), 'تم إنشاء كلمة المرور وتفعيل حسابك بنجاح! جارٍ الدخول…');
-          await enter(true);
+          await enter();
         }
       } catch (er) { msg($('#lErr'), er.message); }
     });
@@ -1647,15 +1605,6 @@
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
     $('#loginForm').addEventListener('submit', submitLogin);
-    var ftBtn = $('#firstTimeBtn');
-    if (ftBtn) {
-      ftBtn.addEventListener('click', function () {
-        msg($('#lErr'), ''); msg($('#lOk'), '');
-        $('#invEmail').value = ($('#email').value || '').trim();
-        setMode('invite');
-        $('#invEmail').focus();
-      });
-    }
     $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot'); $('#fEmail').focus(); });
     $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
@@ -1675,7 +1624,6 @@
     if (hash && hash.error) { showLogin(hash.error); return; }
     if (hash && (hash.token || hash.type === 'invite' || hash.type === 'recovery' || hash.type === 'signup')) {
       show('login');
-      mustSetPw(true);
       var userEmail = hash.email || '';
       if (!userEmail) {
         try { var u = await C.me(); if (u && u.email) userEmail = u.email; } catch (e) {}
@@ -1683,16 +1631,6 @@
       if ($('#setEmail')) $('#setEmail').value = userEmail;
       if ($('#email')) $('#email').value = userEmail;
       setMode('set', 'مرحبًا بك في لوحة الإدارة! بريدك الإلكتروني معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بحسابك وتأكيدها للمتابعة.');
-      return;
-    }
-    if (C.load() && mustSetPw()) {
-      // أُعيد تحميل الصفحة قبل تعيين كلمة المرور: نعود إلى شاشة «إنشاء كلمة المرور» ولا ندخل اللوحة
-      show('login');
-      var em2 = '';
-      try { var u2 = await C.me(); em2 = (u2 && u2.email) || ''; } catch (e) {}
-      if (!em2) return showLogin('انتهت صلاحية جلسة الدعوة. اطلب من المالك إعادة إرسال الدعوة.');
-      if ($('#setEmail')) $('#setEmail').value = em2;
-      setMode('set', 'لم تُنشئ كلمة مرور بعد. يرجى إنشاء كلمة المرور الخاصة بحسابك وتأكيدها للمتابعة.');
       return;
     }
     if (C.load()) enter(); else showLogin();
