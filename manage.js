@@ -1394,12 +1394,13 @@
             }))) return;
             try {
               var pastDate = new Date(Date.now() - 30 * 86400000).toISOString();
-              var deleted = await C.rpc('admin_delete_audit', { p_older_than: pastDate });
+              var deleted = await C.rpc('admin_delete_audit', { p_id: null, p_older_than: pastDate });
+              bust();
               if (!deleted) toast('لا توجد سجلات أقدم من 30 يومًا، لذلك لم يُحذف شيء.');
               else toast('تم حذف ' + deleted + ' سجل تدقيق قديم.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر الحذف. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
+              toast('تعذّر الحذف: ' + (e && e.message ? e.message : 'خطأ غير معروف') + '. إن استمرت المشكلة فتأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql.', 'bad');
             }
           }
         }),
@@ -1414,11 +1415,12 @@
               ok: 'مسح شامل', danger: true
             }))) return;
             try {
-              var deleted = await C.rpc('admin_delete_audit', {});
-              toast('تم مسح ' + deleted + ' سجل تدقيق بنجاح.', 'ok');
+              var deleted = await C.rpc('admin_delete_audit', { p_id: null, p_older_than: null });
+              bust();
+              toast('تم مسح ' + (deleted || 0) + ' سجل تدقيق بنجاح.', 'ok');
               go('audit');
             } catch (e) {
-              toast('تعذّر المسح. يرجى التأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql في Supabase.', 'bad');
+              toast('تعذّر المسح: ' + (e && e.message ? e.message : 'خطأ غير معروف') + '. إن استمرت المشكلة فتأكد من تشغيل ملف 08-fix-audit-and-admin-delete.sql.', 'bad');
             }
           }
         })
