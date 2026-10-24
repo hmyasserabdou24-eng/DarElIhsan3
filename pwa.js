@@ -5,9 +5,43 @@
   if (secure && 'serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
-  if (/qr\.html$/.test(location.pathname)) return;                     // صفحة التحقق العامة: لا شريط
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+
+  /* ── أزرار التثبيت الصريحة ([data-install]) — تُستعمل في لوحة الإدارة ── */
+  var installBtns = [].slice.call(document.querySelectorAll('[data-install]'));
+  if (installBtns.length && !standalone) {
+    var savedPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); savedPrompt = e; });
+    window.addEventListener('appinstalled', function () {
+      savedPrompt = null;
+      installBtns.forEach(function (b) { b.hidden = true; });
+    });
+    installBtns.forEach(function (b) {
+      b.hidden = false;
+      b.addEventListener('click', function () {
+        if (savedPrompt) {
+          savedPrompt.prompt();
+          savedPrompt.userChoice.then(function () { savedPrompt = null; });
+          return;
+        }
+        showInstallHint();
+      });
+    });
+  }
+  function showInstallHint() {
+    var old = document.querySelector('.pwa-bar.pwa-hint'); if (old) old.remove();
+    var box = document.createElement('div'); box.className = 'pwa-bar pwa-hint'; box.setAttribute('role', 'status');
+    var msg = document.createElement('span'); msg.className = 'pwa-msg';
+    msg.textContent = 'إن لم تظهر نافذة التثبيت: من قائمة المتصفح (⋮ أو ⋯) اختر «تثبيت» أو «إنشاء اختصار»، وعلى Mac اختر من قائمة ملف «إضافة إلى الرصيف».';
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'pwa-x'; x.textContent = '×'; x.setAttribute('aria-label', 'إغلاق');
+    x.addEventListener('click', function () { box.remove(); });
+    box.appendChild(msg); box.appendChild(x); document.body.appendChild(box);
+    setTimeout(function () { if (box.parentNode) box.remove(); }, 15000);
+  }
+
+  if (/qr\.html$/.test(location.pathname)) return;                     // صفحة التحقق العامة: لا شريط
   if (standalone) return;
+  if (installBtns.length) return;                                      // لوحة الإدارة: لها أزرار التثبيت، بلا شريط عام
   var KEY = 'de-install-dismissed';
   try { var t = +localStorage.getItem(KEY); if (t && Date.now() - t < 14 * 864e5) return; } catch (e) {}
   var fr = (document.documentElement.lang || 'ar').slice(0, 2) === 'fr';
