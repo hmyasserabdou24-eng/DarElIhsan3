@@ -557,11 +557,43 @@
   /* تبويب البرامج التربوية للأقسام — عرض جدول البرنامج الأسبوعي المصدَّر للأولياء (عزل RLS تام) */
   var WEEK_DAYS_PARENT = [
     { key: 'sun', label: 'الأحد' },
-    { key: 'mon', label: 'الاثنين' },
+    { key: 'mon', label: 'الإثنين' },
     { key: 'tue', label: 'الثلاثاء' },
     { key: 'wed', label: 'الأربعاء' },
     { key: 'thu', label: 'الخميس' }
   ];
+
+  var PARENT_DOMAIN_KEYS = [
+    'مجال الاستقلالية (الحياة اليومية والعناية بالذات)',
+    'مجال المهارات الحركية الدقيقة',
+    'مجال المهارات الحركية الكبرى',
+    'مجال ما قبل الأكاديمي',
+    'المجال الأكاديمي',
+    'مجال التقليد',
+    'مجال مهارات الحضور والانتباه',
+    'مجال التواصل'
+  ];
+
+  function parentDomainColor(domName) {
+    var idx = PARENT_DOMAIN_KEYS.indexOf(domName);
+    if (idx < 0) idx = 0;
+    return 'wk-dom-c' + (idx % 8);
+  }
+
+  function formatParentTimeRange(start, end) {
+    var s = String(start || '').trim();
+    var e = String(end || '').trim();
+    if (s && e) return s + ' - ' + e;
+    if (s) return s;
+    if (e) return e;
+    return '';
+  }
+
+  function isParentSessionActive(s) {
+    if (!s) return false;
+    if (s.kind === 'break') return !!(s.title || s.start || s.end || (s.items && s.items.length));
+    return !!((s.items && s.items.length) || s.title || s.start || s.end);
+  }
 
   function resolveSectionName(p, rawSched) {
     if (Array.isArray(rawSched) && rawSched[0] && rawSched[0].section_name) {
@@ -584,50 +616,67 @@
       } catch (e) { rawSched = null; }
     }
     var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026–2027';
+    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
     var notesTxt = (Array.isArray(rawSched) && rawSched[0] && rawSched[0].notes) || '';
 
     var logo = h('img', { class: 'wk-sheet-logo', alt: 'شعار المركز النفسي البيداغوجي دار الإحسان' });
     logo.setAttribute('src', 'logo-sq.png');
 
-    var head = h('div', { class: 'wk-sheet-head' },
-      h('div', { class: 'wk-sheet-brand' },
-        logo,
-        h('div', { class: 'wk-sheet-titles' },
-          h('span', { class: 'wk-sheet-org', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي دار الإحسان' }),
+    var head = h('div', { class: 'wk-official-head' },
+      h('div', { class: 'wk-head-right' },
+        h('div', { class: 'wk-head-line' },
+          h('span', { text: 'الموسم الدراسي: ' }),
+          h('strong', { dir: 'ltr', text: acYear })
+        ),
+        h('div', { class: 'wk-head-line' },
+          h('span', { text: 'الفوج / القسم: ' }),
+          h('strong', { text: secName })
+        ),
+        p.published_at ? h('div', { class: 'wk-head-status', text: t('datePrefix') + fmtDate(p.published_at) }) : null
+      ),
+      h('div', { class: 'wk-head-center' },
+        h('div', { class: 'wk-org-line1', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+        h('div', { class: 'wk-org-line2', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('div', { class: 'wk-org-line3', text: '- العطف - غرداية -' }),
+        h('div', { class: 'wk-title-banner' },
           h('h2', { class: 'wk-sheet-title', text: 'البرنامج الأسبوعي' })
         )
       ),
-      h('div', { class: 'wk-sheet-meta' },
-        h('div', { class: 'wk-meta-pill gold' },
-          h('span', { class: 'wk-meta-lbl', text: 'القسم / الفوج التربوي:' }),
-          h('strong', { text: secName })
-        ),
-        h('div', { class: 'wk-meta-pill' },
-          h('span', { class: 'wk-meta-lbl', text: 'الموسم الدراسي:' }),
-          h('strong', { text: acYear })
-        ),
-        p.published_at ? h('div', { class: 'wk-meta-pill ok' },
-          h('span', { class: 'wk-meta-lbl', text: t('datePrefix') }),
-          h('strong', { text: fmtDate(p.published_at) })
-        ) : null
-      )
+      h('div', { class: 'wk-head-left' }, logo)
     );
 
     var domainsList = (Array.isArray(rawSched) && rawSched[0] && Array.isArray(rawSched[0].domains)) ? rawSched[0].domains : [];
     var activeDomains = domainsList.filter(function (dm) { return dm && dm.domain && dm.skills && dm.skills.length; });
-    var domSummary = null;
+    var colorStrip = null;
     if (activeDomains.length) {
-      domSummary = h('div', { class: 'wk-domains-bar' },
-        h('div', { class: 'wk-domains-title', text: '📚 المجالات والمهارات التربوية المستهدفة:' }),
-        h('div', { class: 'wk-domains-grid' }, activeDomains.map(function (dm) {
-          return h('div', { class: 'wk-domain-box' },
-            h('strong', { class: 'wk-domain-name', text: '📘 ' + dm.domain }),
-            h('div', { class: 'wk-domain-skills' }, dm.skills.map(function (sk) {
-              return h('span', { class: 'wk-skill-tag', text: '🎯 ' + sk });
-            }))
+      var totalSkillsCount = 0;
+      activeDomains.forEach(function (dm) { totalSkillsCount += dm.skills.length; });
+
+      var stripHeaderRow = h('tr', null,
+        h('th', { class: 'wk-strip-label-col', text: 'المجالات التربوية' }),
+        activeDomains.map(function (dm) {
+          return h('th', { class: 'wk-strip-dom-col ' + parentDomainColor(dm.domain), text: dm.domain });
+        }),
+        h('th', { class: 'wk-strip-total-col', text: 'المجموع' })
+      );
+
+      var stripSkillsRow = h('tr', null,
+        h('td', { class: 'wk-strip-label-col', text: 'المهارات المستهدفة' }),
+        activeDomains.map(function (dm) {
+          return h('td', { class: 'wk-strip-skl-cell ' + parentDomainColor(dm.domain) },
+            dm.skills.map(function (sk) {
+              return h('div', { class: 'wk-strip-skl-item', text: '• ' + sk });
+            })
           );
-        }))
+        }),
+        h('td', { class: 'wk-strip-total-val', text: totalSkillsCount + ' مهارة' })
+      );
+
+      colorStrip = h('div', { class: 'wk-strip-wrap' },
+        h('table', { class: 'wk-strip-table' },
+          h('thead', null, stripHeaderRow),
+          h('tbody', null, stripSkillsRow)
+        )
       );
     }
 
@@ -637,19 +686,31 @@
     if (hasStructuredDays) {
       var tbody = h('tbody');
       WEEK_DAYS_PARENT.forEach(function (wd) {
-        var dayObj = rawSched.filter(function (dy) { return dy && (dy.day === wd.key || dy.label === wd.label); })[0] || { day: wd.key, label: wd.label, sessions: [] };
-        var validSessions = (dayObj.sessions || []).filter(function (s) { return s && s.items && s.items.length; });
+        var dayObj = rawSched.filter(function (dy) { return dy && (dy.day === wd.key || dy.label === wd.label || (wd.key === 'mon' && dy.label === 'الاثنين')); })[0] || { day: wd.key, label: wd.label, sessions: [] };
+        var validSessions = (dayObj.sessions || []).filter(isParentSessionActive);
 
         var sessCell;
         if (validSessions.length) {
-          sessCell = h('div', { class: 'wk-sessions-grid' }, validSessions.map(function (sess, idx) {
-            return h('div', { class: 'wk-session-box' },
-              h('div', { class: 'wk-session-hdr' },
-                h('span', { class: 'wk-sess-badge', text: 'الحصة ' + (idx + 1) }),
-                h('span', { class: 'wk-sess-time', dir: 'ltr', text: '⏰ ' + (sess.start || '08:30') + ' – ' + (sess.end || '09:30') })
-              ),
-              h('div', { class: 'wk-session-body' }, (sess.items || []).map(function (it) {
-                return h('div', { class: 'wk-cell-item' },
+          var normalIdx = 0;
+          sessCell = h('div', { class: 'wk-sessions-flow' }, validSessions.map(function (sess) {
+            var timeTxt = formatParentTimeRange(sess.start, sess.end);
+            var isBreak = sess.kind === 'break';
+            if (!isBreak) normalIdx++;
+
+            var hdrLabel = isBreak
+              ? (sess.title || 'حصة بينية / استراحة')
+              : (sess.title ? sess.title : ('الحصة ' + normalIdx));
+
+            var bodyNodes = [];
+            if (isBreak && sess.title) {
+              bodyNodes.push(h('div', { class: 'wk-break-banner-title', text: sess.title }));
+            } else if (!isBreak && sess.title && sess.items && sess.items.length) {
+              bodyNodes.push(h('div', { class: 'wk-sess-custom-title', text: sess.title }));
+            }
+
+            if (sess.items && sess.items.length) {
+              sess.items.forEach(function (it) {
+                bodyNodes.push(h('div', { class: 'wk-cell-item ' + parentDomainColor(it.domain) },
                   h('div', { class: 'wk-cell-domain' },
                     h('span', { class: 'wk-lbl', text: 'المجال:' }),
                     h('strong', { text: ' ' + (it.domain || '—') })
@@ -658,12 +719,22 @@
                     h('span', { class: 'wk-lbl', text: 'المهارة:' }),
                     h('span', { text: ' ' + (it.skill || '—') })
                   )
-                );
-              }))
+                ));
+              });
+            } else if (!isBreak && sess.title) {
+              bodyNodes.push(h('div', { class: 'wk-break-banner-title', text: sess.title }));
+            }
+
+            return h('div', { class: 'wk-session-box' + (isBreak ? ' is-break' : '') },
+              h('div', { class: 'wk-session-hdr' + (isBreak ? ' is-break-hdr' : '') },
+                h('span', { class: 'wk-sess-badge' + (isBreak ? ' break-badge' : ''), text: hdrLabel }),
+                timeTxt ? h('span', { class: 'wk-sess-time', dir: 'ltr', text: timeTxt }) : null
+              ),
+              h('div', { class: 'wk-session-body' }, bodyNodes)
             );
           }));
         } else {
-          sessCell = h('div', { class: 'wk-no-sessions', text: '— لا توجد حصص مبرمجة في هذا اليوم —' });
+          sessCell = h('div', { class: 'wk-no-sessions', text: '—' });
         }
 
         tbody.appendChild(h('tr', null,
@@ -675,9 +746,15 @@
       bodyContent = h('div', { class: 'wk-table-wrap' },
         h('table', { class: 'wk-table' },
           h('thead', null,
-            h('tr', null,
-              h('th', { class: 'wk-th-day', text: 'اليوم' }),
-              h('th', { class: 'wk-th-sessions', text: 'الحصص اليومية والتوقيت (المجال والمهارة في نفس الخانة)' })
+            h('tr', { class: 'wk-period-row' },
+              h('th', { class: 'wk-th-day', text: 'التوقيت / الأيام' }),
+              h('th', { class: 'wk-th-sessions' },
+                h('div', { class: 'wk-period-banners' },
+                  h('span', { class: 'wk-period-tag morning', text: '☀️ الفترة الصباحية' }),
+                  h('span', { class: 'wk-period-tag break-tag', text: '⏸️ الحصص البينية / الاستراحة' }),
+                  h('span', { class: 'wk-period-tag afternoon', text: '🌤️ الفترة المسائية' })
+                )
+              )
             )
           ),
           tbody
@@ -696,6 +773,12 @@
       h('span', { text: notesTxt })
     ) : null;
 
+    var sigFooter = h('div', { class: 'wk-signatures-row' },
+      h('div', { class: 'wk-sig-box' }, h('span', { text: 'توقيع المربية' })),
+      h('div', { class: 'wk-sig-box' }, h('span', { text: 'المشرف البيداغوجي' })),
+      h('div', { class: 'wk-sig-box' }, h('span', { text: 'توقيع وختم المدير' }))
+    );
+
     var printBtn = h('button', {
       type: 'button',
       class: 'btn small gold no-print',
@@ -704,7 +787,7 @@
     });
 
     return h('div', { class: 'card wk-parent-card' },
-      h('div', { class: 'wk-sheet' }, head, domSummary, bodyContent, notesEl),
+      h('div', { class: 'wk-sheet' }, head, colorStrip, bodyContent, notesEl, sigFooter),
       h('div', { class: 'wk-parent-actions no-print' }, printBtn)
     );
   }
