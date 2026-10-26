@@ -1,0 +1,10 @@
+/* أنماط الأقسام المخصصة التي يضيفها المحتوى المنشور. لا يغيّر أي نمط موجود في style.css */
+
+/* الأقسام المخصصة */
+.cms-sec .cms-box{display:grid;gap:24px;align-items:start}
+@media(min-width:860px){.cms-sec .cms-box.has-media{grid-template-columns:1fr 1fr}}
+.cms-sec .cms-media{border-radius:18px;overflow:hidden;aspect-ratio:16/10;background:#0b1d33}
+.cms-sec .cms-media img,.cms-sec .cms-media video,.cms-sec .cms-media iframe{display:block;width:100%;height:100%;object-fit:cover;border:0}
+.cms-sec .cms-text p{margin:0 0 14px;white-space:pre-line;text-align:start}
+.cms-sec .cms-text p:last-of-type{margin-bottom:0}
+.cms-sec .cms-text .btn{margin-top:18px}

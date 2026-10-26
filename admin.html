@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<title>لوحة الإدارة – دار الإحسان</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="admin-version" content="5">
+<link rel="stylesheet" href="admin.css?v=6">
+</head>
+<body>
+<svg width="0" height="0" class="sprite" aria-hidden="true">
+<symbol id="a-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/></symbol>
+<symbol id="a-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="a-send" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/><path d="M5 21h14"/></symbol>
+<symbol id="a-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+<symbol id="a-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+<symbol id="a-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+<symbol id="a-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="a-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="a-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+<symbol id="a-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+<symbol id="a-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+<symbol id="a-undo" viewBox="0 0 24 24"><path d="M3 7v6h6M3 13a9 9 0 1 0 3-7"/></symbol>
+<symbol id="a-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></symbol>
+<symbol id="a-desktop" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+<symbol id="a-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></symbol>
+</svg>
+
+<div id="boot" class="boot" role="status">جارٍ التحميل…</div>
+
+<div style="background:#0f1c30; color:#fff; padding:12px 16px; text-align:center; font-size:14px; border-bottom:2px solid #b8860b; z-index:99; position:relative;">
+  <span>📢 للإدارة الشاملة للطلبة، الأولياء، الفروع والبرامج التربوية:</span>
+  <a href="manage.html" style="color:#f0ca7d; font-weight:800; margin-right:8px; text-decoration:underline;">الانتقال إلى لوحة الإدارة المتطورة (manage.html) ←</a>
+</div>
+
+<!-- تسجيل الدخول -->
+<main id="login" class="login" hidden>
+  <form id="loginForm" class="login-card" autocomplete="on" novalidate>
+    <img src="logo-sq.png" alt="" class="login-logo">
+    <h1>لوحة إدارة دار الإحسان</h1>
+    <p class="muted" id="loginHint">سجّل الدخول لإدارة محتوى الموقع.</p>
+    <div id="stepCreds">
+      <label class="fld"><span>البريد الإلكتروني</span><input id="email" type="email" inputmode="email" autocomplete="username" required dir="ltr"></label>
+      <label class="fld"><span>كلمة المرور</span><input id="password" type="password" autocomplete="current-password" required dir="ltr"></label>
+      <label class="chk"><input id="remember" type="checkbox" checked><span>البقاء متصلاً على هذا الجهاز</span></label>
+    </div>
+    <div id="stepMfa" hidden>
+      <label class="fld"><span>رمز المصادقة الثنائية (6 أرقام)</span><input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr"></label>
+    </div>
+    <div id="stepForgot1" hidden>
+      <label class="fld"><span>البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr"></label>
+    </div>
+    <div id="stepForgot2" hidden>
+      <label class="fld"><span>الرمز الذي وصلك على البريد</span><input id="rCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr"></label>
+      <label class="fld"><span>كلمة المرور الجديدة</span><input id="rPass" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <label class="fld"><span>أعد كتابة كلمة المرور الجديدة</span><input id="rPass2" type="password" autocomplete="new-password" dir="ltr" maxlength="72"></label>
+      <button id="resendBtn" class="linkbtn" type="button">إعادة إرسال الرمز</button>
+    </div>
+    <p id="loginErr" class="err" role="alert" hidden></p>
+    <p id="loginOk" class="okmsg" role="status" hidden></p>
+    <button id="loginBtn" class="btn primary block" type="submit">دخول</button>
+    <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
+    <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
+  </form>
+</main>
+
+<!-- التطبيق -->
+<div id="app" class="app" hidden>
+  <header class="top">
+    <img src="logo-sq.png" alt="" class="top-logo">
+    <div class="top-title"><strong>لوحة الإدارة</strong><span id="statusChip" class="chip">—</span></div>
+    <a href="manage.html" class="btn small" style="background:#b8860b; color:#fff; text-decoration:none; font-weight:700; margin-inline:8px;">إدارة الطلبة والأولياء ←</a>
+    <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج"><svg class="i"><use href="#a-out"/></svg></button>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="الأقسام">
+    <button role="tab" data-tab="texts" type="button">النصوص</button>
+    <button role="tab" data-tab="sections" type="button">الأقسام</button>
+    <button role="tab" data-tab="images" type="button">الصور</button>
+    <button role="tab" data-tab="gallery" type="button">المعرض</button>
+    <button role="tab" data-tab="contact" type="button">الاتصال</button>
+    <button role="tab" data-tab="users" type="button">المستخدمون</button>
+    <button role="tab" data-tab="publish" type="button">النشر والأمان</button>
+  </nav>
+  <main id="view" class="view" tabindex="-1"></main>
+  <footer class="actions" id="actions">
+    <button id="btnCancel" class="act ghost" type="button"><svg class="i"><use href="#a-undo"/></svg><span>إلغاء التعديلات</span></button>
+    <button id="btnSave" class="act blue" type="button"><svg class="i"><use href="#a-save"/></svg><span>حفظ المسودة</span></button>
+    <button id="btnPreview" class="act teal" type="button"><svg class="i"><use href="#a-eye"/></svg><span>معاينة</span></button>
+    <button id="btnPublish" class="act burg" type="button"><svg class="i"><use href="#a-send"/></svg><span>نشر</span></button>
+  </footer>
+</div>
+
+<!-- المعاينة -->
+<div id="preview" class="preview" hidden>
+  <div class="pv-bar">
+    <button id="pvBack" class="btn light" type="button">رجوع للتحرير</button>
+    <div class="seg" role="group" aria-label="حجم المعاينة">
+      <button id="pvPhone" class="on" type="button" aria-label="جوال"><svg class="i"><use href="#a-phone"/></svg></button>
+      <button id="pvDesk" type="button" aria-label="حاسوب"><svg class="i"><use href="#a-desktop"/></svg></button>
+    </div>
+    <button id="pvPublish" class="btn burg" type="button">نشر الآن</button>
+  </div>
+  <div class="pv-stage" id="pvStage"><iframe id="pvFrame" title="معاينة الموقع"></iframe></div>
+</div>
+
+<div id="modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal-card">
+    <h2 id="mTitle"></h2><p id="mMsg"></p>
+    <div id="mBody"></div>
+    <div class="modal-actions"><button id="mCancel" class="btn light" type="button">تراجع</button><button id="mOk" class="btn primary" type="button">تأكيد</button></div>
+  </div>
+</div>
+<div id="busy" class="busy" hidden><div class="busy-card"><div id="busyTxt">جارٍ التنفيذ…</div><div class="bar"><i id="busyBar"></i></div></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="i18n-data.js?v=6"></script>
+<script src="cms-config.js?v=6"></script>
+<script src="admin.js?v=6"></script>
+</body>
+</html>

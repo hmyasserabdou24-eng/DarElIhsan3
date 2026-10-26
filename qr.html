@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'">
+<title>التحقق من بطاقة التلميذ – دار الإحسان</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="portal.css?v=11">
+<link rel="stylesheet" href="qr.css?v=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0C2D55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="دار الإحسان">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="pwa.css?v=1">
+<script src="pwa.js" defer></script>
+</head>
+<body class="qr-page">
+
+<main class="qr-box" id="cardBox" role="main">
+  <div class="qr-header">
+    <div class="republic">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+    <div class="assoc">جمعية أولياء الأطفال المعاقين ذهنياً</div>
+    <img src="logo-sq.png" alt="شعار دار الإحسان" class="qr-logo">
+    <div class="qr-center">المركز النفسي البيداغوجي دار الإحسان<br><small>العطف – ولاية غرداية</small></div>
+    <div class="qr-status-tag">
+      <span>✓ بطاقة تلميذ معتمدة</span>
+    </div>
+  </div>
+
+  <div id="loading" class="qr-loading">جارٍ التحقق من بيانات التلميذ…</div>
+  <div id="errorState" class="qr-error" hidden></div>
+
+  <div id="studentData" hidden>
+    <p class="qr-note">هذه معلومات التحقق العامة من البطاقة فقط. المعلومات الكاملة متاحة لولي التلميذ بعد تسجيل الدخول.</p>
+    <div class="qr-field">
+      <span class="qr-field-label">رقم المنخرط:</span>
+      <span class="qr-field-val qr-num" id="f_num">—</span>
+    </div>
+    <div class="qr-field">
+      <span class="qr-field-label">اسم ولقب التلميذ(ة):</span>
+      <span class="qr-field-val" id="f_name">—</span>
+    </div>
+    <div class="qr-field">
+      <span class="qr-field-label">المركز:</span>
+      <span class="qr-field-val" id="f_center">—</span>
+    </div>
+    <div class="qr-field" id="row_section" hidden>
+      <span class="qr-field-label">الفوج / القسم:</span>
+      <span class="qr-field-val" id="f_section">—</span>
+    </div>
+    <div class="qr-field" id="row_dob" hidden>
+      <span class="qr-field-label">تاريخ الميلاد:</span>
+      <span class="qr-field-val" id="f_dob">—</span>
+    </div>
+    <div class="qr-field" id="row_disability" hidden>
+      <span class="qr-field-label">طبيعة الإعاقة:</span>
+      <span class="qr-field-val" id="f_disability">—</span>
+    </div>
+    <div class="qr-field">
+      <span class="qr-field-label">الفترة:</span>
+      <span class="qr-field-val" id="f_period">السنة التربوية 2026–2027</span>
+    </div>
+
+    <div class="qr-claim">
+      <p>أنت ولي أمر هذا التلميذ؟<br>سجّل الدخول باسم المستخدم وكلمة المرور التي سلّمتها لك الإدارة لمتابعة ملف طفلك (لا يظهر لك إلا ابنك).</p>
+      <p id="userRow" hidden>اسم المستخدم: <strong dir="ltr" id="f_user"></strong></p>
+      <a href="parent.html" class="btn-gold" id="btnClaim">الدخول إلى فضاء الأولياء</a>
+    </div>
+  </div>
+
+  <div class="qr-footer">
+    المركز النفسي البيداغوجي دار الإحسان – العطف، غرداية<br>
+    <a href="index.html">زيارة الموقع الرسمي للمركز</a>
+  </div>
+</main>
+
+<script src="cms-config.js?v=9"></script>
+<script src="centers.js?v=1"></script>
+<script src="de-core.js?v=11"></script>
+<script src="fr-names.js?v=1"></script>
+<script src="username.js?v=1"></script>
+<script src="qr.js?v=12"></script>
+</body>
+</html>

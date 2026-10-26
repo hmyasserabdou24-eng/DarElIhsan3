@@ -1,0 +1,162 @@
+:root{
+  --blue:#16335f; --ink:#163250; --burg:#a3264d; --teal:#1f8a7a; --paper:#f7f5f2; --card:#fff;
+  --line:rgba(22,51,95,.14); --muted:#6b7787; --danger:#b3261e; --ok:#1f8a7a; --warn:#b26a00;
+  --shadow:0 12px 28px rgba(13,38,64,.07); --bar:76px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.7 "Tajawal","Segoe UI",Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+[hidden]{display:none!important}
+button,input,textarea,select{font:inherit;color:inherit}
+.sprite{position:absolute}
+.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:3px solid rgba(163,38,77,.45);outline-offset:2px}
+.muted{color:var(--muted)}
+.boot{min-height:100vh;display:grid;place-items:center;color:var(--muted)}
+
+/* الأزرار */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 20px;border:0;border-radius:999px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:filter .15s,opacity .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.primary,.btn.burg{background:var(--burg)}
+.btn.teal{background:var(--teal)}
+.btn.light{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.danger{background:var(--danger)}
+.btn.small{min-height:40px;padding:6px 14px;font-size:14px}
+.btn.block{width:100%}
+.icon-btn{width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;cursor:pointer}
+
+/* الدخول */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:linear-gradient(180deg,#112a4d,#0a1d38)}
+.login-card{width:min(420px,100%);background:#fff;border-radius:24px;padding:28px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:14px}
+.login-logo{width:84px;height:84px;border-radius:50%;object-fit:cover;align-self:center}
+.login-card h1{margin:0;text-align:center;font:800 22px/1.4 "Cairo","Tajawal",sans-serif}
+.login-card p{margin:0;text-align:center}
+.fld{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:15px}
+.fld span small{font-weight:400;color:var(--muted)}
+.fld input,.fld textarea,.fld select{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font-weight:400;font-size:16px;min-height:48px}
+.fld textarea{resize:vertical;line-height:1.7;min-height:48px;overflow:hidden}
+.fld textarea[rows="3"]{min-height:92px}
+.fld input:focus,.fld textarea:focus{border-color:var(--burg);outline:none;box-shadow:0 0 0 3px rgba(163,38,77,.15)}
+.fld.bad input,.fld.bad textarea{border-color:var(--danger)}
+.fld .hint{font-weight:400;font-size:13px;color:var(--muted)}
+.fld .hint.bad{color:var(--danger)}
+.chk{display:flex;align-items:center;gap:10px;font-size:15px}
+.chk input{width:20px;height:20px;accent-color:var(--burg)}
+.err{color:var(--danger);background:#fdecea;padding:10px 14px;border-radius:12px;font-size:15px;text-align:start!important}
+
+/* الهيكل */
+.app{min-height:100vh;padding-bottom:calc(var(--bar) + env(safe-area-inset-bottom,0px) + 12px)}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:linear-gradient(180deg,#112a4d,#0a1d38);color:#fff}
+.top-logo{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#fff}
+.top-title{flex:1;display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.top-title strong{font:800 17px/1.3 "Cairo","Tajawal",sans-serif}
+.chip{display:inline-block;align-self:flex-start;padding:1px 10px;border-radius:999px;font-size:12.5px;background:rgba(255,255,255,.16);font-weight:700}
+.chip.dirty{background:#ffd9a8;color:#6a3d00}
+.chip.pending{background:#cfe9ff;color:#0d3a63}
+.chip.live{background:#c9f0e7;color:#0b5a4c}
+.tabs{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));z-index:20;display:flex;gap:8px;overflow-x:auto;padding:10px 14px;background:var(--paper);border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;min-height:42px;padding:6px 18px;border:1.5px solid var(--line);border-radius:999px;background:#fff;font-weight:700;color:var(--blue);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.view{width:min(860px,100%);margin:0 auto;padding:16px 14px 24px;outline:none}
+.view h2{margin:6px 0 4px;font:800 21px/1.4 "Cairo","Tajawal",sans-serif}
+.view .lead{margin:0 0 14px;color:var(--muted);font-size:15px}
+
+/* بطاقات */
+.card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px;border-top:4px solid var(--burg)}
+.card.teal{border-top-color:var(--teal)}
+.card.plain{border-top:0}
+.card h3{margin:0 0 10px;font-size:18px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.end{justify-content:flex-end}
+.grow{flex:1}
+
+/* النصوص */
+details.grp{background:#fff;border-radius:18px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+details.grp>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:space-between;min-height:54px}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::after{content:"";width:10px;height:10px;border-inline-end:2.5px solid var(--muted);border-bottom:2.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+details.grp[open]>summary::after{transform:rotate(-135deg)}
+details.grp .inner{padding:4px 16px 18px;display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line)}
+.fld.edited>span::after{content:" • معدَّل";color:var(--burg);font-weight:700;font-size:13px}
+.reset{align-self:flex-start;border:0;background:none;color:var(--burg);font-weight:700;font-size:14px;cursor:pointer;padding:4px 0;min-height:32px}
+.seg{display:inline-flex;background:#fff;border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px var(--line);gap:4px}
+.seg button{border:0;background:none;min-height:40px;min-width:46px;padding:4px 16px;border-radius:999px;font-weight:700;cursor:pointer;color:var(--blue);display:grid;place-items:center}
+.seg button.on{background:var(--blue);color:#fff}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+
+/* الصور والمعرض */
+.thumb{width:100%;aspect-ratio:16/10;border-radius:14px;background:#e9eef3 center/cover no-repeat;overflow:hidden;display:grid;place-items:center;color:var(--muted)}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .emb{display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;color:var(--blue)}
+.thumb .emb .i{width:44px;height:44px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;background:#eef3f6;color:var(--blue)}
+.badge.mod{background:#fbe3ea;color:var(--burg)}
+.item-actions{display:flex;flex-wrap:wrap;gap:8px}
+.empty{padding:26px 16px;text-align:center;color:var(--muted);background:#fff;border-radius:18px;border:1.5px dashed var(--line)}
+input[type=file]{display:none}
+.two{display:grid;gap:12px}
+@media(min-width:620px){.two{grid-template-columns:1fr 1fr}}
+
+/* النشر */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:700}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:#f7f9fb}
+.qr{background:#fff;border-radius:12px;padding:8px;width:min(220px,100%);align-self:center}
+.qr img{width:100%;display:block}
+code.sec{display:block;direction:ltr;text-align:left;word-break:break-all;background:#f1f4f7;border-radius:10px;padding:8px 10px;font-size:14px}
+
+/* الشريط السفلي */
+.actions{position:fixed;inset-inline:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.96);backdrop-filter:blur(6px);box-shadow:0 -8px 24px rgba(13,38,64,.12)}
+.act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:6px 4px;border:0;border-radius:16px;font-weight:700;font-size:13px;line-height:1.25;cursor:pointer;color:#fff;text-align:center}
+.act.blue{background:var(--blue)}.act.teal{background:var(--teal)}.act.burg{background:var(--burg)}
+.act.ghost{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1.5px var(--line)}
+.act:disabled{opacity:.4;cursor:not-allowed}
+@media(min-width:720px){.actions{inset-inline:auto;left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 24px));bottom:12px;border-radius:22px}.act{flex-direction:row;gap:8px;font-size:15px}}
+
+/* المعاينة */
+.preview{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#22262b}
+.pv-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:#0a1d38}
+.pv-bar .btn{min-height:42px;padding:6px 14px;font-size:14px}
+.pv-stage{flex:1;display:flex;justify-content:center;overflow:auto;padding:0}
+.pv-stage iframe{border:0;background:#fff;height:100%;width:100%}
+.pv-stage.phone{padding:14px 0}
+.pv-stage.phone iframe{width:min(390px,100%);border-radius:22px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+
+/* نوافذ */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(10,29,56,.55)}
+.modal-card{width:min(440px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.modal-card h2{margin:0 0 6px;font:800 20px/1.4 "Cairo","Tajawal",sans-serif}
+.modal-card p{margin:0 0 14px;color:#31465f}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.busy{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:rgba(10,29,56,.5)}
+.busy-card{width:min(340px,86%);background:#fff;border-radius:20px;padding:20px;text-align:center;font-weight:700}
+.bar{height:8px;border-radius:99px;background:#e6ebf0;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--teal);transition:width .2s}
+.toast{position:fixed;inset-inline:16px;bottom:calc(var(--bar) + env(safe-area-inset-bottom,0px) + 26px);z-index:95;margin-inline:auto;max-width:420px;padding:12px 18px;border-radius:16px;background:#112a4d;color:#fff;font-weight:700;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.3)}
+.toast.err{background:var(--danger)}
+.toast.ok{background:#0b5a4c}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.card .icon-btn,.row>.icon-btn{background:#eef3f6;color:var(--blue);width:42px;height:42px}
+.view .btn .i{width:20px;height:20px}
+
+.badge.owner{background:#fff1cf;color:#6a4b00}
+.small{font-size:13.5px}
+.u-row{align-items:flex-start;flex-wrap:wrap}
+.u-mail{font-weight:700;word-break:break-all}
+.view select{width:100%}
+.fld textarea[data-grow]{min-height:110px}
+.view h3{margin:14px 0 8px;font-size:16px;color:var(--blue)}
+
+.linkbtn{align-self:center;border:0;background:none;color:var(--burg);font-weight:700;font-size:15px;cursor:pointer;min-height:40px;padding:4px 10px}
+.okmsg{color:#0b5a4c;background:#e3f6ef;padding:10px 14px;border-radius:12px;font-size:15px;text-align:start!important}
+.ver-banner{position:sticky;top:0;z-index:100;padding:10px 14px;background:#fff3cd;color:#664d03;font-weight:700;text-align:center}
+
+.steps{margin:0 0 14px;padding-inline-start:22px;color:#31465f}
+.steps li{margin:4px 0}
+
+a.icon-btn{text-decoration:none;font-size:20px}

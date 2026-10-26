@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════════════════
+   لوحة الإدارة على الهاتف (mobile-admin.css)
+   يُحمَّل بعد manage-theme.css. يؤثر فقط في الشاشات الضيقة (≤ 640px)،
+   فلا يغيّر شكل الحاسوب إطلاقًا.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ─── الرأس: سطر واحد للعنوان، وبريد المستخدم يُقتطع بدل أن يدفع الأزرار ─── */
+  .bar .ttl { gap: 8px; min-width: 0; }
+  .bar .ttl strong {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  /* بريد المستخدم يُخفى على الهاتف حتى يتسع العنوان؛ يظهر في الحاسوب */
+  .bar .ttl #who { display: none; }
+
+  /* أزرار لمس بحجم مناسب للإصبع */
+  .btn, button.btn { min-height: 44px; }
+  .linkbtn { min-height: 44px; }
+
+  /* ─── عناوين الصفحات ─── */
+  .bar-sub h2 { font-size: 1.1rem; line-height: 1.5; }
+  .bar-sub { gap: 10px; }
+  .row-actions { width: 100%; }
+  .row-actions .btn { flex: 1 1 auto; }
+
+  /* ─── بطاقات الإحصاء: عمودان بدل عمود واحد طويل ─── */
+  .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { padding: 14px 12px; }
+
+  /* ─── الجداول تتحول إلى بطاقات، كل سجل بطاقة، وكل عمود سطر باسمه ─── */
+  .sheet-wrap, .tbl-wrap, .table-wrap {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  table.tbl, table.tbl tbody, table.tbl tr, table.tbl td {
+    display: block;
+    width: 100%;
+  }
+  table.tbl thead { display: none; }
+  table.tbl tbody tr {
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    margin-bottom: 12px;
+    padding: 6px 14px;
+  }
+  table.tbl tbody tr:hover { background: #FFFFFF; }
+  table.tbl td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    border: 0;
+    border-bottom: 1px dashed var(--line);
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+  table.tbl td:last-child { border-bottom: 0; }
+  table.tbl td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    max-width: 42%;
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 700;
+  }
+  table.tbl td.actions-cell {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding-top: 12px;
+  }
+  table.tbl td.actions-cell::before { display: none; }
+  table.tbl td.actions-cell .btn { min-height: 44px; flex: 1 1 calc(50% - 8px); }
+
+  /* صف التفاصيل المفتوح: بلا بطاقة إضافية */
+  table.tbl tbody tr.detail-row {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 12px;
+  }
+  table.tbl tr.detail-row td { display: block; padding: 0; }
+  table.tbl tr.detail-row td::before { display: none; }
+
+  /* ─── الفلاتر ─── */
+  .filter-bar { gap: 8px; }
+  .filter-bar > * { min-width: 100%; }
+
+  /* ─── النوافذ المنبثقة: تأخذ عرض الشاشة وتبقى قابلة للتمرير ─── */
+  .modal-card {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-card .row-actions,
+  .modal-card .form-actions { flex-direction: column; }
+  .modal-card .row-actions .btn,
+  .modal-card .form-actions .btn { width: 100%; }
+}
+
+/* الشاشات الصغيرة جدًا (أجهزة قديمة بعرض أقل من 360px) */
+@media (max-width: 360px) {
+  .stats { grid-template-columns: 1fr; }
+  .bar .ttl .chip { display: none; }
+}
+
+/* أزرار التثبيت تُخفى بالسمة hidden حتى لو تعارضت معها قواعد الأزرار الأخرى */
+[data-install][hidden] { display: none !important; }
