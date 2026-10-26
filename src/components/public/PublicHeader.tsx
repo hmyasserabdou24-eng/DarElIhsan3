@@ -1,10 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Globe, Users, Shield, Menu, X, QrCode } from 'lucide-react';
+import { Globe, Users, Shield, Menu, X, QrCode, Smartphone } from 'lucide-react';
+
+const FacebookIcon = () => (
+  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg className="w-4 h-4 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">
+    <rect x="2" y="2" width="20" height="20" rx="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+  </svg>
+);
 
 export const PublicHeader: React.FC = () => {
-  const { lang, setLang, t, setCurrentView } = useApp();
+  const { lang, setLang, t, setCurrentView, showToast } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        showToast('تم تثبيت تطبيق دار الإحسان على جهازك بنجاح!', 'success');
+      }
+      setDeferredPrompt(null);
+    } else {
+      showToast('لتثبيت التطبيق على أندرويد: افتح قائمة المتصفح (⋮) واختر "إضافة إلى الشاشة الرئيسية" أو "تثبيت التطبيق"', 'info');
+    }
+  };
 
   const toggleLang = () => {
     setLang(lang === 'ar' ? 'fr' : 'ar');
@@ -59,6 +96,16 @@ export const PublicHeader: React.FC = () => {
 
           {/* Right Action Buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Install PWA Button */}
+            <button
+              onClick={handleInstallClick}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all animate-pulse"
+              title="تثبيت كتطبيق أندرويد على الهاتف"
+            >
+              <Smartphone className="w-4 h-4 text-emerald-200" />
+              <span className="hidden sm:inline">تثبيت التطبيق</span>
+            </button>
+
             {/* Verify QR quick link */}
             <button
               onClick={() => setCurrentView('verify')}
