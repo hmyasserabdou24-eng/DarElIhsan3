@@ -31,10 +31,10 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-black text-[#0C2D55] font-['Cairo']">
-                تطبيق دار الإحسان للهواتف والأجهزة
+                تحميل تطبيق دار الإحسان للهواتف
               </h3>
               <span className="text-xs text-slate-500">
-                متاح لنظام Android وهواتف الأولياء والمؤطرين
+                ملف APK المترجم الجاهز لنظام أندرويد
               </span>
             </div>
           </div>
@@ -46,53 +46,75 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({
           </button>
         </div>
 
-        {/* Option 1: PWA Instant Install (Recommended) */}
-        <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-3">
+        {/* Option 1: Direct APK Download (Ready Now!) */}
+        <div className="p-5 rounded-2xl bg-[#0C2D55] text-white space-y-3 shadow-md">
           <div className="flex items-center justify-between">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold">
-              الخيار الموصى به (فوري)
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-bold">
+              جاهز للتحميل الآن (5.8 ميغابايت)
             </span>
-            <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
           </div>
 
-          <h4 className="font-bold text-base text-emerald-950 font-['Cairo']">
-            تثبيت التطبيق مباشرة على شاشة الهاتف (WebAPK)
+          <h4 className="font-bold text-base text-white font-['Cairo']">
+            تحميل ملف APK المباشر (دار الإحسان)
           </h4>
-          <p className="text-xs text-emerald-900 leading-relaxed text-justify">
-            يعمل كتطبيق أندرويد كامل بشاشة مستقلة وأيقونة دار الإحسان على شاشة هاتفك، دون الحاجة لتحميل ملفات خارجية أو ضبط إعدادات معقدة.
+          <p className="text-xs text-slate-200 leading-relaxed text-justify">
+            تم استخراج وبناء ملف الـ APK بنجاح! يمكنك تنزيله وتثبيته مباشرة على هاتفك أو مشاركته عبر واتساب.
           </p>
 
+          <a
+            href="/dar-el-ihsan.apk"
+            download="dar-el-ihsan.apk"
+            className="w-full py-3 rounded-xl bg-[#B4873A] hover:bg-[#c99843] text-white font-bold text-xs sm:text-sm font-['Cairo'] shadow-sm transition-colors flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            <span>تنزيل ملف dar-el-ihsan.apk مباشرة</span>
+          </a>
+        </div>
+
+        {/* Option 2: GitHub Actions Artifacts Link */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+          <div className="flex items-center justify-between font-bold text-slate-800 font-['Cairo']">
+            <div className="flex items-center gap-1.5">
+              <GithubIcon />
+              <span>مستودع GitHub Actions المكتمل</span>
+            </div>
+            <span className="text-emerald-700 font-mono font-bold">✓ مكتمل بنجاح</span>
+          </div>
+
+          <p className="text-slate-600 leading-relaxed">
+            تم الانتهاء من تجميع ملف الـ APK في GitHub بنجاح تام:
+          </p>
+
+          <a
+            href="https://github.com/hmyasserabdou24-eng/DarElIhsan3/actions/runs/40344509133"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-semibold transition-colors"
+          >
+            <span>فتح صفحة البناء #3 على GitHub وتحميل الملف</span>
+            <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+          </a>
+        </div>
+
+        {/* Option 3: PWA Instant Install */}
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 text-xs">
+          <div className="flex items-center justify-between font-bold text-emerald-950 font-['Cairo']">
+            <span>تثبيت فوري على شاشة الهاتف (WebAPK)</span>
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+          </div>
+          <p className="text-emerald-900 leading-relaxed">
+            يمكنك أيضًا تثبيت التطبيق مباشرة من المتصفح بدون أي ملفات إضافية.
+          </p>
           <button
             onClick={() => {
               onInstallPwa();
               onClose();
             }}
-            className="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm font-['Cairo'] shadow-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-colors"
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>تثبيت التطبيق على جهازي الآن</span>
+            تثبيت على الشاشة الرئيسية
           </button>
-        </div>
-
-        {/* Option 2: GitHub Actions Automated APK */}
-        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 font-['Cairo']">
-            <GithubIcon />
-            <span>بناء ملف APK التلقائي عبر GitHub Actions</span>
-          </div>
-
-          <p className="text-xs text-slate-600 leading-relaxed text-justify">
-            تم تجهيز مشروع أندرويد الأصلي داخل المجلد <code className="font-mono text-[#0C2D55] bg-white px-1.5 py-0.5 rounded border border-slate-200">android/</code> مع سير عمل تلقائي <code className="font-mono text-[#0C2D55] bg-white px-1.5 py-0.5 rounded border border-slate-200">.github/workflows/build-apk.yml</code>.
-          </p>
-
-          <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
-            <p className="font-semibold text-[#0C2D55]">خطوات استخراج ملف الـ APK:</p>
-            <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600">
-              <li>رفع التحديثات لمستودعك على GitHub.</li>
-              <li>فتح تبويب <strong>Actions</strong> في مستودع GitHub.</li>
-              <li>تحميل ملف <strong>app-debug.apk</strong> الجاهز للتثبيت المباشر.</li>
-            </ol>
-          </div>
         </div>
 
         <div className="flex justify-end pt-2">
