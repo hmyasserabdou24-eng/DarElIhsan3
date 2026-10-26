@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Globe, Users, Shield, Menu, X, QrCode, Smartphone } from 'lucide-react';
+import { AppDownloadModal } from '../common/AppDownloadModal';
 
 const FacebookIcon = () => (
   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -19,6 +20,7 @@ const InstagramIcon = () => (
 export const PublicHeader: React.FC = () => {
   const { lang, setLang, t, setCurrentView, showToast } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export const PublicHeader: React.FC = () => {
       }
       setDeferredPrompt(null);
     } else {
-      showToast('لتثبيت التطبيق على أندرويد: افتح قائمة المتصفح (⋮) واختر "إضافة إلى الشاشة الرئيسية" أو "تثبيت التطبيق"', 'info');
+      setIsDownloadModalOpen(true);
     }
   };
 
@@ -204,6 +206,15 @@ export const PublicHeader: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* App Download and Install Modal */}
+      <AppDownloadModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        onInstallPwa={() => {
+          showToast('لتثبيت التطبيق: اضغط على (⋮) أعلى المتصفح واختر "إضافة إلى الشاشة الرئيسية"', 'info');
+        }}
+      />
     </header>
   );
 };
