@@ -1,0 +1,6 @@
+{
+  "name": "Dar El Ihsan - دار الإحسان",
+  "description": "بوابة ومركز دار الإحسان لرعاية وتكفل الأطفال ذوي الاحتياجات الخاصة، فضاء الأولياء، ولوحة إدارة المراكز",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

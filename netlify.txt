@@ -1,0 +1,66 @@
+# =====================================================================
+# 🔒 netlify.toml — PACK SÉCURITÉ VIBE CODER (Dar El Ihsan / دار الإحسان)
+# =====================================================================
+# En-têtes de sécurité HTTP stricts (HSTS, Anti-clickjacking, nosniff,
+# Referrer-Policy, Permissions-Policy, et Content-Security-Policy)
+# adaptés au projet Dar El Ihsan et connectés à Supabase :
+# https://qgjddtylriqdwvpihvmi.supabase.co
+# =====================================================================
+
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # HTTPS obligatoire (HSTS 1 an + sous-domaines + preload)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+    # Anti-clickjacking (empêche l'intégration dans une iframe externe)
+    X-Frame-Options = "DENY"
+
+    # MIME sniffing off
+    X-Content-Type-Options = "nosniff"
+
+    # Referrer strict
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Permissions caméra/micro/géoloc désactivées
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+    # CSP stricte — sans 'unsafe-inline' dans script-src, connectée au projet Supabase
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; media-src 'self' blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self';"
+
+# Protection renforcée pour les portails sensibles (Admin, Gestion, Espace Parents)
+[[headers]]
+  for = "/manage.html"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self';"
+
+[[headers]]
+  for = "/parent.html"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self';"
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; media-src 'self' blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none';"
+
+# Cache assets statiques
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

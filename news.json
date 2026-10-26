@@ -1,0 +1,9 @@
+[
+  {
+    "date": "2026-10-13",
+    "image": "main-center.jpg",
+    "title": { "ar": "مرحبًا بكم في موقع الجمعية", "fr": "Bienvenue sur le site de l'association" },
+    "text": { "ar": "هذا منشور تجريبي. عدّلوا هذا الملف لإضافة آخر أخبار وأنشطة الجمعية.", "fr": "Ceci est un exemple. Modifiez ce fichier pour ajouter les actualités de l'association." },
+    "url": "#"
+  }
+]

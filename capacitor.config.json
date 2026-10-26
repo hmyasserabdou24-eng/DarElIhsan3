@@ -1,0 +1,9 @@
+{
+  "appId": "com.darelihsan.app",
+  "appName": "دار الإحسان",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
