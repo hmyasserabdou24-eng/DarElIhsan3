@@ -1,4 +1,4 @@
-/* شريط تثبيت التطبيق + تحسينات اللمس للهاتف (أهداف لمس ≥ 44px، منع تكبير iOS عند الكتابة، مناطق آمنة) */
+/* شريط تثبيت التطبيق + تحسينات اللمس للهاتف */
 .pwa-bar{position:fixed;inset-inline:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:9999;display:flex;align-items:center;gap:10px;
   padding:10px 12px;border-radius:14px;background:#0C2D55;color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.28);font:600 14px/1.4 IBM Plex Sans Arabic,system-ui,sans-serif}
 .pwa-msg{flex:1}
@@ -20,3 +20,175 @@ body{padding-inline:env(safe-area-inset-left) env(safe-area-inset-right)}
 /* زر «تثبيت التطبيق» في لوحة الإدارة (الكمبيوتر) */
 .install-btn { width: auto !important; padding-inline: 12px !important; gap: 6px; display: inline-flex; align-items: center; font-weight: 600; font-size: 13px; white-space: nowrap; }
 .install-btn[hidden], .linkbtn[data-install][hidden] { display: none !important; }
+
+/* نافذة تثبيت وتشغيل لوحة الإدارة على الكمبيوتر */
+.pwa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(8, 27, 51, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: pwaFadeIn 0.2s ease-out;
+}
+.pwa-modal-card {
+  background: #FFFFFF;
+  color: #081B33;
+  width: 100%;
+  max-width: 580px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(8, 27, 51, 0.35);
+  border: 1px solid #DCE6F2;
+  border-top: 5px solid #0C2D55;
+  display: flex;
+  flex-direction: column;
+  animation: pwaSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+.pwa-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1.5px solid #EEF3F8;
+  gap: 12px;
+}
+.pwa-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0C2D55;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pwa-modal-close {
+  background: #F0F4F9;
+  border: 0;
+  color: #556980;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.pwa-modal-close:hover {
+  background: #E2EAF2;
+  color: #081B33;
+}
+.pwa-modal-content {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pwa-opt-box {
+  background: #F8FAFC;
+  border: 1.5px solid #E2EAF2;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease;
+}
+.pwa-opt-box.featured {
+  background: #F3F8FF;
+  border-color: #BDD8F8;
+  border-right: 4px solid #0C2D55;
+}
+.pwa-opt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pwa-opt-label {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0C2D55;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pwa-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #E5C47F;
+  color: #081B33;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.pwa-opt-text {
+  font-size: 13.5px;
+  color: #4A5F75;
+  line-height: 1.6;
+  margin: 0;
+}
+.pwa-opt-steps {
+  margin: 4px 0 0;
+  padding-right: 20px;
+  font-size: 13px;
+  color: #33485E;
+  line-height: 1.7;
+}
+.pwa-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 0;
+  text-decoration: none;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.pwa-action-btn.gold {
+  background: #E5C47F;
+  color: #081B33;
+}
+.pwa-action-btn.gold:hover {
+  background: #D9B56B;
+}
+.pwa-action-btn.navy {
+  background: #0C2D55;
+  color: #FFFFFF;
+}
+.pwa-action-btn.navy:hover {
+  background: #081B33;
+}
+.pwa-action-btn.outline {
+  background: #FFFFFF;
+  border: 1.5px solid #C8D8E8;
+  color: #0C2D55;
+}
+.pwa-action-btn.outline:hover {
+  background: #F0F4F9;
+  border-color: #0C2D55;
+}
+.pwa-modal-foot {
+  padding: 14px 24px;
+  background: #F8FAFC;
+  border-top: 1.5px solid #EEF3F8;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 0 0 20px 20px;
+}
+
+@keyframes pwaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pwaSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }

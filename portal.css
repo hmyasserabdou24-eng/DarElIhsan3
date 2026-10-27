@@ -419,9 +419,10 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* الشريط الجانبي الفخم */
 .side {
   width: var(--side);
-  flex: none;
-  background: linear-gradient(180deg, var(--navy) 0%, var(--navy-dark) 100%);
-  color: #FFFFFF;
+  min-width: var(--side);
+  flex: 0 0 var(--side);
+  background: #FFFFFF;
+  color: #243447;
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -429,9 +430,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  border-inline-end: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
-  transition: width var(--transition);
+  border-inline-end: 1px solid #DCE6F2;
+  box-shadow: 2px 0 16px rgba(8, 45, 80, 0.05);
+  transition: width var(--transition), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 80;
 }
 
@@ -442,12 +443,144 @@ button, input, textarea, select { font: inherit; color: inherit; }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.15);
+  padding: 18px 16px 15px;
+  border-bottom: 2px solid var(--brand-gold);
+  background: linear-gradient(135deg, #082D50 0%, #123E73 100%);
+  color: #FFFFFF;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.brand-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+.brand-icon-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: none;
+}
+
+.brand-txt strong {
+  display: block;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.25;
+}
+
+.brand-txt .small {
+  display: block;
+  font-size: 12px;
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.side-profile-pill {
+  margin: 14px 12px 8px;
+  padding: 11px 12px;
+  background: #EBF3FC;
+  border: 1.5px solid #BDD6F2;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.22s ease;
+}
+
+.spp-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #123E73;
+  color: #FFFFFF;
+  font-family: "Readex Pro", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--brand-gold);
+  flex-shrink: 0;
+}
+
+.spp-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.spp-info strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #082D50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.spp-info span {
+  display: block;
+  font-size: 11.5px;
+  color: #5A6B7C;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.side-foot {
+  padding: 12px 14px;
+  border-top: 1px solid #F1F5F9;
+  background: #FFFFFF;
+  margin-top: auto;
+}
+
+.side-signout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #FFF1F2;
+  color: #E11D48;
+  border: 1.5px solid #FECDD3;
+  font-size: 13.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.side-signout-btn:hover {
+  background: #FFE4E6;
+  border-color: #FDA4AF;
+  color: #BE123C;
+}
+
+.side-signout-btn svg,
+.side-signout-btn .i {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
 }
 
 .side .brand img {
@@ -931,22 +1064,21 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  min-height: 44px;
+  min-height: 46px;
   min-width: 0;
   width: 100%;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   background: transparent;
-  color: rgba(226, 232, 240, 0.85);
+  color: #334155;
   font-weight: 700;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
   text-align: start;
   text-decoration: none;
-  transition: all var(--transition);
-  border-inline-start: 3px solid transparent;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   box-sizing: border-box;
   position: relative;
 }
@@ -954,33 +1086,48 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
 .side #tabs button:hover,
 .side .side-nav button:hover,
 .side-nav button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-  transform: translateX(-2px);
+  background: #EBF3FC;
+  color: #082D50;
+  transform: translateX(-3px);
 }
 
 html[lang="fr"] .side #tabs button:hover,
 html[lang="fr"] .side .side-nav button:hover,
 html[lang="fr"] .side-nav button:hover {
-  transform: translateX(2px);
+  transform: translateX(3px);
+}
+
+.side #tabs button:hover .i,
+.side .side-nav button:hover .i,
+.side-nav button:hover .i,
+.side #tabs button:hover svg,
+.side .side-nav button:hover svg,
+.side-nav button:hover svg {
+  color: #123E73;
 }
 
 .side #tabs button[aria-selected="true"],
 .side #tabs button.active,
+.side #tabs button[aria-current="page"],
 .side-nav button[aria-selected="true"],
-.side-nav button.active {
-  background: rgba(180, 135, 58, 0.18);
-  color: #FFFFFF;
-  border-inline-start-color: var(--brand-gold);
-  box-shadow: inset 3px 0 0 var(--brand-gold);
+.side-nav button.active,
+.side-nav button[aria-current="page"] {
+  background: linear-gradient(135deg, #123E73 0%, #082D50 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  border-color: transparent !important;
+  box-shadow: 0 5px 14px rgba(18, 62, 115, 0.28) !important;
 }
 
 .side #tabs button[aria-selected="true"] .i,
-.side #tabs button[aria-selected="true"] .ti,
+.side #tabs button[aria-selected="true"] svg,
 .side #tabs button.active .i,
+.side #tabs button.active svg,
 .side-nav button[aria-selected="true"] .i,
-.side-nav button.active .i {
-  color: var(--gold-light);
+.side-nav button[aria-selected="true"] svg,
+.side-nav button.active .i,
+.side-nav button.active svg {
+  color: #FDE047 !important;
 }
 
 .side #tabs button[aria-selected="true"]::before,
@@ -1325,30 +1472,7 @@ html[lang="fr"] .child-card {
     -webkit-overflow-scrolling: touch;
   }
 
-  .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  .tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tabs button {
-    flex: 1 0 auto;
-    min-width: 48px;
-    min-height: 54px;
-    padding: 4px 2px;
-    font-size: 10.5px;
-  }
-
-  .tabs .ti, .tabs .i {
-    width: 20px;
-    height: 20px;
-  }
+  /* Tabs are strictly sidebar items now */
 
   .child-card {
     padding: 16px 14px;
@@ -1407,11 +1531,7 @@ html[lang="fr"] .child-card {
     margin: 10px auto;
   }
 
-  .tabs button {
-    min-width: 44px;
-    font-size: 9.5px;
-    padding: 4px 1px;
-  }
+
 }
 
 /* ─── الوصولية وتقليل الحركة (Accessibility) ─── */

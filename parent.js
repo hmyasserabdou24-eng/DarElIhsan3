@@ -430,7 +430,9 @@
       var spName = $('#sideParentName');
       if (spName) spName.textContent = S.name || t('whoDefault');
       var spEmail = $('#sideParentEmail');
-      if (spEmail && S.me) spEmail.textContent = (me && me.email) || '';
+      if (spEmail) spEmail.textContent = (me && me.email) ? me.email : 'حساب ولي معتمد';
+      var spAvatar = $('#sideAvatar');
+      if (spAvatar) spAvatar.textContent = (S.name ? S.name.trim().charAt(0) : 'و');
       toast(t('welcome') + (S.name ? ' ' + S.name : '') + t('welcomeSuffix'), 'ok');
 
       stopIdle && stopIdle();
@@ -493,12 +495,17 @@
     if (hideReports && S.tab === 'reports') S.tab = 'children';
     TABS.forEach(function (tb) {
       if (hideReports && tb[0] === 'reports') return;
+      var isAct = (S.tab === tb[0]);
       var b = h('button', {
         type: 'button',
         role: 'tab',
-        'aria-selected': S.tab === tb[0] ? 'true' : 'false',
+        class: isAct ? 'active' : '',
+        'aria-selected': isAct ? 'true' : 'false',
+        'aria-current': isAct ? 'page' : null,
         onclick: function () {
           document.body.classList.remove('nav-toggled');
+          var app = $('#app');
+          if (app) app.classList.remove('nav-toggled');
           if (S.tab !== tb[0]) {
             S.tabStack.push(S.tab);
             if (S.tabStack.length > 20) S.tabStack.shift();
@@ -508,7 +515,7 @@
           render();
           window.scrollTo(0, 0);
         }
-      }, icon(tb[2]), t(tb[1]));
+      }, icon(tb[2]), h('span', { text: t(tb[1]) }));
 
       if (tb[0] === 'msgs' && unreadCount()) {
         b.appendChild(h('span', { class: 'dot', text: String(unreadCount()) }));
@@ -1570,11 +1577,23 @@
     $('#backBtn').addEventListener('click', function () { setMode('login'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
     var menuBtn = $('#menuBtn');
-    if (menuBtn) menuBtn.addEventListener('click', function () { document.body.classList.toggle('nav-toggled'); });
+    if (menuBtn) menuBtn.addEventListener('click', function () {
+      var app = $('#app');
+      if (app) app.classList.toggle('nav-toggled');
+      document.body.classList.toggle('nav-toggled');
+    });
     var sideCloseBtn = $('#sideCloseBtn');
-    if (sideCloseBtn) sideCloseBtn.addEventListener('click', function () { document.body.classList.remove('nav-toggled'); });
+    if (sideCloseBtn) sideCloseBtn.addEventListener('click', function () {
+      var app = $('#app');
+      if (app) app.classList.remove('nav-toggled');
+      document.body.classList.remove('nav-toggled');
+    });
     var scrim = $('#scrim');
-    if (scrim) scrim.addEventListener('click', function () { document.body.classList.remove('nav-toggled'); });
+    if (scrim) scrim.addEventListener('click', function () {
+      var app = $('#app');
+      if (app) app.classList.remove('nav-toggled');
+      document.body.classList.remove('nav-toggled');
+    });
     var sideLogoutBtn = $('#sideLogoutBtn');
     if (sideLogoutBtn) sideLogoutBtn.addEventListener('click', function () { logout(); });
 

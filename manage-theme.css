@@ -374,49 +374,144 @@ body {
   margin: 8px 6px;
 }
 
-.side nav button {
-  padding: 11px 13px;
+.side nav button,
+.side #tabs button,
+.side .side-nav button,
+.side-nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
   border-radius: 11px;
   font-size: 13.8px;
   font-weight: 700;
   color: #334155;
   background: transparent;
   border: 1px solid transparent;
+  cursor: pointer;
+  text-align: start;
+  text-decoration: none;
   transition: all 0.2s var(--ease-out);
+  box-sizing: border-box;
 }
 
-.side nav button svg {
+.side nav button svg,
+.side nav button .i,
+.side #tabs button svg,
+.side #tabs button .i,
+.side .side-nav button svg,
+.side .side-nav button .i,
+.side-nav button svg,
+.side-nav button .i {
+  width: 20px;
+  height: 20px;
   color: #64748B;
+  stroke-width: 2;
+  flex-shrink: 0;
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.side nav button:hover {
+.side nav button:hover,
+.side #tabs button:hover,
+.side .side-nav button:hover,
+.side-nav button:hover {
   background: var(--blue-soft);
   color: var(--blue-dark);
   transform: translateX(-3px);
 }
 
-.side nav button:hover svg {
+html[lang="fr"] .side nav button:hover,
+html[lang="fr"] .side #tabs button:hover,
+html[lang="fr"] .side .side-nav button:hover,
+html[lang="fr"] .side-nav button:hover {
+  transform: translateX(3px);
+}
+
+.side nav button:hover svg,
+.side nav button:hover .i,
+.side #tabs button:hover svg,
+.side #tabs button:hover .i,
+.side .side-nav button:hover svg,
+.side .side-nav button:hover .i,
+.side-nav button:hover svg,
+.side-nav button:hover .i {
   color: var(--blue);
 }
 
 .side nav button.active,
-.side nav button[aria-current="page"] {
-  background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
-  color: #FFFFFF;
-  font-weight: 800;
-  border-color: transparent;
-  box-shadow: 0 5px 14px rgba(18, 62, 115, 0.28);
+.side nav button[aria-current="page"],
+.side nav button[aria-selected="true"],
+.side #tabs button.active,
+.side #tabs button[aria-selected="true"],
+.side .side-nav button.active,
+.side .side-nav button[aria-selected="true"],
+.side-nav button.active,
+.side-nav button[aria-selected="true"] {
+  background: linear-gradient(135deg, #123E73 0%, #082D50 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  border-color: transparent !important;
+  box-shadow: 0 5px 14px rgba(18, 62, 115, 0.28) !important;
 }
 
 .side nav button.active::before,
-.side nav button[aria-current="page"]::before {
-  display: none;
+.side nav button[aria-current="page"]::before,
+.side nav button[aria-selected="true"]::before,
+.side #tabs button[aria-selected="true"]::before,
+.side-nav button[aria-selected="true"]::before {
+  display: none !important;
 }
 
 .side nav button.active svg,
-.side nav button[aria-current="page"] svg {
-  color: #FDE047;
+.side nav button[aria-current="page"] svg,
+.side nav button[aria-selected="true"] svg,
+.side nav button[aria-selected="true"] .i,
+.side #tabs button.active svg,
+.side #tabs button.active .i,
+.side #tabs button[aria-selected="true"] svg,
+.side #tabs button[aria-selected="true"] .i,
+.side .side-nav button.active svg,
+.side .side-nav button.active .i,
+.side .side-nav button[aria-selected="true"] svg,
+.side .side-nav button[aria-selected="true"] .i,
+.side-nav button.active svg,
+.side-nav button.active .i,
+.side-nav button[aria-selected="true"] svg,
+.side-nav button[aria-selected="true"] .i {
+  color: #FDE047 !important;
+}
+
+.side nav button .dot,
+.side #tabs button .dot,
+.side .side-nav button .dot,
+.side-nav button .dot {
+  margin-inline-start: auto;
+  font-size: 11px;
+  background: var(--brand-gold);
+  color: #082D50;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.bar-lang-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--blue-border);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-weight: 800;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.bar-lang-btn:hover {
+  background: var(--blue);
+  color: #FFFFFF;
+  border-color: var(--blue);
 }
 
 .side-foot {
