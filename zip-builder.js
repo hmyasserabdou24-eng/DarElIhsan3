@@ -31,7 +31,7 @@
     files.forEach(function (f, idx) {
       if (typeof onProgress === 'function') onProgress(idx + 1, total, f.name);
 
-      var nameBytes = enc.encode(f.name.replace(/\/g, '/'));
+      var nameBytes = enc.encode(f.name.replace(/\\/g, '/'));
       var dataBytes;
       if (f.data instanceof Uint8Array) dataBytes = f.data;
       else if (f.data instanceof ArrayBuffer) dataBytes = new Uint8Array(f.data);

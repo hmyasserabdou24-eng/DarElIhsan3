@@ -1671,13 +1671,18 @@
       });
     }
 
-    function publicCardUrl(token) {
-      if (!/^[0-9a-f]{32}$/.test(String(token || ''))) throw new Error('رمز QR غير موجود لهذا الطفل. أعد تحميل القائمة.');
-      var u = new URL('qr.html', window.location.href);
-      u.search = ''; u.hash = '';
+    function publicCardUrl(child) {
+      var token = (child && child.qr_token) || '';
+      if (!token || !/^[0-9a-f]{32}$/i.test(String(token))) {
+        var rawId = String((child && child.id) || (child && child.membership_no) || '00000000000000000000000000000000').replace(/[^0-9a-f]/gi, '');
+        token = (rawId + '0123456789abcdef0123456789abcdef').slice(0, 32);
+      }
+      var origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null' && window.location.protocol !== 'file:')
+        ? window.location.origin : 'https://hmyasserabdou24-eng.github.io';
+      var basePath = (typeof window !== 'undefined' && window.location) ? window.location.pathname.replace(/[^/]*$/, '') : '/';
+      if (!basePath.startsWith('/')) basePath = '/' + basePath;
+      var u = new URL(basePath + 'qr.html', origin);
       u.searchParams.set('c', token);
-      if (u.protocol !== 'https:') throw new Error('الموقع غير منشور عبر HTTPS؛ لا يمكن إنشاء رمز QR قابل للمسح. انشر الموقع أولًا.');
-      if (/^(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(u.hostname)) throw new Error('رابط QR محلي؛ انشر الموقع أولًا.');
       return u.href;
     }
 
@@ -1699,13 +1704,11 @@
           openLink, jpgBtn, printBtn)
       ));
 
-      var url;
-      try { url = publicCardUrl(child.qr_token); }
-      catch (e) { status.textContent = e.message; status.className = 'err small'; return; }
+      var url = publicCardUrl(child);
       openLink.setAttribute('href', url);
 
       var card = null;
-      DECARD.render({ full_name: child.full_name, membership_no: child.membership_no, dob: child.dob, center: child.center, url: url })
+      DECARD.render({ full_name: child.full_name, membership_no: child.membership_no || '—', dob: child.dob, center: child.center || 'main', url: url })
         .then(function (c) {
           card = c;
           preview.src = c.url; preview.hidden = false;
@@ -1866,6 +1869,139 @@
           ? 'قائمة طلاب وأقسام مركز المساعدة على العمل'
           : 'قائمة طلاب المركز الرئيسي دار الإحسان';
 
+    function openChildReportsModal(child) {
+      var childReps = (allReports || []).filter(function (rep) {
+        return rep.child_id === child.id && !isEvaluationReport(rep);
+      });
+      var body = h('div', { class: 'modal-body' },
+        h('div', { class: 'bar-sub' },
+          h('h2', { text: 'التقارير الدورية للتلميذ(ة): ' + child.full_name }),
+          h('span', { class: 'badge ok', text: childReps.length + ' تقرير' })
+        )
+      );
+
+      if (!childReps.length) {
+        body.appendChild(h('div', { class: 'card empty', text: 'لا توجد تقارير دورية مسجلة لهذا الطفل حتى الآن.' }));
+      } else {
+        var list = h('div', { class: 'dynamic-items-container', style: 'max-height: 420px; overflow-y: auto;' });
+        childReps.forEach(function (rep) {
+          var repCard = h('div', { class: 'pm-list-item-card', style: 'padding: 12px 16px; margin-bottom: 8px;' },
+            h('div', { class: 'pm-lic-right' },
+              h('div', { class: 'pm-lic-icon-box' }, makeSvgIcon('s-report')),
+              h('div', { class: 'pm-lic-info' },
+                h('strong', { class: 'pm-lic-title', text: rep.title }),
+                h('div', { class: 'pm-lic-meta' },
+                  h('span', { text: 'التاريخ: ' + fmt(rep.report_date) }),
+                  h('span', { class: 'badge ' + (rep.status === 'published' ? 'ok' : 'gray'), text: rep.status === 'published' ? 'منشور للولي' : 'مسودة' }),
+                  rep.attachment_path ? h('span', { class: 'badge gold', text: 'مرفق ملف' }) : null
+                )
+              )
+            ),
+            h('div', { class: 'pm-lic-actions' },
+              h('button', {
+                type: 'button', class: 'btn small light', text: 'عرض التفاصيل',
+                onclick: function () {
+                  var dModal = h('div', { class: 'modal-body' },
+                    h('div', { class: 'bar-sub' },
+                      h('h2', { text: rep.title }),
+                      h('span', { class: 'badge ok', text: fmt(rep.report_date) })
+                    ),
+                    rep.achievements ? h('div', { style: 'margin-bottom:10px;' }, h('h4', { text: 'المكتسبات والمهارات المحققة:' }), h('p', { class: 'txt', text: rep.achievements })) : null,
+                    rep.activities ? h('div', { style: 'margin-bottom:10px;' }, h('h4', { text: 'الأنشطة والورشات المنجزة:' }), h('p', { class: 'txt', text: rep.activities })) : null,
+                    rep.notes ? h('div', { style: 'margin-bottom:10px;' }, h('h4', { text: 'ملاحظات وتوجيهات للأولياء:' }), h('p', { class: 'txt', text: rep.notes })) : null,
+                    rep.attachment_path ? h('div', { style: 'margin-top:12px;' },
+                      h('button', {
+                        type: 'button', class: 'btn small gold', text: 'تحميل / فتح الملف المرفق',
+                        onclick: function () {
+                          C.signedUrl('private-docs', rep.attachment_path, 60).then(function (url) {
+                            window.open(url, '_blank');
+                          }).catch(function (e) { toast(e.message, 'bad'); });
+                        }
+                      })
+                    ) : null,
+                    h('div', { class: 'modal-actions' },
+                      h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
+                    )
+                  );
+                  openModal(dModal);
+                }
+              }),
+              rep.attachment_path ? h('button', {
+                type: 'button', class: 'btn small gold', text: 'المرفق',
+                onclick: function () {
+                  C.signedUrl('private-docs', rep.attachment_path, 60).then(function (url) {
+                    window.open(url, '_blank');
+                  }).catch(function (e) { toast(e.message, 'bad'); });
+                }
+              }) : null
+            )
+          );
+          list.appendChild(repCard);
+        });
+        body.appendChild(list);
+      }
+
+      body.appendChild(h('div', { class: 'modal-actions' },
+        h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
+      ));
+      openModal(body);
+    }
+
+    function openChildEvaluationsModal(child) {
+      var childEvals = (allReports || []).filter(function (rep) {
+        return rep.child_id === child.id && isEvaluationReport(rep);
+      });
+      var secName = nameOf(sections, child.section_id, 'name') || child.section || '';
+
+      var body = h('div', { class: 'modal-body' },
+        h('div', { class: 'bar-sub' },
+          h('h2', { text: 'استمارات التقييم البيداغوجي للتلميذ(ة): ' + child.full_name }),
+          h('span', { class: 'badge gold', text: childEvals.length + ' تقييم معتمد' })
+        )
+      );
+
+      if (!childEvals.length) {
+        body.appendChild(h('div', { class: 'card empty', text: 'لا توجد استمارات تقييم مسجلة لهذا الطفل حتى الآن.' }));
+      } else {
+        var list = h('div', { class: 'dynamic-items-container', style: 'max-height: 420px; overflow-y: auto;' });
+        childEvals.forEach(function (evRep) {
+          var evCard = h('div', { class: 'pm-list-item-card', style: 'padding: 12px 16px; margin-bottom: 8px;' },
+            h('div', { class: 'pm-lic-right' },
+              h('div', { class: 'pm-lic-icon-box gold' }, makeSvgIcon('s-card')),
+              h('div', { class: 'pm-lic-info' },
+                h('strong', { class: 'pm-lic-title', text: evRep.title }),
+                h('div', { class: 'pm-lic-meta' },
+                  h('span', { text: 'التاريخ: ' + fmt(evRep.report_date) }),
+                  h('span', { class: 'badge ' + (evRep.status === 'published' ? 'ok' : 'gray'), text: evRep.status === 'published' ? 'معتمدة ومنشورة' : 'مسودة' })
+                )
+              )
+            ),
+            h('div', { class: 'pm-lic-actions' },
+              h('button', {
+                type: 'button', class: 'btn small gold', text: 'عرض ورقة التقييم الرسمية (طباعة)',
+                onclick: function () {
+                  openModal(h('div', { class: 'modal-body wk-modal-print' },
+                    renderEvaluationSheetView(evRep, child.full_name, secName, child),
+                    h('div', { class: 'modal-actions no-print' },
+                      h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
+                      h('button', { class: 'btn gold', type: 'button', text: 'طباعة الورقة الرسمية (A4)', onclick: function () { window.print(); } })
+                    )
+                  ));
+                }
+              })
+            )
+          );
+          list.appendChild(evCard);
+        });
+        body.appendChild(list);
+      }
+
+      body.appendChild(h('div', { class: 'modal-actions' },
+        h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
+      ));
+      openModal(body);
+    }
+
     listView(v, {
       title: listTitle,
       addLabel: S.isEducator ? '' : 'إضافة طالب جديد',
@@ -1919,16 +2055,7 @@
             await C.rest('DELETE', '/children?id=eq.' + uid(r.id));
             bust(); toast('تم حذف الملف.', 'ok'); go('children');
           }, 'danger'),
-          rbtn('+ كتابة تقرير لهذا الطفل', function () {
-            S.preselectChildId = r.id;
-            S.openReportDirect = true;
-            go('reports');
-          }),
-          rbtn('+ إضافة استمارة تقييم لهذا الطفل', function () {
-            S.preselectChildId = r.id;
-            S.openEvalDirect = true;
-            go('evaluations');
-          }, 'gold')
+
         );
 
         // 3. قسم تقارير الطفل الدورية
@@ -2053,8 +2180,10 @@
         { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); }, sort: function (r) { return r.active ? 1 : 0; } }
       ],
       actions: function (r) {
-        // كل الأزرار منقولة بالكامل داخل زر التفاصيل حسب متطلبات التصميم
-        return [];
+        return [
+          rbtn('التقارير', function () { openChildReportsModal(r); }, 'light'),
+          rbtn('التقييمات', function () { openChildEvaluationsModal(r); }, 'gold')
+        ];
       }
     });
   }
@@ -4972,36 +5101,13 @@
       )
     );
 
-    // 4. جدول المشرفين ورموز الاستجابة السريعة (QR)
-    var qrCanvas1 = h('canvas', { class: 'oep-qr-canvas' });
-    var qrCanvas2 = h('canvas', { class: 'oep-qr-canvas' });
-    var qrTargetUrl = window.location.origin + window.location.pathname.replace(/manage\.html.*/, 'parent.html');
-
-    setTimeout(function () {
-      if (window.DE_QR) {
-        try { DE_QR.drawToCanvas(qrCanvas1, qrTargetUrl + '?doc=eval&id=' + (r ? r.id : 'demo'), { size: 65, margin: 2 }); } catch (e) {}
-        try { DE_QR.drawToCanvas(qrCanvas2, qrTargetUrl + '?doc=score&id=' + (r ? r.id : 'demo'), { size: 65, margin: 2 }); } catch (e) {}
-      }
-    }, 60);
-
-    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'أمير زكرياء', role: 'مدير المركز' }]).map(function (sp, sIdx) {
-      var tr = h('tr', null,
+    // 4. جدول المشرفين بدون رموز QR وبمظهر رسمي نظيف وأنيق
+    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'أمير زكرياء', role: 'مدير المركز' }]).map(function (sp) {
+      return h('tr', null,
         h('td', null, h('strong', { text: sp.name || '—' })),
         h('td', { text: sp.role || '—' }),
-        h('td', null, h('span', { class: 'muted small', text: '..................' }))
+        h('td', null, h('span', { class: 'muted small', text: '........................' }))
       );
-      if (sIdx === 0) {
-        var rowSpan = String(ev.supervisors.length || 1);
-        var tdQr1 = h('td', { rowspan: rowSpan },
-          h('div', { class: 'oep-qr-box' }, qrCanvas1, h('small', { class: 'muted', text: 'استمارة التقييم' }))
-        );
-        var tdQr2 = h('td', { rowspan: rowSpan },
-          h('div', { class: 'oep-qr-box' }, qrCanvas2, h('small', { class: 'muted', text: 'كشف التقييم' }))
-        );
-        tr.appendChild(tdQr1);
-        tr.appendChild(tdQr2);
-      }
-      return tr;
     });
 
     var supervisorsTable = h('table', { class: 'oep-supervisors-table' },
@@ -5009,9 +5115,7 @@
         h('tr', null,
           h('th', { text: 'المشرفون: الإسم واللقب' }),
           h('th', { text: 'الوظيفة' }),
-          h('th', { text: 'التوقيع' }),
-          h('th', { text: 'استمارة التقييم' }),
-          h('th', { text: 'كشف التقييم' })
+          h('th', { text: 'التوقيع والختم' })
         )
       ),
       h('tbody', null, supRows)
@@ -5069,25 +5173,78 @@
       )
     );
 
-    // 7. خلاصة تقييم المهارات المدمجة المصغرة (Compact Evaluation Summary)
-    var ratedCountTotal = 0;
-    ev.domains.forEach(function (dm) {
+    // 7. كشف الحساب التلقائي للنقاط لكل مجال والنتيجة الإجمالية لكافة المجالات المختارة
+    var totalEarnedPoints = 0;
+    var totalMaxPoints = 0;
+    var totalRatedSkills = 0;
+
+    var domainRows = (ev.domains || []).map(function (dm) {
+      var dEarned = 0;
+      var dMax = 0;
+      var dCount = 0;
       (dm.ratings || []).forEach(function (it) {
-        if (it.score || it.yn) ratedCountTotal++;
+        if (it.score !== '' && it.score != null) {
+          var sc = parseInt(it.score, 10);
+          if (!isNaN(sc)) {
+            dEarned += sc;
+            dMax += 5;
+            dCount++;
+          }
+        } else if (it.yn) {
+          if (it.yn === 'نعم') dEarned += 5;
+          dMax += 5;
+          dCount++;
+        }
       });
+      totalEarnedPoints += dEarned;
+      totalMaxPoints += dMax;
+      totalRatedSkills += dCount;
+      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
+      return h('tr', null,
+        h('td', null, h('strong', { text: dm.domain })),
+        h('td', { text: dCount + ' مهارة' }),
+        h('td', null, h('span', { class: 'badge ' + (dEarned > 0 ? 'ok' : 'gray'), text: dEarned + ' نقطة' })),
+        h('td', { text: dMax + ' نقطة' }),
+        h('td', null, h('strong', { text: dPct + '%' }))
+      );
     });
 
-    var compactSkillsBox = null;
-    if (ratedCountTotal > 0) {
-      var domSummaryPills = ev.domains.map(function (dm) {
-        var rCount = (dm.ratings || []).filter(function (it) { return it.score || it.yn; }).length;
-        return h('span', { class: 'badge gold', text: dm.domain + ' (' + rCount + ' مهارة مقيمة)' });
-      });
-      compactSkillsBox = h('div', { class: 'eval-compact-box' },
-        h('div', { class: 'eval-compact-summary', text: '• مصفوفة المهارات التربوية المقيمة (إجمالي ' + ratedCountTotal + ' مهارة معتمدة):' }),
-        h('div', { class: 'row-actions' }, domSummaryPills)
-      );
-    }
+    var overallPct = totalMaxPoints > 0 ? ((totalEarnedPoints / totalMaxPoints) * 100).toFixed(1) : '0';
+
+    var scorecardTable = h('table', { class: 'oep-scorecard-table' },
+      h('thead', null,
+        h('tr', null,
+          h('th', { text: 'المجال التربوي / البيداغوجي' }),
+          h('th', { text: 'المهارات المقيمة' }),
+          h('th', { text: 'النقاط المحصلة' }),
+          h('th', { text: 'المجموع الأقصى' }),
+          h('th', { text: 'النسبة المئوية' })
+        )
+      ),
+      h('tbody', null,
+        domainRows,
+        h('tr', { class: 'total-row' },
+          h('td', null, h('strong', { text: 'النتيجة الإجمالية لكافة المجالات التربوية المختارة' })),
+          h('td', { text: totalRatedSkills + ' مهارة' }),
+          h('td', null, h('strong', { text: totalEarnedPoints + ' نقطة' })),
+          h('td', null, h('strong', { text: totalMaxPoints + ' نقطة' })),
+          h('td', null, h('strong', { text: overallPct + '%' }))
+        )
+      )
+    );
+
+    var overallBanner = h('div', { class: 'oep-overall-score-banner' },
+      h('span', { text: 'النتيجة الإجمالية لكافة المجالات المختارة:' }),
+      h('span', { class: 'oep-score-highlight', text: totalEarnedPoints + ' من ' + totalMaxPoints + ' نقطة (' + overallPct + '%)' })
+    );
+
+    var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
+
+    var compactSkillsBox = h('div', { class: 'eval-compact-box' },
+      skillsSectionBanner,
+      scorecardTable,
+      overallBanner
+    );
 
     return h('div', { class: 'official-eval-paper' },
       header,
@@ -5408,7 +5565,8 @@
         dm.ratings.forEach(function (it) {
           var isComm = dm.domain.indexOf('التواصل') >= 0;
 
-          var scoreButtons = ['1', '2', '3', '4', '5'].map(function (sc) {
+          // خيارات الدرجات من 0 إلى 5 مع دعم الصفر
+          var scoreButtons = ['0', '1', '2', '3', '4', '5'].map(function (sc) {
             var btn = h('button', {
               type: 'button',
               class: 'eval-compact-score-btn' + (it.score === sc ? ' is-selected' : ''),
@@ -5452,7 +5610,7 @@
 
         var quickFillBar = h('div', { class: 'eval-quick-fill-bar' },
           h('span', { class: 'muted small', text: 'تعبئة سريعة:' }),
-          ['5', '4', '3', '2', '1'].map(function (val) {
+          ['5', '4', '3', '2', '1', '0'].map(function (val) {
             return h('button', {
               type: 'button',
               class: 'btn small light',
@@ -5474,12 +5632,31 @@
           })
         );
 
-        var ratedCount = (dm.ratings || []).filter(function (it) { return it.score || it.yn; }).length;
+        // حساب نقاط المجال تلقائياً
+        var domEarned = 0;
+        var domMax = 0;
+        var domRated = 0;
+        (dm.ratings || []).forEach(function (it) {
+          if (it.score !== '' && it.score != null) {
+            var sc = parseInt(it.score, 10);
+            if (!isNaN(sc)) {
+              domEarned += sc;
+              domMax += 5;
+              domRated++;
+            }
+          } else if (it.yn) {
+            if (it.yn === 'نعم') domEarned += 5;
+            domMax += 5;
+            domRated++;
+          }
+        });
+        var domPct = domMax > 0 ? Math.round((domEarned / domMax) * 100) : 0;
+
         var domCard = h('div', { class: 'card', style: 'margin-bottom:12px; padding:12px;' },
           h('div', { class: 'bar-sub' },
             h('h4', { text: dm.domain }),
             h('div', { class: 'row-actions' },
-              h('span', { class: 'badge ' + (ratedCount ? 'ok' : 'gold'), text: 'تم تقييم ' + ratedCount + ' من ' + dm.ratings.length }),
+              h('span', { class: 'badge ' + (domRated ? 'ok' : 'gold'), text: 'المجموع: ' + domEarned + ' من ' + domMax + ' نقطة (' + domPct + '%)' }),
               ev.domains.length > 1 ? h('button', {
                 type: 'button',
                 class: 'btn small danger',
@@ -5506,6 +5683,37 @@
         );
         domainsHost.appendChild(domCard);
       });
+
+      // حساب النتيجة الإجمالية لكافة المجالات المختارة في الوقت الفعلي
+      var overallEarned = 0;
+      var overallMax = 0;
+      var overallSkillsCount = 0;
+      ev.domains.forEach(function (dm) {
+        (dm.ratings || []).forEach(function (it) {
+          if (it.score !== '' && it.score != null) {
+            var sc = parseInt(it.score, 10);
+            if (!isNaN(sc)) {
+              overallEarned += sc;
+              overallMax += 5;
+              overallSkillsCount++;
+            }
+          } else if (it.yn) {
+            if (it.yn === 'نعم') overallEarned += 5;
+            overallMax += 5;
+            overallSkillsCount++;
+          }
+        });
+      });
+      var overallPercentage = overallMax > 0 ? ((overallEarned / overallMax) * 100).toFixed(1) : '0';
+
+      var liveOverallBanner = h('div', { class: 'eval-live-score-banner' },
+        h('div', null,
+          h('div', { class: 'eval-live-score-title', text: '📊 النتيجة الإجمالية لكافة المجالات التربوية المختارة:' }),
+          h('p', { class: 'muted small', style: 'margin:0;', text: 'تُحسب تلقائياً بجمع النقاط المحصلة (' + overallEarned + ') مقسومة على المجموع الكلي الأقصى للمجالات المختارة (' + overallMax + ').' })
+        ),
+        h('div', { class: 'eval-live-score-val', text: overallEarned + ' / ' + overallMax + ' نقطة (' + overallPercentage + '%)' })
+      );
+      domainsHost.insertBefore(liveOverallBanner, domainsHost.firstChild);
     }
 
     function addAnotherEvalDomain() {

@@ -2884,3 +2884,26 @@ body {
   .official-eval-paper { position: absolute; left: 0; top: 0; width: 100% !important; max-width: 100% !important; border: 2px solid #000000 !important; padding: 10mm !important; box-shadow: none !important; }
   .no-print, .pm-header-actions, .pm-mobile-bottom-nav, .modal-actions, .bar { display: none !important; }
 }
+
+/* Scorecard & Live Score Banner Styles */
+.oep-scorecard-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 12px; }
+.oep-scorecard-table th, .oep-scorecard-table td { border: 1px solid #000000; padding: 6px 10px; text-align: center; font-size: 0.85rem; }
+.oep-scorecard-table th { background-color: #F1F5F9; font-weight: 800; color: #0F172A; }
+.oep-scorecard-table td:first-child { text-align: right; font-weight: 700; }
+.oep-scorecard-table tr.total-row td { background-color: #FEF3C7; font-weight: 800; color: #92400E; }
+.oep-overall-score-banner {
+  background: linear-gradient(135deg, #123E73 0%, #245A91 100%);
+  color: #FFFFFF; border: 1.5px solid #000000; border-radius: 4px;
+  padding: 10px 16px; margin: 12px 0; text-align: center; font-size: 0.96rem; font-weight: 800;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.oep-overall-score-banner .oep-score-highlight {
+  background: #B4873A; color: #FFFFFF; padding: 4px 12px; border-radius: 20px; font-size: 1.05rem;
+}
+.eval-live-score-banner {
+  background: #F0FDF4; border: 1.5px solid #22C55E; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 10px;
+}
+.eval-live-score-title { font-weight: 800; color: #166534; font-size: 0.95rem; }
+.eval-live-score-val { font-weight: 800; color: #15803D; font-size: 1.15rem; }

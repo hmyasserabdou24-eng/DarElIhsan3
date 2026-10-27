@@ -1689,33 +1689,13 @@
       )
     );
 
-    var qrCanvas1 = h('canvas', { class: 'oep-qr-canvas' });
-    var qrCanvas2 = h('canvas', { class: 'oep-qr-canvas' });
-    var qrTargetUrl = window.location.href;
-
-    setTimeout(function () {
-      if (window.DE_QR) {
-        try { DE_QR.drawToCanvas(qrCanvas1, qrTargetUrl + '#eval', { size: 65, margin: 2 }); } catch (e) {}
-        try { DE_QR.drawToCanvas(qrCanvas2, qrTargetUrl + '#score', { size: 65, margin: 2 }); } catch (e) {}
-      }
-    }, 60);
-
-    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'أمير زكرياء', role: 'مدير المركز' }]).map(function (sp, sIdx) {
-      var tr = h('tr', null,
+    // جدول المشرفين بدون رموز QR
+    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'أمير زكرياء', role: 'مدير المركز' }]).map(function (sp) {
+      return h('tr', null,
         h('td', null, h('strong', { text: sp.name || '—' })),
         h('td', { text: sp.role || '—' }),
-        h('td', null, h('span', { class: 'muted small', text: '..................' }))
+        h('td', null, h('span', { class: 'muted small', text: '........................' }))
       );
-      if (sIdx === 0) {
-        var rowSpan = String(ev.supervisors.length || 1);
-        tr.appendChild(h('td', { rowspan: rowSpan },
-          h('div', { class: 'oep-qr-box' }, qrCanvas1, h('small', { class: 'muted', text: 'استمارة التقييم' }))
-        ));
-        tr.appendChild(h('td', { rowspan: rowSpan },
-          h('div', { class: 'oep-qr-box' }, qrCanvas2, h('small', { class: 'muted', text: 'كشف التقييم' }))
-        ));
-      }
-      return tr;
     });
 
     var supervisorsTable = h('table', { class: 'oep-supervisors-table' },
@@ -1723,9 +1703,7 @@
         h('tr', null,
           h('th', { text: 'المشرفون: الإسم واللقب' }),
           h('th', { text: 'الوظيفة' }),
-          h('th', { text: 'التوقيع' }),
-          h('th', { text: 'استمارة التقييم' }),
-          h('th', { text: 'كشف التقييم' })
+          h('th', { text: 'التوقيع والختم' })
         )
       ),
       h('tbody', null, supRows)
@@ -1781,24 +1759,78 @@
       )
     );
 
-    var ratedCountTotal = 0;
-    ev.domains.forEach(function (dm) {
+    // حساب النقاط والنتائج المكتسبة لكل مجال والنتيجة الإجمالية لكافة المجالات
+    var totalEarnedPoints = 0;
+    var totalMaxPoints = 0;
+    var totalRatedSkills = 0;
+
+    var domainRows = (ev.domains || []).map(function (dm) {
+      var dEarned = 0;
+      var dMax = 0;
+      var dCount = 0;
       (dm.ratings || []).forEach(function (it) {
-        if (it.score || it.yn) ratedCountTotal++;
+        if (it.score !== '' && it.score != null) {
+          var sc = parseInt(it.score, 10);
+          if (!isNaN(sc)) {
+            dEarned += sc;
+            dMax += 5;
+            dCount++;
+          }
+        } else if (it.yn) {
+          if (it.yn === 'نعم') dEarned += 5;
+          dMax += 5;
+          dCount++;
+        }
       });
+      totalEarnedPoints += dEarned;
+      totalMaxPoints += dMax;
+      totalRatedSkills += dCount;
+      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
+      return h('tr', null,
+        h('td', null, h('strong', { text: dm.domain })),
+        h('td', { text: dCount + ' مهارة' }),
+        h('td', null, h('span', { class: 'badge ' + (dEarned > 0 ? 'ok' : 'gray'), text: dEarned + ' نقطة' })),
+        h('td', { text: dMax + ' نقطة' }),
+        h('td', null, h('strong', { text: dPct + '%' }))
+      );
     });
 
-    var compactSkillsBox = null;
-    if (ratedCountTotal > 0) {
-      var domSummaryPills = ev.domains.map(function (dm) {
-        var rCount = (dm.ratings || []).filter(function (it) { return it.score || it.yn; }).length;
-        return h('span', { class: 'badge gold', text: dm.domain + ' (' + rCount + ' مهارة مقيمة)' });
-      });
-      compactSkillsBox = h('div', { class: 'eval-compact-box' },
-        h('div', { class: 'eval-compact-summary', text: '• مصفوفة المهارات التربوية المقيمة (إجمالي ' + ratedCountTotal + ' مهارة معتمدة):' }),
-        h('div', { class: 'row-actions' }, domSummaryPills)
-      );
-    }
+    var overallPct = totalMaxPoints > 0 ? ((totalEarnedPoints / totalMaxPoints) * 100).toFixed(1) : '0';
+
+    var scorecardTable = h('table', { class: 'oep-scorecard-table' },
+      h('thead', null,
+        h('tr', null,
+          h('th', { text: 'المجال التربوي / البيداغوجي' }),
+          h('th', { text: 'المهارات المقيمة' }),
+          h('th', { text: 'النقاط المحصلة' }),
+          h('th', { text: 'المجموع الأقصى' }),
+          h('th', { text: 'النسبة المئوية' })
+        )
+      ),
+      h('tbody', null,
+        domainRows,
+        h('tr', { class: 'total-row' },
+          h('td', null, h('strong', { text: 'النتيجة الإجمالية لكافة المجالات التربوية المختارة' })),
+          h('td', { text: totalRatedSkills + ' مهارة' }),
+          h('td', null, h('strong', { text: totalEarnedPoints + ' نقطة' })),
+          h('td', null, h('strong', { text: totalMaxPoints + ' نقطة' })),
+          h('td', null, h('strong', { text: overallPct + '%' }))
+        )
+      )
+    );
+
+    var overallBanner = h('div', { class: 'oep-overall-score-banner' },
+      h('span', { text: 'النتيجة الإجمالية لكافة المجالات المختارة:' }),
+      h('span', { class: 'oep-score-highlight', text: totalEarnedPoints + ' من ' + totalMaxPoints + ' نقطة (' + overallPct + '%)' })
+    );
+
+    var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
+
+    var compactSkillsBox = h('div', { class: 'eval-compact-box' },
+      skillsSectionBanner,
+      scorecardTable,
+      overallBanner
+    );
 
     return h('div', { class: 'official-eval-paper' },
       header,
@@ -2200,7 +2232,7 @@
     S.reads = {};
     show('app');
     applyLang();
-    .textContent = S.name;
+    if ($('#who')) $('#who').textContent = S.name;
     toast('مرحبًا بك في وضع المعاينة التجريبية لفضاء الأولياء!', 'ok');
     render();
   }
@@ -2211,13 +2243,13 @@ async function init() {
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
 
     $('#loginForm').addEventListener('submit', submitLogin);
-    var pDemo = ;
+    var pDemo = $('#quickDemoParentBtn');
     if (pDemo) pDemo.addEventListener('click', enterDemoParent);
     if (new URLSearchParams(window.location.search).get('demo') === '1') { enterDemoParent(); return; }
 
     $('#forgotBtn').addEventListener('click', function () { setMode('forgot'); });
     $('#backBtn').addEventListener('click', function () { setMode('login'); });
-    $('#logoutBtn').addEventListener('click', function () { logout(); });
+    var lBtn = $('#logoutBtn'); if (lBtn) lBtn.addEventListener('click', function () { logout(); });
 
     var btnLoginLang = $('#loginLangBtn'); if (btnLoginLang) btnLoginLang.addEventListener('click', toggleLang);
     var btnBarLang = $('#barLangBtn'); if (btnBarLang) btnBarLang.addEventListener('click', toggleLang);

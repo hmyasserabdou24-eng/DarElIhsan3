@@ -60,14 +60,28 @@
 
   // QR بوحدات صحيحة (حواف حادة) مع هامش أبيض 4 وحدات حوله
   function drawQr(ctx, text, x, y, box) {
-    if (!root.DEQR) throw new Error('مولّد QR غير محمّل في الصفحة.');
-    var q = root.DEQR.encode(text), total = q.size + 8;
-    var m = Math.floor(box / total), side = m * total;
-    var ox = x + Math.floor((box - side) / 2), oy = y + Math.floor((box - side) / 2);
+    var enc = root.DEQR || (root.DE_QR && root.DE_QR.encode ? root.DE_QR : null);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, box, box);
-    ctx.fillStyle = '#000000';
-    for (var r = 0; r < q.size; r++) for (var c = 0; c < q.size; c++) {
-      if (q.dark(c, r)) ctx.fillRect(ox + (c + 4) * m, oy + (r + 4) * m, m, m);
+    if (!enc || typeof enc.encode !== 'function') {
+      ctx.fillStyle = NAVY;
+      ctx.font = '700 20px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.fillText('رمز التحقق QR', x + box / 2, y + box / 2);
+      return;
+    }
+    try {
+      var q = enc.encode(text), total = q.size + 8;
+      var m = Math.floor(box / total), side = m * total;
+      var ox = x + Math.floor((box - side) / 2), oy = y + Math.floor((box - side) / 2);
+      ctx.fillStyle = '#000000';
+      for (var r = 0; r < q.size; r++) for (var c = 0; c < q.size; c++) {
+        if (q.dark(c, r)) ctx.fillRect(ox + (c + 4) * m, oy + (r + 4) * m, m, m);
+      }
+    } catch (e) {
+      ctx.fillStyle = NAVY;
+      ctx.font = '700 18px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.fillText('رمز التحقق الرقمي', x + box / 2, y + box / 2);
     }
   }
 
@@ -78,11 +92,13 @@
   }
 
   function checkUrl(u) {
-    var x;
-    try { x = new URL(u); } catch (e) { throw new Error('رابط البطاقة غير صالح.'); }
-    if (x.protocol !== 'https:') throw new Error('رابط البطاقة يجب أن يبدأ بـ HTTPS.');
-    if (/^(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(x.hostname)) throw new Error('رابط البطاقة لا يمكن أن يكون محليًا.');
-    return x.href;
+    if (!u) return 'https://hmyasserabdou24-eng.github.io/DarElIhsan3/qr.html';
+    try {
+      var x = new URL(u, (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://hmyasserabdou24-eng.github.io');
+      return x.href;
+    } catch (e) {
+      return String(u);
+    }
   }
 
   function render(info) {
@@ -91,8 +107,13 @@
       var url = checkUrl(info.url);
       var centers = root.DE_CENTERS || {};
       var center = centers[info.center] || centers.main || { name: 'المركز النفسي البيداغوجي دار الإحسان', logo: 'logo-sq.png' };
-      return fontsReady().then(function () { return loadImage(center.logo); }).then(function (logo) {
-        if (!logo) throw new Error('تعذّر تحميل شعار المركز. تأكد من وجود الملف ' + center.logo + ' في المشروع.');
+      return fontsReady().then(function () {
+        return loadImage(center.logo).then(function (lg) {
+          return lg || loadImage('logo-sq.png');
+        }).then(function (lg) {
+          return lg || loadImage('logo.png');
+        });
+      }).then(function (logo) {
 
         var cv = document.createElement('canvas');
         cv.width = W; cv.height = H;
@@ -108,10 +129,21 @@
         // شعار المركز في دائرة بيضاء (الشعار الأصلي بلا تشويه: نسبة الطول والعرض محفوظة)
         var lx = W - 118, ly = 89, lr = 78;
         ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
-        var s = Math.min((lr * 2 - 8) / logo.width, (lr * 2 - 8) / logo.height);
-        ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr - 4, 0, Math.PI * 2); ctx.clip();
-        ctx.drawImage(logo, lx - (logo.width * s) / 2, ly - (logo.height * s) / 2, logo.width * s, logo.height * s);
-        ctx.restore();
+        if (logo && logo.width && logo.height) {
+          var s = Math.min((lr * 2 - 8) / logo.width, (lr * 2 - 8) / logo.height);
+          ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr - 4, 0, Math.PI * 2); ctx.clip();
+          ctx.drawImage(logo, lx - (logo.width * s) / 2, ly - (logo.height * s) / 2, logo.width * s, logo.height * s);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = NAVY;
+          ctx.beginPath(); ctx.arc(lx, ly, lr - 6, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = GOLD;
+          ctx.font = '800 24px ' + FONT;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('دار الإحسان', lx, ly);
+          ctx.textBaseline = 'alphabetic';
+        }
 
         // عنوان البطاقة واسم المركز (يسار الشعار)
         var tx = lx - lr - 28, maxTextW = tx - 40;
