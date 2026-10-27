@@ -60,29 +60,39 @@
 
   // QR بوحدات صحيحة (حواف حادة) مع هامش أبيض 4 وحدات حوله
   function drawQr(ctx, text, x, y, box) {
-    var enc = root.DEQR || (root.DE_QR && root.DE_QR.encode ? root.DE_QR : null);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, box, box);
-    if (!enc || typeof enc.encode !== 'function') {
-      ctx.fillStyle = NAVY;
-      ctx.font = '700 20px ' + FONT;
-      ctx.textAlign = 'center';
-      ctx.fillText('رمز التحقق QR', x + box / 2, y + box / 2);
-      return;
+
+    // 1. الأولوية الأولى: استعمال DE_QR.drawToCanvas من qr-gen.js (يدعم أي طول رابط تلقائياً بلا قيود)
+    if (root.DE_QR && typeof root.DE_QR.drawToCanvas === 'function') {
+      try {
+        var tempCanvas = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+        if (tempCanvas) {
+          root.DE_QR.drawToCanvas(tempCanvas, text, { size: box, margin: 4, dark: '#000000', light: '#ffffff' });
+          ctx.drawImage(tempCanvas, x, y, box, box);
+          return;
+        }
+      } catch (e1) {}
     }
-    try {
-      var q = enc.encode(text), total = q.size + 8;
-      var m = Math.floor(box / total), side = m * total;
-      var ox = x + Math.floor((box - side) / 2), oy = y + Math.floor((box - side) / 2);
-      ctx.fillStyle = '#000000';
-      for (var r = 0; r < q.size; r++) for (var c = 0; c < q.size; c++) {
-        if (q.dark(c, r)) ctx.fillRect(ox + (c + 4) * m, oy + (r + 4) * m, m, m);
-      }
-    } catch (e) {
-      ctx.fillStyle = NAVY;
-      ctx.font = '700 18px ' + FONT;
-      ctx.textAlign = 'center';
-      ctx.fillText('رمز التحقق الرقمي', x + box / 2, y + box / 2);
+
+    // 2. الأولوية الثانية: DEQR.encode من qr-encoder.js
+    var enc = root.DEQR || (root.DE_QR && root.DE_QR.encode ? root.DE_QR : null);
+    if (enc && typeof enc.encode === 'function') {
+      try {
+        var q = enc.encode(text), total = q.size + 8;
+        var m = Math.floor(box / total), side = m * total;
+        var ox = x + Math.floor((box - side) / 2), oy = y + Math.floor((box - side) / 2);
+        ctx.fillStyle = '#000000';
+        for (var r = 0; r < q.size; r++) for (var c = 0; c < q.size; c++) {
+          if (q.dark(c, r)) ctx.fillRect(ox + (c + 4) * m, oy + (r + 4) * m, m, m);
+        }
+        return;
+      } catch (e2) {}
     }
+
+    ctx.fillStyle = NAVY;
+    ctx.font = '700 18px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.fillText('رمز التحقق QR', x + box / 2, y + box / 2);
   }
 
   function fontsReady() {

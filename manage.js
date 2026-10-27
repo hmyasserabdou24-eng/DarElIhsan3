@@ -1808,14 +1808,11 @@
       if (!basePath.startsWith('/')) basePath = '/' + basePath;
       var u = new URL(basePath + 'qr.html', origin);
       if (child) {
-        if (child.id) u.searchParams.set('id', child.id);
-        if (child.membership_no) u.searchParams.set('m', child.membership_no);
-        var token = (child && child.qr_token) || '';
-        if (!token || !/^[0-9a-f]{32}$/i.test(String(token))) {
-          var rawId = String((child && child.id) || (child && child.membership_no) || '00000000000000000000000000000000').replace(/[^0-9a-f]/gi, '');
-          token = (rawId + '0123456789abcdef0123456789abcdef').slice(0, 32);
+        if (child.membership_no) {
+          u.searchParams.set('m', child.membership_no);
+        } else if (child.id) {
+          u.searchParams.set('id', child.id);
         }
-        u.searchParams.set('c', token);
       }
       return u.href;
     }
