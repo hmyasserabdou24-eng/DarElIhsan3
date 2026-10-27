@@ -31,6 +31,14 @@
     var d = new Date(s + 'T00:00:00Z');
     return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
   }
+    function academicYear(sep) {
+    var s = sep || '-';
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = now.getMonth();
+    var start = (m >= 8) ? y : (y - 1);
+    return start + s + (start + 1);
+  }
   function safeUrl(u) { try { var x = new URL(u); return x.protocol === 'https:' ? x.href : null; } catch (e) { return null; } }
   var PW_MSG = 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.';
   function pwProblem(v) {
@@ -306,7 +314,7 @@
 
   var DE = {
     BUILD: BUILD, MAX_FILE: MAX_FILE, EXT: EXT, PW_MSG: PW_MSG,
-    uuid: uuid, clean: clean, isUuid: isUuid, isEmail: isEmail, isPhone: isPhone, isDate: isDate, safeUrl: safeUrl, pwProblem: pwProblem,
+    uuid: uuid, clean: clean, isUuid: isUuid, isEmail: isEmail, isPhone: isPhone, isDate: isDate, safeUrl: safeUrl, pwProblem: pwProblem, academicYear: academicYear,
     sniff: sniff, pdfHasActive: pdfHasActive, checkFile: checkFile, objectPath: objectPath,
     h: h, friendly: friendly, Client: Client, idle: idle
   };

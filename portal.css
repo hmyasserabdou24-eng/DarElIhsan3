@@ -5,7 +5,7 @@
    Background: #F8FAFC | Surface: #FFFFFF | Text: #0F172A | Line: #E2E8F0
    ═══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Readex+Pro:wght@500;600;700&display=swap');
 
 /* ─── متغيرات نظام التصميم الموحد ─── */
 :root {
@@ -82,7 +82,7 @@ body {
   max-width: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Cairo", "Tajawal", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -90,7 +90,7 @@ body {
 }
 
 html[lang="fr"] body {
-  font-family: "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 img { display: block; max-width: 100%; height: auto; }
@@ -651,7 +651,7 @@ html[lang="fr"] .side nav button:hover, html[lang="fr"] .side nav a:hover {
 }
 
 .stat b {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Inter", "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 2rem;
   font-weight: 900;
   color: var(--navy);
@@ -779,7 +779,7 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
 
 /* رقم القيد الرسمي */
 .sic-num {
-  font-family: "IBM Plex Sans Arabic", monospace;
+  font-family: "Inter", monospace;
   font-size: 12.5px;
   font-weight: 800;
   padding: 3px 8px;
@@ -899,65 +899,115 @@ table.sheet tr:last-child td, table.tbl tr:last-child td {
 }
 
 /* ─── فضاء الأطفال والأولياء (Parent Portal Specifics) ─── */
-/* الشريط السفلي للهواتف */
-.tabs {
-  position: fixed;
-  bottom: 0;
-  inset-inline: 0;
-  z-index: 70;
+/* ─── فضاء الأولياء: القائمة الجانبية الموحدة (Parent Portal Sidebar) ─── */
+.side #tabs,
+.side .side-nav,
+.side-nav {
+  position: static;
+  inset: auto;
   display: flex;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -4px 20px rgba(12, 45, 85, 0.08);
+  flex-direction: column;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+  box-shadow: none;
+  padding: 14px 10px;
+  gap: 3px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  z-index: auto;
 }
 
-.tabs button {
-  flex: 1;
-  min-height: 60px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  font-family: inherit;
+.side #tabs button,
+.side .side-nav button,
+.side-nav button {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  min-width: 0;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: rgba(226, 232, 240, 0.85);
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
-  position: relative;
+  text-align: start;
+  text-decoration: none;
   transition: all var(--transition);
+  border-inline-start: 3px solid transparent;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.tabs button[aria-selected="true"] {
-  color: var(--blue);
+.side #tabs button:hover,
+.side .side-nav button:hover,
+.side-nav button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  transform: translateX(-2px);
 }
 
-.tabs button[aria-selected="true"]::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline: 18%;
-  height: 3px;
-  background: linear-gradient(90deg, var(--brand-gold), var(--blue));
-  border-radius: 0 0 3px 3px;
+html[lang="fr"] .side #tabs button:hover,
+html[lang="fr"] .side .side-nav button:hover,
+html[lang="fr"] .side-nav button:hover {
+  transform: translateX(2px);
 }
 
-.tabs .ti {
-  width: 22px;
-  height: 22px;
+.side #tabs button[aria-selected="true"],
+.side #tabs button.active,
+.side-nav button[aria-selected="true"],
+.side-nav button.active {
+  background: rgba(180, 135, 58, 0.18);
+  color: #FFFFFF;
+  border-inline-start-color: var(--brand-gold);
+  box-shadow: inset 3px 0 0 var(--brand-gold);
+}
+
+.side #tabs button[aria-selected="true"] .i,
+.side #tabs button[aria-selected="true"] .ti,
+.side #tabs button.active .i,
+.side-nav button[aria-selected="true"] .i,
+.side-nav button.active .i {
+  color: var(--gold-light);
+}
+
+.side #tabs button[aria-selected="true"]::before,
+.side-nav button[aria-selected="true"]::before {
+  display: none !important;
+}
+
+.side #tabs button .dot,
+.side-nav button .dot {
+  margin-inline-start: auto;
+  font-size: 11px;
+  background: var(--brand-gold);
+  color: #082D50;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.side #tabs .ti,
+.side #tabs .i,
+.side-nav .i {
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
+  flex-shrink: 0;
 }
 
 /* بطاقة الطفل في فضاء الأولياء */
@@ -1089,7 +1139,7 @@ html[lang="fr"] .child-card {
   border: 1.5px dashed var(--brand-gold);
   border-radius: var(--radius-sm);
   padding: 16px;
-  font-family: "IBM Plex Sans Arabic", monospace;
+  font-family: "Inter", monospace;
   font-size: 18px;
   font-weight: 800;
   color: var(--navy);
@@ -1223,7 +1273,7 @@ html[lang="fr"] .child-card {
   }
 
   .main .content {
-    padding: 16px 14px 84px;
+    padding: 16px 14px 24px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -2118,7 +2168,7 @@ table.wk-table td {
 }
 
 .wk-sess-time {
-  font-family: "IBM Plex Sans Arabic", monospace;
+  font-family: "Inter", "Cairo", monospace;
   font-size: 12.5px;
   font-weight: 900;
   color: #0F172A;
@@ -2603,7 +2653,7 @@ table.wk-table td {
 }
 
 .pw-code-badge {
-  font-family: "IBM Plex Sans Arabic", monospace;
+  font-family: "Inter", monospace;
   font-size: 13px;
   font-weight: 800;
   padding: 4px 10px;

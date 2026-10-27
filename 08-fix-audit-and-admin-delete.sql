@@ -108,6 +108,116 @@ grant execute on function public.admin_delete_audit(timestamptz) to authenticate
 revoke all on function public.admin_remove_user(uuid) from public, anon;
 grant execute on function public.admin_remove_user(uuid) to authenticated;
 
+
+-- =====================================================================
+-- تفعيل خيار حذف الحسابات لجميع مديري المركز (بالمعرّف أو بالبريد الإلكتروني)
+-- =====================================================================
+create or replace function public.admin_list()
+returns jsonb language plpgsql stable security definer set search_path = public, auth as $$
+declare v_owner uuid; v_out jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'غير مصرّح' using errcode = '42501';
+  end if;
+  select a.user_id into v_owner from public.admins a order by a.created_at asc, a.user_id asc limit 1;
+  select jsonb_build_object(
+           'can_manage', public.can_manage_families(),
+           'admins', coalesce(jsonb_agg(jsonb_build_object(
+               'id', a.user_id, 'email', u.email, 'created_at', a.created_at,
+               'last_sign_in_at', u.last_sign_in_at, 'role', a.role, 'disabled', a.disabled,
+               'is_owner', a.user_id = v_owner, 'is_me', a.user_id = auth.uid())
+             order by a.created_at asc, a.user_id asc), '[]'::jsonb))
+    into v_out
+    from public.admins a join auth.users u on u.id = a.user_id;
+  return v_out;
+end $$;
+revoke all on function public.admin_list() from public, anon;
+grant execute on function public.admin_list() to authenticated;
+
+create or replace function public.admin_remove_user(p_user_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_mail text;
+begin
+  if not public.can_manage_families() then
+    raise exception 'غير مصرّح بتنفيذ هذه العملية' using errcode = '42501';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'لا يمكنك حذف الحساب الذي تسجل الدخول به حالياً' using errcode = '22023';
+  end if;
+
+  select lower(email) into v_mail from auth.users where id = p_user_id;
+  delete from public.admins where user_id = p_user_id;
+  delete from auth.identities where user_id = p_user_id;
+  delete from auth.users where id = p_user_id;
+
+  if v_mail is not null then
+    update public.site_content
+       set data = jsonb_set(
+         data,
+         '{_portal_meta,account_meta}',
+         coalesce(data #> '{_portal_meta,account_meta}', '{}'::jsonb) - v_mail,
+         true
+       ),
+       updated_at = now()
+     where id = 'draft' and data ? '_portal_meta';
+  end if;
+
+  perform public.audit_log('remove_user', coalesce(v_mail, p_user_id::text));
+  return jsonb_build_object('ok', true, 'deleted_email', v_mail);
+end;
+$$;
+revoke all on function public.admin_remove_user(uuid) from public, anon;
+grant execute on function public.admin_remove_user(uuid) to authenticated;
+
+create or replace function public.admin_remove_user_by_email(p_email text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_mail text := lower(btrim(coalesce(p_email, '')));
+  v_uid uuid;
+begin
+  if not public.can_manage_families() then
+    raise exception 'غير مصرّح بتنفيذ هذه العملية' using errcode = '42501';
+  end if;
+  if v_mail = '' then
+    return jsonb_build_object('ok', false);
+  end if;
+
+  select id into v_uid from auth.users where lower(email) = v_mail limit 1;
+  if v_uid is not null then
+    if v_uid = auth.uid() then
+      raise exception 'لا يمكنك حذف الحساب الذي تسجل الدخول به حالياً' using errcode = '22023';
+    end if;
+    delete from public.admins where user_id = v_uid;
+    delete from auth.identities where user_id = v_uid;
+    delete from auth.users where id = v_uid;
+  end if;
+
+  update public.site_content
+     set data = jsonb_set(
+       data,
+       '{_portal_meta,account_meta}',
+       coalesce(data #> '{_portal_meta,account_meta}', '{}'::jsonb) - v_mail,
+       true
+     ),
+     updated_at = now()
+   where id = 'draft' and data ? '_portal_meta';
+
+  perform public.audit_log('remove_user', v_mail);
+  return jsonb_build_object('ok', true, 'deleted_email', v_mail);
+end;
+$$;
+revoke all on function public.admin_remove_user_by_email(text) from public, anon;
+grant execute on function public.admin_remove_user_by_email(text) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- 4) دالة إنشاء أو تحديث حساب مدير أو مربية بكلمة مرور مباشرة (بدون الحاجة لـ Edge Function)
@@ -171,5 +281,115 @@ $$;
 
 revoke all on function public.admin_add_user(text, text) from public, anon;
 grant execute on function public.admin_add_user(text, text) to authenticated;
+
+
+-- =====================================================================
+-- تفعيل خيار حذف الحسابات لجميع مديري المركز (بالمعرّف أو بالبريد الإلكتروني)
+-- =====================================================================
+create or replace function public.admin_list()
+returns jsonb language plpgsql stable security definer set search_path = public, auth as $$
+declare v_owner uuid; v_out jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'غير مصرّح' using errcode = '42501';
+  end if;
+  select a.user_id into v_owner from public.admins a order by a.created_at asc, a.user_id asc limit 1;
+  select jsonb_build_object(
+           'can_manage', public.can_manage_families(),
+           'admins', coalesce(jsonb_agg(jsonb_build_object(
+               'id', a.user_id, 'email', u.email, 'created_at', a.created_at,
+               'last_sign_in_at', u.last_sign_in_at, 'role', a.role, 'disabled', a.disabled,
+               'is_owner', a.user_id = v_owner, 'is_me', a.user_id = auth.uid())
+             order by a.created_at asc, a.user_id asc), '[]'::jsonb))
+    into v_out
+    from public.admins a join auth.users u on u.id = a.user_id;
+  return v_out;
+end $$;
+revoke all on function public.admin_list() from public, anon;
+grant execute on function public.admin_list() to authenticated;
+
+create or replace function public.admin_remove_user(p_user_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_mail text;
+begin
+  if not public.can_manage_families() then
+    raise exception 'غير مصرّح بتنفيذ هذه العملية' using errcode = '42501';
+  end if;
+  if p_user_id = auth.uid() then
+    raise exception 'لا يمكنك حذف الحساب الذي تسجل الدخول به حالياً' using errcode = '22023';
+  end if;
+
+  select lower(email) into v_mail from auth.users where id = p_user_id;
+  delete from public.admins where user_id = p_user_id;
+  delete from auth.identities where user_id = p_user_id;
+  delete from auth.users where id = p_user_id;
+
+  if v_mail is not null then
+    update public.site_content
+       set data = jsonb_set(
+         data,
+         '{_portal_meta,account_meta}',
+         coalesce(data #> '{_portal_meta,account_meta}', '{}'::jsonb) - v_mail,
+         true
+       ),
+       updated_at = now()
+     where id = 'draft' and data ? '_portal_meta';
+  end if;
+
+  perform public.audit_log('remove_user', coalesce(v_mail, p_user_id::text));
+  return jsonb_build_object('ok', true, 'deleted_email', v_mail);
+end;
+$$;
+revoke all on function public.admin_remove_user(uuid) from public, anon;
+grant execute on function public.admin_remove_user(uuid) to authenticated;
+
+create or replace function public.admin_remove_user_by_email(p_email text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_mail text := lower(btrim(coalesce(p_email, '')));
+  v_uid uuid;
+begin
+  if not public.can_manage_families() then
+    raise exception 'غير مصرّح بتنفيذ هذه العملية' using errcode = '42501';
+  end if;
+  if v_mail = '' then
+    return jsonb_build_object('ok', false);
+  end if;
+
+  select id into v_uid from auth.users where lower(email) = v_mail limit 1;
+  if v_uid is not null then
+    if v_uid = auth.uid() then
+      raise exception 'لا يمكنك حذف الحساب الذي تسجل الدخول به حالياً' using errcode = '22023';
+    end if;
+    delete from public.admins where user_id = v_uid;
+    delete from auth.identities where user_id = v_uid;
+    delete from auth.users where id = v_uid;
+  end if;
+
+  update public.site_content
+     set data = jsonb_set(
+       data,
+       '{_portal_meta,account_meta}',
+       coalesce(data #> '{_portal_meta,account_meta}', '{}'::jsonb) - v_mail,
+       true
+     ),
+     updated_at = now()
+   where id = 'draft' and data ? '_portal_meta';
+
+  perform public.audit_log('remove_user', v_mail);
+  return jsonb_build_object('ok', true, 'deleted_email', v_mail);
+end;
+$$;
+revoke all on function public.admin_remove_user_by_email(text) from public, anon;
+grant execute on function public.admin_remove_user_by_email(text) to authenticated;
 
 notify pgrst, 'reload schema';

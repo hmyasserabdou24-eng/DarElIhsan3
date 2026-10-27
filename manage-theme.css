@@ -176,7 +176,7 @@ body {
   background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
   color: #FFFFFF;
   border: 2px solid #082D50;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
@@ -203,7 +203,7 @@ body {
 }
 
 .hub-diagram-title-box h1 {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.55rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -262,7 +262,7 @@ body {
 
 .brand-txt strong {
   display: block;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.05rem;
   font-weight: 800;
   color: #FFFFFF;
@@ -302,7 +302,7 @@ body {
   border-radius: 10px;
   background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
   color: #FFFFFF;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-weight: 800;
   font-size: 15px;
   display: flex;
@@ -319,7 +319,7 @@ body {
 
 .spp-info strong {
   display: block;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 13px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -347,7 +347,7 @@ body {
 }
 
 .nav-group-label {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Readex Pro", sans-serif;
   font-size: 11px;
   font-weight: 800;
   color: #64748B;
@@ -435,7 +435,7 @@ body {
   border: 1px solid #FEE2E2;
   background: #FEF2F2;
   color: #DC2626;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
@@ -487,7 +487,7 @@ body {
   background: var(--blue-soft);
   color: var(--blue-dark);
   border: 1.5px solid var(--blue-border);
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.8px;
   font-weight: 800;
   cursor: pointer;
@@ -567,7 +567,7 @@ body {
 }
 
 .dash-hero-title {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: clamp(1.3rem, 2.2vw, 1.7rem);
   font-weight: 800;
   color: #FFFFFF;
@@ -589,7 +589,7 @@ body {
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   padding: 9px 16px;
   border-radius: 11px;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -630,7 +630,7 @@ body {
 
 .dash-hero-stat b {
   display: block;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "Plus Jakarta Sans", sans-serif;
   font-size: clamp(1.5rem, 2.3vw, 2rem);
   font-weight: 800;
   color: #FFFFFF;
@@ -654,7 +654,7 @@ body {
 }
 
 .qa-section-title {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.12rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -715,7 +715,7 @@ body {
 }
 
 .qa-title {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 15px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -799,7 +799,7 @@ body {
 }
 
 .chc-title {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -851,7 +851,7 @@ body {
 }
 
 .csp-head strong {
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 14.5px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -869,7 +869,7 @@ body {
   border: 1px solid #CBD5E1;
   background: #F8FAFC;
   color: #334155;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.8px;
   font-weight: 700;
   cursor: pointer;
@@ -1129,7 +1129,7 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   background: var(--blue-soft);
   color: var(--blue-dark);
   border: 1.5px solid var(--blue-border);
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
@@ -1160,7 +1160,7 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   min-height: 210px;
   padding: 36px 24px;
   gap: 16px;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
 }
 
 .center-hub-clean-box .chc-icon {
@@ -1176,4 +1176,181 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   font-size: 1.35rem;
   font-weight: 800;
   color: var(--blue-dark);
+}
+
+
+/* ─── 11. الخط الاحترافي الجديد (IBM Plex Sans Arabic & Readex Pro) والأيقونات الهندسية (SVG) ─── */
+body, button, input, select, textarea {
+  font-family: "IBM Plex Sans Arabic", "Readex Pro", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  letter-spacing: 0;
+}
+
+h1, h2, h3, h4, .chc-title, .dash-hero-title, .bar .ttl strong {
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+svg.i {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: "IBM Plex Sans Arabic", "Readex Pro", sans-serif;
+  font-weight: 600;
+}
+
+.btn svg.i {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.1;
+}
+
+/* تصميم بطاقات المراكز الثلاثة بأيقونات SVG هندسية فاخرة (بدل الإيموجي البدائي) */
+.center-hub-clean-box {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 235px;
+  padding: 36px 26px;
+  gap: 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1.5px solid #D8E4F2;
+  box-shadow: 0 10px 28px rgba(8, 45, 80, 0.06);
+}
+
+.center-hub-clean-box .chc-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 22px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #EBF3FC 0%, #DBEAFE 100%);
+  color: #123E73;
+  border: 1.5px solid #BDD6F2;
+  box-shadow: 0 8px 20px rgba(18, 62, 115, 0.12);
+  transition: all 0.28s var(--ease-out);
+}
+
+.center-hub-clean-box .chc-icon.chc-icon-work {
+  background: linear-gradient(135deg, #FDF8ED 0%, #FDE68A 45%, #FEF3C7 100%);
+  color: #8A6420;
+  border-color: #E8D2A6;
+  box-shadow: 0 8px 20px rgba(180, 135, 58, 0.15);
+}
+
+.center-hub-clean-box .chc-icon.chc-icon-farm {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  color: #047857;
+  border-color: #A7F3D0;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.14);
+}
+
+.center-hub-clean-box .chc-icon svg.i {
+  width: 36px;
+  height: 36px;
+  stroke-width: 1.85;
+}
+
+.center-hub-clean-box:hover .chc-icon {
+  transform: translateY(-4px) scale(1.05);
+  background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
+  color: #FFFFFF;
+  border-color: #082D50;
+}
+
+.center-hub-clean-box:hover .chc-icon.chc-icon-work {
+  background: linear-gradient(135deg, #B4873A 0%, #8A6420 100%);
+  color: #FFFFFF;
+  border-color: #8A6420;
+}
+
+.center-hub-clean-box:hover .chc-icon.chc-icon-farm {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #FFFFFF;
+  border-color: #047857;
+}
+
+.center-hub-clean-box .chc-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.center-hub-clean-box .chc-title {
+  margin: 0;
+  font-size: 1.32rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+}
+
+.center-hub-clean-box .chc-badge-sub {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5A6B7C;
+  background: #F1F5F9;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #E2E8F0;
+}
+
+/* أزرار تحميل وتثبيت موقع الإدارة على الكمبيوتر */
+.install-desktop-btn {
+  margin-top: 10px;
+  border: 1.5px solid var(--blue-border) !important;
+  background: var(--blue-soft) !important;
+  color: var(--blue-dark) !important;
+  font-weight: 700 !important;
+}
+
+.install-desktop-btn:hover {
+  background: var(--blue) !important;
+  color: #FFFFFF !important;
+}
+
+.hub-install-pc-btn,
+.install-top-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+
+/* بطاقة انخراط التلميذ الرسمية */
+.card-modal {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.card-preview {
+  display: block;
+  width: 100%;
+  max-width: 580px;
+  height: auto;
+  margin: 16px auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+  border: 1px solid #c9d3e0;
+  transition: transform 0.2s ease;
+}
+
+.card-preview:hover {
+  transform: scale(1.01);
 }

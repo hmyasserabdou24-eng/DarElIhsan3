@@ -4,13 +4,22 @@
    كل النصوص تُدرج بـ textContent لحماية تامة من XSS. */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-24.2';
-  if (window.top !== window.self) { document.body.textContent = ''; return; }
+  var FILE_BUILD = '2026-10-27.1';
+  function currentAcademicYear(sep) {
+    var s = sep || '-';
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = now.getMonth();
+    var start = (m >= 8) ? y : (y - 1);
+    return start + s + (start + 1);
+  }
+
+  /* frame-safe */
 
   var CFG = window.DE_CONFIG || {}, h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
   var C = DE.Client(CFG, 'de_parent_session');
-  var S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
+  var S = { tab: 'children', tabStack: [], me: null, name: '', d: null, reads: {}, selectedChildId: null };
   var stopIdle = null;
 
   /* الدليل البيداغوجي الرسمي المعتمد (لإظهار استمارات التقييم البيداغوجي للأولياء بدقة تامة) */
@@ -93,14 +102,14 @@
       markAsRead: 'تم الاطلاع',
       contactTitle: 'التواصل مع إدارة المركز',
       contactSub: 'نحن في خدمتكم دائمًا عبر الوسائل الرسمية التالية:',
-      contactAddrLabel: ' العنوان:',
+      contactAddrLabel: 'العنوان:',
       contactAddrVal: 'بلدية العطف – ولاية غرداية – الجزائر',
-      contactEmailLabel: ' البريد الإلكتروني:',
-      contactPhoneLabel: ' الهاتف / الفاكس:',
-      contactSocialLabel: ' منصات التواصل:',
+      contactEmailLabel: 'البريد الإلكتروني:',
+      contactPhoneLabel: 'الهاتف / الفاكس:',
+      contactSocialLabel: 'منصات التواصل:',
       contactWa: 'واتساب المركز',
       contactFb: 'صفحة فيسبوك',
-      contactSiteLabel: ' الموقع الرسمي للمركز:',
+      contactSiteLabel: 'الموقع الرسمي للمركز:',
       contactSiteLink: 'الصفحة الرئيسية لدار الإحسان',
       contactNoteTitle: 'إرشاد للأولياء',
       contactNoteTxt: 'لأي استفسار طارئ أو مناقشة بخصوص الملف البيداغوجي لطفلك، يُفضَّل التواصل مع الإدارة المباشرة خلال ساعات العمل الرسمية.',
@@ -109,7 +118,7 @@
       passMismatchErr: 'كلمتا المرور غير متطابقتين.',
       forgotSentOk: 'إن كان البريد مسجَّلًا فسيصلك رابط لتعيين كلمة مرور جديدة خلال دقائق.',
       notActiveParentErr: 'هذا الحساب غير مفعّل أو غير مخصّص للأولياء.',
-      btnLinkCode: ' ربط طفل برمز التسجيل',
+      btnLinkCode: 'ربط طفل برمز التسجيل',
       enterCodePrompt: 'أدخل رمز التسجيل السري المكوّن من 8 محارف (مثال: DI-A1B2C3):',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'تأكيد الربط',
@@ -188,14 +197,14 @@
       markAsRead: 'Marquer comme lu',
       contactTitle: 'Contacter l’Administration',
       contactSub: 'Nous sommes à votre écoute par le biais des canaux officiels suivants :',
-      contactAddrLabel: ' Adresse :',
+      contactAddrLabel: 'Adresse :',
       contactAddrVal: 'Commune d’El Atteuf – Wilaya de Ghardaïa – Algérie',
-      contactEmailLabel: ' E-mail :',
-      contactPhoneLabel: ' Téléphone / Fax :',
-      contactSocialLabel: ' Réseaux officiels :',
+      contactEmailLabel: 'E-mail :',
+      contactPhoneLabel: 'Téléphone / Fax :',
+      contactSocialLabel: 'Réseaux officiels :',
       contactWa: 'WhatsApp du Centre',
       contactFb: 'Page Facebook',
-      contactSiteLabel: ' Site web officiel :',
+      contactSiteLabel: 'Site web officiel :',
       contactSiteLink: 'Page d’accueil Dar El Ihsan',
       contactNoteTitle: 'Information aux parents',
       contactNoteTxt: 'Pour toute question relative au suivi éducatif ou médical de votre enfant, privilégiez le contact par e-mail ou une visite directe durant les heures de permanence.',
@@ -204,7 +213,7 @@
       passMismatchErr: 'Les mots de passe ne correspondent pas.',
       forgotSentOk: 'Si cet e-mail est enregistré, un lien de réinitialisation vous sera envoyé d’ici quelques minutes.',
       notActiveParentErr: 'Ce compte n’est pas activé ou n’a pas accès à l’Espace Parents.',
-      btnLinkCode: ' Lier un enfant par code',
+      btnLinkCode: 'Lier un enfant par code',
       enterCodePrompt: 'Saisissez le code d’inscription secret (ex: DI-A1B2C3) :',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'Confirmer',
@@ -274,7 +283,11 @@
   function openModal(card) {
     var m = $('#modal'), c = $('#modalCard');
     if (!m || !c) return;
+    var wasHidden = m.hidden;
     c.textContent = ''; c.appendChild(card); m.hidden = false; document.body.style.overflow = 'hidden';
+    if (wasHidden) {
+      try { window.history.pushState({ deParent: true, tab: S.tab, modal: true }, ''); } catch (e) {}
+    }
     var first = c.querySelector('input,select,textarea,button'); if (first) first.focus();
   }
   function closeModal() {
@@ -414,10 +427,19 @@
       show('app');
       applyLang();
       $('#who').textContent = S.name || t('whoDefault');
+      var spName = $('#sideParentName');
+      if (spName) spName.textContent = S.name || t('whoDefault');
+      var spEmail = $('#sideParentEmail');
+      if (spEmail && S.me) spEmail.textContent = (me && me.email) || '';
       toast(t('welcome') + (S.name ? ' ' + S.name : '') + t('welcomeSuffix'), 'ok');
 
       stopIdle && stopIdle();
       stopIdle = DE.idle(30 * 60 * 1000, function () { logout(t('logoutPrompt')); });
+      S.tabStack = [];
+      try {
+        window.history.replaceState({ deParentGuard: true, deParent: true, tab: S.tab }, '');
+        window.history.pushState({ deParent: true, tab: S.tab }, '');
+      } catch (e) {}
       render();
 
       var params = new URLSearchParams(window.location.search);
@@ -457,14 +479,35 @@
     return s;
   }
 
+  function isFarmOnlyParent() {
+    var kids = (S.d && S.d.children) || [];
+    if (!kids.length) return false;
+    return kids.every(function (c) {
+      return c.center === 'farm' || String(c.section || '').indexOf('البستنة') >= 0 || String(c.section || '').indexOf('المزرعة') >= 0;
+    });
+  }
+
   function renderTabs() {
     var nav = $('#tabs'); nav.textContent = '';
+    var hideReports = isFarmOnlyParent();
+    if (hideReports && S.tab === 'reports') S.tab = 'children';
     TABS.forEach(function (tb) {
+      if (hideReports && tb[0] === 'reports') return;
       var b = h('button', {
         type: 'button',
         role: 'tab',
         'aria-selected': S.tab === tb[0] ? 'true' : 'false',
-        onclick: function () { S.tab = tb[0]; render(); window.scrollTo(0, 0); }
+        onclick: function () {
+          document.body.classList.remove('nav-toggled');
+          if (S.tab !== tb[0]) {
+            S.tabStack.push(S.tab);
+            if (S.tabStack.length > 20) S.tabStack.shift();
+            S.tab = tb[0];
+            try { window.history.pushState({ deParent: true, tab: S.tab }, ''); } catch (e) {}
+          }
+          render();
+          window.scrollTo(0, 0);
+        }
       }, icon(tb[2]), t(tb[1]));
 
       if (tb[0] === 'msgs' && unreadCount()) {
@@ -560,7 +603,7 @@
           c.section ? ['الفوج / القسم', c.section] : null,
           c.dob ? ['تاريخ الميلاد', fmtDate(c.dob)] : null,
           c.disability ? ['طبيعة الإعاقة', c.disability] : null,
-          c.academic_year ? ['الموسم الدراسي', c.academic_year] : ['الموسم الدراسي', '2026–2027']
+          ['الموسم الدراسي', c.academic_year ? c.academic_year.replace('-', '–') : currentAcademicYear('–')]
         ].filter(Boolean).map(function (it) {
           return h('div', { class: 'cd-item' }, h('span', { text: it[0] }), h('b', { text: it[1] }));
         }))
@@ -702,7 +745,7 @@
       } catch (e) { rawSched = null; }
     }
     var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
+    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || currentAcademicYear('/');
     var domainsList = (Array.isArray(rawSched) && rawSched[0] && Array.isArray(rawSched[0].domains)) ? rawSched[0].domains : [];
     var activeDomains = domainsList.filter(function (dm) { return dm && dm.domain; });
 
@@ -749,16 +792,16 @@
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 20px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 20px Cairo, Tajawal, sans-serif';
       ctx.fillText('الموسم الدراسي: ' + acYear, W - 36, 58);
       ctx.fillText('الفوج / القسم: ' + secName, W - 36, 98);
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#1E293B';
-      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
       ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', W / 2, 42);
       ctx.fillText('المركز النفسي البيداغوجي دار الإحسان', W / 2, 68);
-      ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
       ctx.fillText('- العطف - غرداية -', W / 2, 92);
 
       ctx.fillStyle = '#E0F2FE';
@@ -767,7 +810,7 @@
       ctx.lineWidth = 2.2;
       ctx.strokeRect(W / 2 - 195, 102, 390, 44);
       ctx.fillStyle = '#0C2D55';
-      ctx.font = '900 27px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = '900 27px Cairo, Tajawal, sans-serif';
       ctx.fillText('البرنامج الأسبوعي', W / 2, 133);
 
       if (logoImg) {
@@ -790,7 +833,7 @@
         ctx.strokeRect(W - 28 - rightLblW, y, rightLblW, 38);
         ctx.strokeRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('الأنشطة / المجالات', W - 28 - rightLblW / 2, y + 24);
         ctx.fillText('عدد المهارات', W - 28 - rightLblW / 2, y + 64);
@@ -811,9 +854,9 @@
           ctx.strokeRect(dx, y + 38, dColW, 42);
 
           ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
           ctx.fillText(String(dm.domain || '').slice(0, 30), dx + dColW / 2, y + 24);
-          ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
           ctx.fillText(skCount + ' مهارة', dx + dColW / 2, y + 64);
         });
 
@@ -825,7 +868,7 @@
         ctx.strokeRect(28, y, leftTotalW, 38);
         ctx.strokeRect(28, y + 38, leftTotalW, 42);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
         ctx.fillText('المجموع', 28 + leftTotalW / 2, y + 24);
         ctx.fillText(totalSkills + ' مهارة', 28 + leftTotalW / 2, y + 64);
 
@@ -851,7 +894,7 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, periodHeaderH);
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('إطار الفترات', 28 + sessColW + dayColW / 2, y + 30);
 
@@ -872,22 +915,22 @@
         ctx.fillRect(mornX, y, mornW, periodHeaderH);
         ctx.strokeRect(mornX, y, mornW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
+        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.fillText('الفترة الصباحية', mornX + mornW / 2, y + 31);
 
         ctx.fillStyle = '#D8B4E2';
         ctx.fillRect(brkX, y, brkW, periodHeaderH);
         ctx.strokeRect(brkX, y, brkW, periodHeaderH);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
+        ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+        ctx.fillText('⏸' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(aftX, y, aftW, periodHeaderH);
         ctx.strokeRect(aftX, y, aftW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
+        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.fillText('الفترة المسائية', aftX + aftW / 2, y + 31);
       } else if (numCols >= 2) {
         var halfCols = Math.ceil(numCols / 2);
         var mW = halfCols * colW;
@@ -898,22 +941,22 @@
         ctx.fillRect(mX, y, mW, periodHeaderH);
         ctx.strokeRect(mX, y, mW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
+        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.fillText('الفترة الصباحية', mX + mW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(28, y, aW, periodHeaderH);
         ctx.strokeRect(28, y, aW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
+        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.fillText('الفترة المسائية', 28 + aW / 2, y + 31);
       } else {
         ctx.fillStyle = '#BAE6FD';
         ctx.fillRect(28, y, sessColW, periodHeaderH);
         ctx.strokeRect(28, y, sessColW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
+        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.fillText('الفترة الصباحية   |   الفترة المسائية', 28 + sessColW / 2, y + 31);
       }
 
       y += periodHeaderH;
@@ -925,11 +968,11 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, timeHeaderH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
+      ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
       ctx.fillStyle = '#FDE047';
-      ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
       ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
 
       unifiedCols.forEach(function (col, cIdx) {
@@ -941,7 +984,7 @@
         ctx.strokeRect(cx, y, colW, timeHeaderH);
 
         ctx.fillStyle = col.isBreak ? '#4C1D95' : '#0C2D55';
-        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(col.label.slice(0, 28), cx + colW / 2, y + 22);
 
@@ -957,8 +1000,8 @@
 
         var timeTxt = formatParentTimeRange(col.start, col.end) || 'التوقيت يدوي';
         ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
-        ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
+        ctx.font = '900 15px Cairo, Tajawal, sans-serif';
+        ctx.fillText('' + timeTxt, cx + colW / 2, pillY + 21);
       });
 
       y += timeHeaderH;
@@ -976,7 +1019,7 @@
         ctx.strokeRect(28 + sessColW, y, dayColW, rh);
 
         ctx.fillStyle = '#0F172A';
-        ctx.font = '900 21px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = '900 21px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(wd.label, 28 + sessColW + dayColW / 2, y + rh / 2 + 7);
 
@@ -993,7 +1036,7 @@
 
           if (!sess || !isParentSessionActive(sess)) {
             ctx.fillStyle = '#94A3B8';
-            ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
+            ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('—', sx + colW / 2, y + rh / 2 + 6);
             return;
@@ -1013,7 +1056,7 @@
             ctx.fillStyle = isBrk ? '#D8B4E2' : '#E0F2FE';
             ctx.fillRect(sx + 5, iy, colW - 10, 24);
             ctx.fillStyle = '#0F172A';
-            ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
+            ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText((sess.title + (customTime ? (' (' + customTime + ')') : '')).slice(0, 34), sx + colW / 2, iy + 17);
             iy += 28;
@@ -1021,7 +1064,7 @@
 
           if (isBrk && (!sess.items || !sess.items.length)) {
             ctx.fillStyle = '#4C1D95';
-            ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
+            ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(sess.title || col.label || 'فسحة', sx + colW / 2, y + rh / 2 + 7);
           } else {
@@ -1036,15 +1079,15 @@
 
               ctx.textAlign = 'right';
               ctx.fillStyle = '#0C2D55';
-              ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
-              ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
+              ctx.font = 'bold 11.5px Cairo, Tajawal, sans-serif';
+              ctx.fillText(('' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
               ctx.fillStyle = '#0F172A';
-              ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
-              var skillLines = wrapParentCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
+              ctx.font = 'bold 12px Cairo, Tajawal, sans-serif';
+              var skillLines = wrapParentCanvasLines(ctx, '' + (it.skill || ''), colW - 22);
               ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
               if (skillLines[1]) {
-                ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
+                ctx.font = 'bold 11px Cairo, Tajawal, sans-serif';
                 ctx.fillText(skillLines[1].slice(0, 44), sx + colW - 10, iy + 44);
               }
               iy += boxH + 5;
@@ -1056,7 +1099,7 @@
       });
 
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
+      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('توقيع المربية', W - 200, y + 48);
       ctx.fillText('المشرف البيداغوجي', W / 2, y + 48);
@@ -1091,12 +1134,12 @@
 
     openModal(h('div', { class: 'modal-body wk-modal-print' },
       h('div', { class: 'bar-sub no-print' },
-        h('h2', { text: ' صورة البرنامج الأسبوعي الكاملة' }),
+        h('h2', { text: 'صورة البرنامج الأسبوعي الكاملة' }),
         h('div', { class: 'row-actions' },
           h('button', {
             type: 'button',
             class: 'btn small light',
-            text: ' تكبير / تصغير الصورة',
+            text: 'تكبير / تصغير الصورة',
             onclick: function () {
               zoomed = !zoomed;
               imgEl.className = zoomed ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
@@ -1111,7 +1154,7 @@
         h('button', {
           class: 'btn gold',
           type: 'button',
-          text: ' تحميل صورة البرنامج (PNG)',
+          text: 'تحميل صورة البرنامج (PNG)',
           onclick: function () {
             if (!currentDataUrl) return;
             var a = document.createElement('a');
@@ -1120,7 +1163,7 @@
             a.click();
           }
         }),
-        h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
+        h('button', { class: 'btn', type: 'button', text: 'طباعة', onclick: function () { window.print(); } })
       )
     ));
   }
@@ -1133,7 +1176,7 @@
       } catch (e) { rawSched = null; }
     }
     var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
+    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || currentAcademicYear('/');
 
     var imgEl = h('img', {
       class: 'wk-program-img',
@@ -1151,14 +1194,14 @@
     var openBtn = h('button', {
       type: 'button',
       class: 'btn small gold',
-      text: ' فتح وتكبير صورة البرنامج كاملة',
+      text: 'فتح وتكبير صورة البرنامج كاملة',
       onclick: function () { openParentProgramImageViewer(p); }
     });
 
     var dlBtn = h('button', {
       type: 'button',
       class: 'btn small light',
-      text: ' حفظ الصورة في الهاتف',
+      text: 'حفظ الصورة في الهاتف',
       onclick: function () {
         if (!currentDataUrl) return;
         var a = document.createElement('a');
@@ -1171,7 +1214,7 @@
     return h('div', { class: 'card wk-parent-card' },
       h('div', { class: 'bar-sub' },
         h('div', null,
-          h('h2', { text: ' البرنامج الأسبوعي — ' + secName }),
+          h('h2', { text: 'البرنامج الأسبوعي — ' + secName }),
           h('span', { class: 'muted small', text: 'الموسم الدراسي: ' + acYear + ' — اضغط على الصورة لتكبيرها ورؤية كل البرنامج بوضوح' })
         ),
         h('div', { class: 'row-actions no-print' }, openBtn, dlBtn)
@@ -1230,14 +1273,14 @@
       id: 'demo-tamhin',
       section_id: secId || '',
       title: 'البرنامج الأسبوعي — ' + (secName || 'التمهين م م ع'),
-      academic_year: '2026/2027',
+      academic_year: currentAcademicYear('/'),
       published_at: new Date().toISOString(),
       schedule: days.map(function (dy) {
         return {
           day: dy.day,
           label: dy.label,
           section_name: secName || 'التمهين م م ع',
-          academic_year: '2026/2027',
+          academic_year: currentAcademicYear('/'),
           notes: notesTxt,
           domains: cleanDomains,
           sessions: dy.sessions
@@ -1301,7 +1344,7 @@
         var isComm = dm.domain.indexOf('التواصل') >= 0;
         var thead = h('thead', null,
           h('tr', { class: 'eval-dom-banner-row' },
-            h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: ' ' + dm.domain })
+            h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: '' + dm.domain })
           ),
           h('tr', { class: 'eval-col-hdr-row' },
             h('th', { class: 'eval-col-num', text: 'الرقم' }),
@@ -1322,11 +1365,11 @@
           tbody.appendChild(h('tr', { class: (it.score || it.yn) ? 'eval-row-rated' : '' },
             h('td', { class: 'eval-col-num', text: String(it.num) }),
             h('td', { class: 'eval-col-skill', text: it.skill }),
-            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'نعم' ? ' eval-cell-checked' : ''), text: it.yn === 'نعم' ? '✓' : '' }) : null,
-            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'لا' ? ' eval-cell-checked' : ''), text: it.yn === 'لا' ? '✓' : '' }) : null,
+            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'نعم' ? ' eval-cell-checked' : ''), text: it.yn === 'نعم' ? '' : '' }) : null,
+            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'لا' ? ' eval-cell-checked' : ''), text: it.yn === 'لا' ? '' : '' }) : null,
             ['1', '2', '3', '4', '5'].map(function (g) {
               var active = String(it.score) === g;
-              return h('td', { class: 'eval-col-sc' + (active ? ' eval-cell-checked' : ''), text: active ? '✓' : '' });
+              return h('td', { class: 'eval-col-sc' + (active ? ' eval-cell-checked' : ''), text: active ? '' : '' });
             }),
             h('td', { class: 'eval-col-deg' }, h('strong', { text: it.score ? (it.score + ' / 5') : (it.yn || '—') })),
             h('td', { class: 'eval-col-note', text: it.note || '—' })
@@ -1343,7 +1386,7 @@
       var isEv = isEvalReport(r);
       var card = h('div', { class: 'card' },
         h('div', { class: 'bar-sub' },
-          h('h2', { text: (isEv ? ' ' : ' ') + r.title }),
+          h('h2', { text: (isEv ? '' : '') + r.title }),
           h('span', { class: 'badge ' + (isEv ? 'gold' : 'ok'), text: isEv ? 'استمارة تقييم بيداغوجي' : 'تقرير دوري' })
         ),
         h('div', { class: 'meta' },
@@ -1467,9 +1510,9 @@
     card.appendChild(h('h2', { text: t('contactTitle') }));
     card.appendChild(h('p', { text: t('contactSub') }));
 
-    function cItem(iconText, label, valNode) {
+    function cItem(symId, label, valNode) {
       var row = h('div', { class: 'contact-item' },
-        h('div', { class: 'ci-icon', text: iconText }),
+        h('div', { class: 'ci-icon' }, icon(symId)),
         h('div', { class: 'ci-body' },
           h('div', { class: 'ci-label', text: label }),
           h('div', { class: 'ci-val' }, valNode)
@@ -1478,20 +1521,20 @@
       card.appendChild(row);
     }
 
-    cItem('', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
-    cItem('', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
-    cItem('', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
+    cItem('i-pin', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
+    cItem('i-mail', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
+    cItem('i-phone', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
 
     var socialLinks = h('div', { class: 'contact-btn-wrap' },
-      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactWa') }),
-      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactFb') })
+      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: t('contactWa') }),
+      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: t('contactFb') })
     );
-    cItem('', t('contactSocialLabel'), socialLinks);
+    cItem('i-globe', t('contactSocialLabel'), socialLinks);
 
     var siteA = document.createElement('a');
-    siteA.setAttribute('href', './site.html');
+    siteA.setAttribute('href', './index.html');
     siteA.textContent = t('contactSiteLink');
-    cItem('', t('contactSiteLabel'), siteA);
+    cItem('i-home', t('contactSiteLabel'), siteA);
 
     v.appendChild(card);
 
@@ -1502,15 +1545,7 @@
     v.appendChild(noteCard);
   }
 
-  if (window.DE_NAV) DE_NAV.setup({
-    active: function () { var a = $('#app'); return !!(a && !a.hidden); },
-    modalOpen: function () { var m = $('#modal'); return !!(m && !m.hidden); },
-    closeModal: function () { closeModal(); },
-    apply: function (st) { if (st.tab) S.tab = st.tab; render(); window.scrollTo(0, 0); }
-  });
-
   function render() {
-    if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
     renderTabs();
     var v = $('#view'); v.textContent = '';
     ({
@@ -1534,6 +1569,14 @@
     $('#forgotBtn').addEventListener('click', function () { setMode('forgot'); });
     $('#backBtn').addEventListener('click', function () { setMode('login'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
+    var menuBtn = $('#menuBtn');
+    if (menuBtn) menuBtn.addEventListener('click', function () { document.body.classList.toggle('nav-toggled'); });
+    var sideCloseBtn = $('#sideCloseBtn');
+    if (sideCloseBtn) sideCloseBtn.addEventListener('click', function () { document.body.classList.remove('nav-toggled'); });
+    var scrim = $('#scrim');
+    if (scrim) scrim.addEventListener('click', function () { document.body.classList.remove('nav-toggled'); });
+    var sideLogoutBtn = $('#sideLogoutBtn');
+    if (sideLogoutBtn) sideLogoutBtn.addEventListener('click', function () { logout(); });
 
     var btnLoginLang = $('#loginLangBtn'); if (btnLoginLang) btnLoginLang.addEventListener('click', toggleLang);
     var btnBarLang = $('#barLangBtn'); if (btnBarLang) btnBarLang.addEventListener('click', toggleLang);
@@ -1544,6 +1587,38 @@
     }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && m && !m.hidden) closeModal();
+    });
+
+    /* دعم زر الرجوع في الهاتف للعودة خطوة للخلف داخل فضاء الأولياء وعدم الخروج منه */
+    window.addEventListener('popstate', function () {
+      if ($('#login') && !$('#login').hidden && mode !== 'login') {
+        setMode('login');
+        try { window.history.pushState({ deParentLogin: true }, ''); } catch (e) {}
+        return;
+      }
+      if (!C.loggedIn() || !S.d || ($('#app') && $('#app').hidden)) return;
+      if (m && !m.hidden) {
+        closeModal();
+        return;
+      }
+      while (S.tabStack && S.tabStack.length > 0) {
+        var prevTab = S.tabStack.pop();
+        if (prevTab && prevTab !== S.tab) {
+          S.tab = prevTab;
+          render();
+          window.scrollTo(0, 0);
+          try { window.history.pushState({ deParent: true, tab: S.tab }, ''); } catch (e) {}
+          return;
+        }
+      }
+      if (S.tab !== 'children') {
+        S.tab = 'children';
+        render();
+        window.scrollTo(0, 0);
+        try { window.history.pushState({ deParent: true, tab: 'children' }, ''); } catch (e) {}
+        return;
+      }
+      try { window.history.pushState({ deParent: true, tab: 'children' }, ''); } catch (e) {}
     });
 
     try {
