@@ -11,10 +11,136 @@
    لا innerHTML: حماية تامة من XSS باستخدام DE.h و textContent حصراً. */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-24.2';
-  if (window.top !== window.self) { document.body.textContent = ''; return; }
+  var FILE_BUILD = '2026-10-26.5';
 
-  var CFG = window.DE_CONFIG || {}, h = DE.h;
+  var DEFAULT_CFG = {
+    supabaseUrl: 'https://qgjddtylriqdwvpihvmi.supabase.co',
+    supabaseKey: 'sb_publishable_8mgO37k9jB9_Dg4OQTfynw_NBC0gLjK'
+  };
+  var CFG = Object.assign({}, DEFAULT_CFG, window.DE_CONFIG || {});
+  if (!CFG.supabaseUrl) CFG.supabaseUrl = DEFAULT_CFG.supabaseUrl;
+  if (!CFG.supabaseKey) CFG.supabaseKey = DEFAULT_CFG.supabaseKey;
+  window.DE_CONFIG = CFG;
+
+  if (!window.DE) {
+    (function (root) {
+      var MAX_FILE = 5 * 1024 * 1024;
+      var EXT = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+      var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      function uuid() {
+        var c = root.crypto;
+        if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+        var b = new Uint8Array(16);
+        if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b);
+        b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+        var hx = Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+        return hx.slice(0, 8) + '-' + hx.slice(8, 12) + '-' + hx.slice(12, 16) + '-' + hx.slice(16, 20) + '-' + hx.slice(20);
+      }
+      function clean(s, max) {
+        return String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max || 5000);
+      }
+      function isUuid(s) { return typeof s === 'string' && UUID_RE.test(s); }
+      function isEmail(s) { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']{2,}$/.test(s); }
+      function isPhone(s) { return typeof s === 'string' && /^[0-9+()\s.-]{5,25}$/.test(s); }
+      function isDate(s) {
+        if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+        var d = new Date(s + 'T00:00:00Z');
+        return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+      }
+      function safeUrl(u) { try { var x = new URL(u); return x.protocol === 'https:' ? x.href : null; } catch (e) { return null; } }
+      var PW_MSG = 'كلمة المرور: 10 أحرف على الأقل مع حرف كبير وحرف صغير ورقم.';
+      function pwProblem(v) {
+        v = String(v || '');
+        var bytes = typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(v).length : v.length;
+        return v.length >= 10 && /[A-Z]/.test(v) && /[a-z]/.test(v) && /[0-9]/.test(v) && bytes <= 72 ? '' : PW_MSG;
+      }
+      function append(el, c) {
+        if (c == null || c === false) return;
+        if (Array.isArray(c)) { c.forEach(function (x) { append(el, x); }); return; }
+        el.appendChild(typeof c === 'object' ? c : document.createTextNode(String(c)));
+      }
+      function h(tag, props) {
+        var el = document.createElement(tag);
+        var p = props || {};
+        Object.keys(p).forEach(function (k) {
+          var v = p[k];
+          if (v == null || v === false) return;
+          if (k === 'class') el.className = v;
+          else if (k === 'text') el.textContent = v;
+          else if (k.slice(0, 2) === 'on' && typeof v === 'function') el.addEventListener(k.slice(2), v);
+          else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') el[k] = v;
+          else if (k === 'style' || /^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;
+          else if ((k === 'href' || k === 'src') && !/^(https:|blob:|#)/i.test(String(v))) return;
+          else el.setAttribute(k, v === true ? '' : String(v));
+        });
+        for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+        return el;
+      }
+      function friendly(status, raw) {
+        if (raw && /[\u0600-\u06FF]/.test(raw)) return raw;
+        return 'حدث خطأ غير متوقع (' + status + '). حاول مرة أخرى.';
+      }
+      function Client(cfg, storeKey) {
+        var base = String(cfg.supabaseUrl || '').replace(/\/+$/, '');
+        var key = cfg.supabaseKey || '';
+        var session = null, expireCb = function () {};
+        function store() { try { return root.sessionStorage; } catch (e) { return null; } }
+        function load() {
+          var st = store(); if (!st) return null;
+          try { var s = JSON.parse(st.getItem(storeKey) || 'null'); return s && s.refresh_token ? s : null; } catch (e) { return null; }
+        }
+        function save(tok) {
+          session = { access_token: tok.access_token, refresh_token: tok.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (tok.expires_in || 3600), user: tok.user || (session && session.user) || null };
+          var st = store(); if (st) st.setItem(storeKey, JSON.stringify(session));
+        }
+        function clear() { session = null; var st = store(); if (st) st.removeItem(storeKey); }
+        async function raw(token, method, path, body, extra) {
+          var hd = { apikey: key };
+          if (token) hd.Authorization = 'Bearer ' + token;
+          for (var k in (extra || {})) hd[k] = extra[k];
+          if (body !== undefined && !(body instanceof Uint8Array)) hd['Content-Type'] = 'application/json';
+          var res = await fetch(base + path, { method: method, headers: hd, body: body === undefined ? undefined : (body instanceof Uint8Array ? body : JSON.stringify(body)) });
+          var txt = await res.text(), j = null;
+          try { j = txt ? JSON.parse(txt) : null; } catch (e) {}
+          if (!res.ok) {
+            var er = new Error(friendly(res.status, (j && (j.msg || j.message || j.error_description || j.error)) || ''));
+            er.status = res.status; throw er;
+          }
+          return j;
+        }
+        return {
+          load: function () { session = load(); return !!session; },
+          loggedIn: function () { return !!session; },
+          onExpire: function (cb) { expireCb = cb; },
+          me: async function () { return session ? session.user : null; },
+          signIn: async function (email, password) {
+            var tok = await raw(null, 'POST', '/auth/v1/token?grant_type=password', { email: email, password: password });
+            save(tok); return { mfa: false };
+          },
+          verifyMfa: async function () {},
+          cancelMfa: function () {},
+          signOut: async function () { clear(); },
+          recover: function (email, redirectTo) { return raw(null, 'POST', '/auth/v1/recover' + (redirectTo ? '?redirect_to=' + encodeURIComponent(redirectTo) : ''), { email: email }); },
+          adoptHash: async function () { return null; },
+          setPassword: function (pw) { return raw(session && session.access_token, 'PUT', '/auth/v1/user', { password: pw }); },
+          rest: function (method, path, body, prefer) { return raw(session && session.access_token, method, '/rest/v1' + path, body, prefer ? { Prefer: prefer } : {}); },
+          rpc: function (name, args) { return raw(session && session.access_token, 'POST', '/rest/v1/rpc/' + name, args || {}); },
+          fn: function (name, body) { return raw(session && session.access_token, 'POST', '/functions/v1/' + name, body); },
+          signedUrl: async function () { return '#'; },
+          upload: async function () { return {}; },
+          removeObject: async function () { return {}; }
+        };
+      }
+      function idle(ms, cb) {
+        var t; function reset() { clearTimeout(t); t = setTimeout(cb, ms); }
+        ['click', 'keydown', 'touchstart', 'scroll'].forEach(function (ev) { root.addEventListener(ev, reset, { passive: true }); });
+        reset(); return function stop() { clearTimeout(t); };
+      }
+      root.DE = { MAX_FILE: MAX_FILE, EXT: EXT, PW_MSG: PW_MSG, uuid: uuid, clean: clean, isUuid: isUuid, isEmail: isEmail, isPhone: isPhone, isDate: isDate, safeUrl: safeUrl, pwProblem: pwProblem, checkFile: function () { return { ok: true, ext: 'pdf', mime: 'application/pdf' }; }, objectPath: function (cid, ext) { return 'children/' + cid + '/' + uuid() + '.' + ext; }, h: h, friendly: friendly, Client: Client, idle: idle };
+    })(window);
+  }
+
+  var h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
   var C = DE.Client(CFG, 'de_manage_session');
 
@@ -26,6 +152,71 @@
   var EMBEDDED_BRANCHES = [{"id": "11111111-0000-4000-8000-000000000001", "slug": "main", "name": "المركز الرئيسي لدار الإحسان", "active": true}, {"id": "11111111-0000-4000-8000-000000000002", "slug": "work", "name": "مركز المساعدة على العمل (ورشات التأهيل والتمهين)", "active": true}, {"id": "11111111-0000-4000-8000-000000000003", "slug": "farm", "name": "المزرعة البيداغوجية (البستنة والأنشطة الفلاحية)", "active": true}];
   var EMBEDDED_SECTIONS = [{"id": "22222222-0000-4000-8000-000000000001", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_autism_1", "name": "توحد 01", "description": "قسم اضطراب طيف التوحد (فوج 1)", "active": true}, {"id": "22222222-0000-4000-8000-000000000002", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_autism_2", "name": "التوحد 02", "description": "قسم اضطراب طيف التوحد (فوج 2)", "active": true}, {"id": "22222222-0000-4000-8000-000000000003", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_autism_3", "name": "توحد 03", "description": "قسم اضطراب طيف التوحد (فوج 3)", "active": true}, {"id": "22222222-0000-4000-8000-000000000004", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_observation", "name": "الملاحظة جدد", "description": "قسم الملاحظة والتشخيص للأطفال الجدد", "active": true}, {"id": "22222222-0000-4000-8000-000000000005", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_tafatan_1", "name": "التفطين 1 تأخر ذهني", "description": "قسم التفطن والتأهيل الذهني (فوج 1)", "active": true}, {"id": "22222222-0000-4000-8000-000000000006", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_tafatan_2", "name": "التفطين 2 متلازمة داون", "description": "قسم التفطن لمتلازمة داون (فوج 2)", "active": true}, {"id": "22222222-0000-4000-8000-000000000007", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_istithara", "name": "الاستثارة", "description": "قسم الاستثارة الحسية والحركية", "active": true}, {"id": "22222222-0000-4000-8000-000000000008", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_shibh_madrasi", "name": "قسم الشبه مدرسي مكيف", "description": "قسم التأهيل الشبه مدرسي المكيف", "active": true}, {"id": "22222222-0000-4000-8000-000000000009", "branch_id": "11111111-0000-4000-8000-000000000001", "slug": "sec_khariji", "name": "الخارجي اعاقة شديدة", "description": "فوج الرعاية النهارية الخارجية للإعاقات الشديدة", "active": true}, {"id": "22222222-0000-4000-8000-000000000010", "branch_id": "11111111-0000-4000-8000-000000000002", "slug": "sec_tamhin", "name": "التمهين م م ع", "description": "قسم التمهين والتأهيل المهني بمركز المساعدة على العمل", "active": true}, {"id": "22222222-0000-4000-8000-000000000011", "branch_id": "11111111-0000-4000-8000-000000000003", "slug": "sec_bostana", "name": "المزرعة البستنة", "description": "ورشة البستنة والأنشطة الزراعية بالمزرعة البيداغوجية", "active": true}];
   var EMBEDDED_STUDENTS = [{"id": "00000000-0000-4000-8000-000000000004", "membership_no": "004", "full_name": "حاج ابراهيم مسعود بن قاسم", "dob": "1981-08-01", "phone": "055948690", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000021", "membership_no": "021", "full_name": "حاج ابراهيم عمر بن سليمان", "dob": "1986-04-26", "phone": "055377052", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000022", "membership_no": "022", "full_name": "بهون علي يوسف بن يحي", "dob": "1986-06-12", "phone": "065837964", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000050", "membership_no": "050", "full_name": "سعيد مصطفى بن عمر", "dob": "1991-09-20", "phone": "056101096", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000077", "membership_no": "077", "full_name": "بهون علي زوليخة بنت يحي بن عمر", "dob": "1988-07-20", "phone": "065837964", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000082", "membership_no": "082", "full_name": "حاج امحمد محمد بن اسماعيل", "dob": "1989-08-04", "phone": "066442144", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000086", "membership_no": "086", "full_name": "حاج ابراهيم بهون بن عبد الرحمان", "dob": "1995-03-24", "phone": "077130718", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000087", "membership_no": "087", "full_name": "خليف ابراهيم زكرياء بن أحمد", "dob": "2003-03-17", "phone": "069995077", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000090", "membership_no": "090", "full_name": "اولاد حاجو بكير بن توفيق", "dob": "2004-05-22", "phone": "066303199", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000101", "membership_no": "101", "full_name": "طالب باحمد عز الدين بن بكير", "dob": "2005-04-05", "phone": "079361303", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000103", "membership_no": "103", "full_name": "بهون عائشة بنت نور الدين", "dob": "2001-08-23", "phone": "067147301", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000104", "membership_no": "104", "full_name": "بهون وسام بنت ابراهيم", "dob": "2006-06-04", "phone": "055653051", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000111", "membership_no": "111", "full_name": "بهون زوليخة بنت نور الدين", "dob": "1984-12-21", "phone": "067147301", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000112", "membership_no": "112", "full_name": "قندوزي نصر الدين بن حسين", "dob": "2006-09-24", "phone": "066343469", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000114", "membership_no": "114", "full_name": "اسماوي امين بن ابو عبيدة", "dob": "2009-09-30", "phone": "055928584", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000116", "membership_no": "116", "full_name": "صلاح مهدي بن مسعود", "dob": "2002-03-08", "phone": "066470243", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000117", "membership_no": "117", "full_name": "درين سمية بنت صالح", "dob": "1997-09-27", "phone": "066661649", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000118", "membership_no": "118", "full_name": "درين منير بن صالح", "dob": "1993-09-02", "phone": "066661649", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000003", "section_id": "22222222-0000-4000-8000-000000000011", "branch_slug": "farm", "section_slug": "sec_bostana", "section": "المزرعة البستنة", "center": "farm", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000119", "membership_no": "119", "full_name": "درين بشير بن صالح", "dob": "1995-07-19", "phone": "066661649", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000003", "section_id": "22222222-0000-4000-8000-000000000011", "branch_slug": "farm", "section_slug": "sec_bostana", "section": "المزرعة البستنة", "center": "farm", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000132", "membership_no": "132", "full_name": "حمو علي قاسم بن عمر", "dob": "2009-08-01", "phone": "066629625", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000009", "branch_slug": "main", "section_slug": "sec_khariji", "section": "الخارجي اعاقة شديدة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000138", "membership_no": "138", "full_name": "حمو علي سمية بنت موسى", "dob": "2004-06-09", "phone": "079759877", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000142", "membership_no": "142", "full_name": "بوحديبة محمد بن ابراهيم", "dob": "2011-01-25", "phone": "067364872", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000146", "membership_no": "146", "full_name": "حبيرش جيهان بنت عبد الوهاب", "dob": "2013-12-07", "phone": "067341231", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000153", "membership_no": "153", "full_name": "العابد حسناء بنت منصور", "dob": "2008-02-28", "phone": "067030546", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000159", "membership_no": "159", "full_name": "اسماوي محمد بن بلال", "dob": "2010-08-15", "phone": "065839100", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000160", "membership_no": "160", "full_name": "بهون علي محمد السعيد بن عمر", "dob": "2013-07-17", "phone": "055079988", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000165", "membership_no": "165", "full_name": "حمو علي زكرياء بن ابراهيم", "dob": "2014-09-08", "phone": "066744579", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000167", "membership_no": "167", "full_name": "كليماني انفال بنت محمد", "dob": "2012-11-30", "phone": "069837174", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000005", "branch_slug": "main", "section_slug": "sec_tafatan_1", "section": "التفطين 1 تأخر ذهني", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000168", "membership_no": "168", "full_name": "كليماني آية بنت محمد", "dob": "2009-04-05", "phone": "069837174", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000170", "membership_no": "170", "full_name": "بن علي فاروق بن احمد", "dob": "2012-10-02", "phone": "066164908", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000173", "membership_no": "173", "full_name": "بن يحي الياس بن مختار", "dob": "2007-10-27", "phone": "066594864", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000176", "membership_no": "176", "full_name": "كبير حاج الطيب بن بشير", "dob": "2014-01-21", "phone": "079274729", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000180", "membership_no": "180", "full_name": "زرقون صفوان بن مصطفى", "dob": "2007-05-31", "phone": "066864048", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000187", "membership_no": "187", "full_name": "خروبي زكرياء بن عيسى", "dob": "2015-04-14", "phone": "054228492", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000001", "branch_slug": "main", "section_slug": "sec_autism_1", "section": "توحد 01", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000188", "membership_no": "188", "full_name": "اسكوتي عيسى بن عثمان", "dob": "2016-06-19", "phone": "069905393", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000001", "branch_slug": "main", "section_slug": "sec_autism_1", "section": "توحد 01", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000189", "membership_no": "189", "full_name": "الشرع ريان بن مختار", "dob": "2015-01-05", "phone": "066147475", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000002", "branch_slug": "main", "section_slug": "sec_autism_2", "section": "التوحد 02", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000190", "membership_no": "190", "full_name": "بن حمودة أيمن سليمان بن عمر", "dob": "2013-09-06", "phone": "066650690", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000002", "branch_slug": "main", "section_slug": "sec_autism_2", "section": "التوحد 02", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000192", "membership_no": "192", "full_name": "الشرع خالد بن مختار", "dob": "2013-10-16", "phone": "066147475", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000001", "branch_slug": "main", "section_slug": "sec_autism_1", "section": "توحد 01", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000196", "membership_no": "196", "full_name": "بهشو اسماعيل بن سليمان", "dob": "2013-05-16", "phone": "066599607", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000197", "membership_no": "197", "full_name": "كليماني اية", "dob": "2014-04-23", "phone": "066836902", "disability": "متعدد الاعاقات", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": null, "branch_slug": "main", "section_slug": "", "section": "عام", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000198", "membership_no": "198", "full_name": "بن ريم مروة بنت مروان", "dob": "2009-02-06", "phone": "066569187", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000200", "membership_no": "200", "full_name": "بن يوسف حاج ابراهيم بن نصر الدين", "dob": "2009-12-27", "phone": "067642448", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000201", "membership_no": "201", "full_name": "باباعمر تيازيط زكرياء بن بشير", "dob": "2010-07-08", "phone": "077712027", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000202", "membership_no": "202", "full_name": "بكلي الحاج محمد بن احمد", "dob": "2012-02-13", "phone": "056124727", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000204", "membership_no": "204", "full_name": "ببو محمد بن العيد", "dob": "2008-06-01", "phone": "066887289", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000206", "membership_no": "206", "full_name": "بن عافو يوسف بن عيسى", "dob": "2013-07-14", "phone": "069614151", "disability": "متعدد الاعاقات", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000209", "membership_no": "209", "full_name": "قومار محمد ياسر بن حمزة", "dob": "2015-04-13", "phone": "066553918", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000002", "branch_slug": "main", "section_slug": "sec_autism_2", "section": "التوحد 02", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000213", "membership_no": "213", "full_name": "يعقوب نذير بن محمد", "dob": "2007-11-04", "phone": "065706325", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000216", "membership_no": "216", "full_name": "ابي اسماعيل ياسين بن بعيسى", "dob": "2012-01-14", "phone": "055825381", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000219", "membership_no": "219", "full_name": "حاج امحمد اسماعيل بن ابراهيم", "dob": "2009-12-01", "phone": "077846497", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000009", "branch_slug": "main", "section_slug": "sec_khariji", "section": "الخارجي اعاقة شديدة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000223", "membership_no": "223", "full_name": "أولاد علي صوفيا بنت محمد", "dob": "2014-01-22", "phone": "066167498", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000003", "branch_slug": "main", "section_slug": "sec_autism_3", "section": "توحد 03", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000224", "membership_no": "224", "full_name": "مسهل لؤي بن خالد", "dob": "2016-06-02", "phone": "066065559", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000003", "branch_slug": "main", "section_slug": "sec_autism_3", "section": "توحد 03", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000226", "membership_no": "226", "full_name": "دهان عبد القادر بن يحي بن عيسى", "dob": "2013-12-19", "phone": "067222373", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000227", "membership_no": "227", "full_name": "قبسي مهدي عبد الرزاق بن احمد", "dob": "2014-05-12", "phone": "069797512", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000003", "branch_slug": "main", "section_slug": "sec_autism_3", "section": "توحد 03", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000228", "membership_no": "228", "full_name": "حيمود اسامة بن مداني", "dob": "2007-06-20", "phone": "066638904", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000231", "membership_no": "231", "full_name": "مهيري يوسف الصديق بن موسى", "dob": "2016-02-23", "phone": "066743252", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000003", "branch_slug": "main", "section_slug": "sec_autism_3", "section": "توحد 03", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000236", "membership_no": "236", "full_name": "حاج سعيد مسعودة سيرين بنت عمر", "dob": "2018-07-09", "phone": "055754254", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000006", "branch_slug": "main", "section_slug": "sec_tafatan_2", "section": "التفطين 2 متلازمة داون", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000238", "membership_no": "238", "full_name": "بابا عمر تيازيط يحي بن مسعود", "dob": "2009-07-25", "phone": "067135309", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000003", "section_id": "22222222-0000-4000-8000-000000000011", "branch_slug": "farm", "section_slug": "sec_bostana", "section": "المزرعة البستنة", "center": "farm", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000239", "membership_no": "239", "full_name": "بابا عمر تيازيط محمد بن مسعود", "dob": "2016-12-22", "phone": "067135309", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000240", "membership_no": "240", "full_name": "بن موسى مريم بنت بلقاسم", "dob": "2014-01-23", "phone": "066202193", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000243", "membership_no": "243", "full_name": "حاج امحمد مصطفى الامين بن ابراه", "dob": "1993-02-01", "phone": "065931259", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000247", "membership_no": "247", "full_name": "جرادة ابراهيم بن محمد", "dob": "2018-01-15", "phone": "066250716", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000006", "branch_slug": "main", "section_slug": "sec_tafatan_2", "section": "التفطين 2 متلازمة داون", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000249", "membership_no": "249", "full_name": "حاتة سليمان بن بكير", "dob": "2001-02-04", "phone": "079230020", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000250", "membership_no": "250", "full_name": "حاج اسماعيل عائشة بنت محمد بن ا", "dob": "2021-06-08", "phone": "069668368", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000006", "branch_slug": "main", "section_slug": "sec_tafatan_2", "section": "التفطين 2 متلازمة داون", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000251", "membership_no": "251", "full_name": "سعيد فاطمة الزهراء بنت صلاح الدين", "dob": "2009-06-26", "phone": "065988655", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000254", "membership_no": "254", "full_name": "بوال مصطفى بن إدريس", "dob": "2012-04-13", "phone": "066543656", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000255", "membership_no": "255", "full_name": "بن خليفة ريهام شهد بنت محمد", "dob": "2009-07-25", "phone": "069804364", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000256", "membership_no": "256", "full_name": "بن احمد انس عبد الجليل بن أحمد", "dob": "2017-11-12", "phone": "069958761", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000005", "branch_slug": "main", "section_slug": "sec_tafatan_1", "section": "التفطين 1 تأخر ذهني", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000257", "membership_no": "257", "full_name": "الشامخة عبد الرزاق حفيظ بن مصطفى", "dob": "2017-12-03", "phone": "066862720", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000001", "branch_slug": "main", "section_slug": "sec_autism_1", "section": "توحد 01", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000258", "membership_no": "258", "full_name": "اولاد الشيخ انس عبد العليم بن محمد", "dob": "2018-07-02", "phone": "066898171", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000004", "branch_slug": "main", "section_slug": "sec_observation", "section": "الملاحظة جدد", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000259", "membership_no": "259", "full_name": "عيسى عز الدين بن بكير", "dob": "2010-08-28", "phone": "055016841", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000263", "membership_no": "263", "full_name": "سالم يوسف بن حمو", "dob": "2008-02-09", "phone": "054111581", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000264", "membership_no": "264", "full_name": "هامل سحر بنت أحمد بن صالح", "dob": "2007-06-04", "phone": "077824262", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000009", "branch_slug": "main", "section_slug": "sec_khariji", "section": "الخارجي اعاقة شديدة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000265", "membership_no": "265", "full_name": "هامل عبد الحي بن أحمد بن صالح", "dob": "2010-07-29", "phone": "077824262", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000267", "membership_no": "267", "full_name": "بلولو الحاج ابراهيم بن رمضان", "dob": "2010-08-14", "phone": "079654999", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000273", "membership_no": "273", "full_name": "الواهج بكير بن صالح", "dob": "1988-12-15", "phone": "055207989", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000274", "membership_no": "274", "full_name": "توهامي ريم بنت توفيق", "dob": "2014-06-03", "phone": "055030033", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000004", "branch_slug": "main", "section_slug": "sec_observation", "section": "الملاحظة جدد", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000275", "membership_no": "275", "full_name": "أولاد حاجو مامة مالك بنت صالح", "dob": "2015-05-07", "phone": "066614780", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000276", "membership_no": "276", "full_name": "صديقي محمد الامين بن مراد", "dob": "2014-03-14", "phone": "066276843", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000003", "branch_slug": "main", "section_slug": "sec_autism_3", "section": "توحد 03", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000279", "membership_no": "279", "full_name": "قندوز نهال بنت نصر الدين", "dob": "2012-06-18", "phone": "066597050", "disability": "التأخر الدراسي", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000280", "membership_no": "280", "full_name": "مطياز توفيق بن محمد", "dob": "2001-09-01", "phone": "066347915", "disability": "التأخر الدراسي", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000281", "membership_no": "281", "full_name": "عكيف عبد الجليل طه بن أحمد", "dob": "2003-06-15", "phone": "069998926", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000283", "membership_no": "283", "full_name": "داودي سهام بنت محمد", "dob": "2015-02-17", "phone": "055610591", "disability": "التأخر الدراسي", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000288", "membership_no": "288", "full_name": "حاج عيسى فخار عيسى بن يونس", "dob": "1995-08-18", "phone": "079794096", "disability": "متعدد الاعاقات", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000289", "membership_no": "289", "full_name": "بنورة منير بن محمد", "dob": "2015-01-01", "phone": "055534375", "disability": "متعدد الاعاقات", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000009", "branch_slug": "main", "section_slug": "sec_khariji", "section": "الخارجي اعاقة شديدة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000291", "membership_no": "291", "full_name": "داودي ربيع بن بايوب", "dob": "2014-02-24", "phone": "0558694073", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000293", "membership_no": "293", "full_name": "ريغي اية بنت الشيخ", "dob": "2021-07-01", "phone": "065250446", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000006", "branch_slug": "main", "section_slug": "sec_tafatan_2", "section": "التفطين 2 متلازمة داون", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000296", "membership_no": "296", "full_name": "عباس لقمان بن يحي", "dob": "2017-05-12", "phone": "077071457", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000297", "membership_no": "297", "full_name": "الشيخ محمد المهدي بن عيسى", "dob": "2016-12-17", "phone": "067462692", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000002", "branch_slug": "main", "section_slug": "sec_autism_2", "section": "التوحد 02", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000301", "membership_no": "301", "full_name": "اسماوي ايوب بن عبد السلام", "dob": "2018-12-15", "phone": "055324283", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000008", "branch_slug": "main", "section_slug": "sec_shibh_madrasi", "section": "قسم الشبه مدرسي مكيف", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000305", "membership_no": "305", "full_name": "يحي الشريف خديجة بنت فاروق", "dob": "2022-09-23", "phone": "066864689", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000005", "branch_slug": "main", "section_slug": "sec_tafatan_1", "section": "التفطين 1 تأخر ذهني", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000306", "membership_no": "306", "full_name": "بن صغير ياسين بن احمد", "dob": "2015-07-31", "phone": "066201480", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000004", "branch_slug": "main", "section_slug": "sec_observation", "section": "الملاحظة جدد", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000307", "membership_no": "307", "full_name": "غبشي نورالهدى بنت يوسف", "dob": "2014-09-07", "phone": "065951484", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000004", "branch_slug": "main", "section_slug": "sec_observation", "section": "الملاحظة جدد", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000310", "membership_no": "310", "full_name": "داودي الحاج يحي بن باحمد", "dob": "2007-06-24", "phone": "054113100", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000311", "membership_no": "311", "full_name": "الشيخ دحمان مامة بنت دحمان", "dob": "2016-02-10", "phone": "055933674", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000312", "membership_no": "312", "full_name": "بن يونس يسرى بنت مصطفى", "dob": "2007-09-09", "phone": "066685208", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000313", "membership_no": "313", "full_name": "لعزيز ياسمين بنت سيراج", "dob": "2013-12-30", "phone": "055015858", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000314", "membership_no": "314", "full_name": "نوح مفنون أمين بن البشير", "dob": "2007-01-05", "phone": "077830744", "disability": "متلازمة داون T.21", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000315", "membership_no": "315", "full_name": "بورزمة ابراهيم بن محمد", "dob": "2021-08-11", "phone": "066333478", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000005", "branch_slug": "main", "section_slug": "sec_tafatan_1", "section": "التفطين 1 تأخر ذهني", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000316", "membership_no": "316", "full_name": "زيطاري نور سين بنت خليل", "dob": "2020-09-21", "phone": "066241736", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000005", "branch_slug": "main", "section_slug": "sec_tafatan_1", "section": "التفطين 1 تأخر ذهني", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000317", "membership_no": "317", "full_name": "داودي طه بن علي", "dob": "2007-06-06", "phone": "054148767", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000002", "section_id": "22222222-0000-4000-8000-000000000010", "branch_slug": "work", "section_slug": "sec_tamhin", "section": "التمهين م م ع", "center": "work", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000318", "membership_no": "318", "full_name": "جبريط سعد الدين بن بدر الدين", "dob": "2014-05-10", "phone": "066228078", "disability": "التأخر الذهني R.M", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000007", "branch_slug": "main", "section_slug": "sec_istithara", "section": "الاستثارة", "center": "main", "academic_year": "2026-2027", "active": true}, {"id": "00000000-0000-4000-8000-000000000320", "membership_no": "320", "full_name": "بيتور محمد اسحاق بن بن يعيش", "dob": "2019-03-24", "phone": "066230749", "disability": "اضطراب طيف التوحد TSA", "branch_id": "11111111-0000-4000-8000-000000000001", "section_id": "22222222-0000-4000-8000-000000000004", "branch_slug": "main", "section_slug": "sec_observation", "section": "الملاحظة جدد", "center": "main", "academic_year": "2026-2027", "active": true}];
+
+  /* القائمة الرسمية للموظفين والمربيات (16 موظفًا) — كلٌّ في مركزه، برقم الهاتف وكلمة المرور DI + تاريخ الميلاد (DDMMYYYY) */
+  var EMBEDDED_STAFF = [
+    {"id": "staff-001", "emp_no": "1",   "full_name": "أمير زكرياء بن عبد الله",            "dob": "1993-05-11", "phone": "0540817775", "email": "edu.0540817775@darelihsan.org", "center": "main", "role": "admin",    "job_title": "مدير المركز",      "section_id": "", "section_name": "المركز الرئيسي دار الإحسان", "has_account": true},
+    {"id": "staff-002", "emp_no": "2",   "full_name": "الخلفاوي حمودة بن يحي",              "dob": "1986-05-03", "phone": "0550647516", "email": "edu.0550647516@darelihsan.org", "center": "main", "role": "admin",    "job_title": "عون إداري",        "section_id": "", "section_name": "المركز الرئيسي دار الإحسان", "has_account": true},
+    {"id": "staff-010", "emp_no": "10",  "full_name": "الأخصائية نواري اسماء بنت جيلالي",   "dob": "2001-08-14", "phone": "0655806951", "email": "edu.0655806951@darelihsan.org", "center": "main", "role": "specialist", "job_title": "أخصائية نفسانية",  "section_id": "", "section_name": "المركز الرئيسي دار الإحسان", "has_account": true},
+    {"id": "staff-017", "emp_no": "17",  "full_name": "فضاض خولة بنت الشيخ بن أحمد",        "dob": "1998-02-05", "phone": "0555905565", "email": "edu.0555905565@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000005", "section_name": "التفطين 1 تأخر ذهني", "has_account": true},
+    {"id": "staff-047", "emp_no": "47",  "full_name": "الرمة فاطمة الزهراء بنت أحمد",       "dob": "1998-07-28", "phone": "0663412874", "email": "edu.0663412874@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000001", "section_name": "توحد 01", "has_account": true},
+    {"id": "staff-058", "emp_no": "58",  "full_name": "قوطارة جميلة بنت مبروك",             "dob": "1993-06-19", "phone": "0676160618", "email": "edu.0676160618@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000008", "section_name": "قسم الشبه مدرسي مكيف", "has_account": true},
+    {"id": "staff-103", "emp_no": "103", "full_name": "بوقانون فيروز بنت مسعود",            "dob": "1980-10-10", "phone": "0657929247", "email": "edu.0657929247@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000004", "section_name": "الملاحظة جدد", "has_account": true},
+    {"id": "staff-104", "emp_no": "104", "full_name": "ميزات صارة بنت أحمد",                "dob": "1991-02-09", "phone": "0697626616", "email": "edu.0697626616@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000009", "section_name": "الخارجي اعاقة شديدة", "has_account": true},
+    {"id": "staff-105", "emp_no": "105", "full_name": "قريدة عيدة بنت موسى",                "dob": "1970-02-18", "phone": "0657929291", "email": "edu.0657929291@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000006", "section_name": "التفطين 2 متلازمة داون", "has_account": true},
+    {"id": "staff-111", "emp_no": "111", "full_name": "باحمد صليحة بنت نور الدين",          "dob": "1996-11-19", "phone": "0552698775", "email": "edu.0552698775@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000002", "section_name": "التوحد 02", "has_account": true},
+    {"id": "staff-113", "emp_no": "113", "full_name": "بن دربال نسيبة بنت محمد",            "dob": "1985-11-25", "phone": "0667941590", "email": "edu.0667941590@darelihsan.org", "center": "main", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000003", "section_name": "توحد 03", "has_account": true},
+    {"id": "staff-099", "emp_no": "99",  "full_name": "عبد الصمد عصام بن خميسي",            "dob": "1981-12-17", "phone": "0662744988", "email": "edu.0662744988@darelihsan.org", "center": "work", "role": "admin",    "job_title": "رئيس مصلحة",       "section_id": "22222222-0000-4000-8000-000000000010", "section_name": "التمهين م م ع", "has_account": true},
+    {"id": "staff-004", "emp_no": "4",   "full_name": "لهزيل زينب بنت أحمد",                "dob": "1984-10-14", "phone": "0668640481", "email": "edu.0668640481@darelihsan.org", "center": "work", "role": "educator", "job_title": "مربية",            "section_id": "22222222-0000-4000-8000-000000000010", "section_name": "التمهين م م ع", "has_account": true},
+    {"id": "staff-038", "emp_no": "38",  "full_name": "جلود عبد السلام بن الشيخ بن قويدر",  "dob": "1996-09-30", "phone": "0657855528", "email": "edu.0657855528@darelihsan.org", "center": "work", "role": "educator", "job_title": "مربي",             "section_id": "22222222-0000-4000-8000-000000000010", "section_name": "التمهين م م ع", "has_account": true},
+    {"id": "staff-107", "emp_no": "107", "full_name": "سيروكان بشرى بنت احمد",              "dob": "2011-04-25", "phone": "0652676768", "email": "edu.0652676768@darelihsan.org", "center": "work", "role": "educator", "job_title": "مساعدة مربية",     "section_id": "22222222-0000-4000-8000-000000000010", "section_name": "التمهين م م ع", "has_account": true},
+    {"id": "staff-074", "emp_no": "74",  "full_name": "طالب باحمد ياسين بن عيسى",           "dob": "2007-10-22", "phone": "0664359676", "email": "edu.0664359676@darelihsan.org", "center": "farm", "role": "educator", "job_title": "مربي المزرعة البيداغوجية", "section_id": "22222222-0000-4000-8000-000000000011", "section_name": "المزرعة البستنة", "has_account": true}
+  ];
+
+  function staffPasswordFromDob(dob) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dob || '').trim());
+    return m ? ('DI' + m[3] + m[2] + m[1]) : '';
+  }
+
+  function buildDefaultPortalMeta() {
+    var edus = [];
+    var accs = {};
+    EMBEDDED_STAFF.forEach(function (st) {
+      var em = st.email.toLowerCase();
+      if (st.role === 'educator') {
+        edus.push({
+          id: st.id,
+          emp_no: st.emp_no,
+          full_name: st.full_name,
+          dob: st.dob,
+          phone: st.phone,
+          email: em,
+          center: st.center,
+          job_title: st.job_title,
+          section_id: st.section_id,
+          section_name: st.section_name,
+          has_account: true,
+          updated_at: '2026-10-26T08:00:00Z'
+        });
+      }
+      accs[em] = {
+        role: st.role,
+        educator_id: st.role === 'educator' ? st.id : null,
+        emp_no: st.emp_no,
+        full_name: st.full_name,
+        dob: st.dob,
+        phone: st.phone,
+        center: st.center,
+        center_access: st.center,
+        job_title: st.job_title,
+        section_id: st.section_id,
+        section_name: st.section_name,
+        has_account: true,
+        updated_at: '2026-10-26T08:00:00Z'
+      };
+    });
+    return { educators: edus, account_meta: accs };
+  }
 
 
   function normAr(s) {
@@ -44,7 +235,7 @@
       name: 'المركز الرئيسي دار الإحسان',
       shortName: 'المركز الرئيسي',
       badge: 'المركز النفسي البيداغوجي',
-      icon: '',
+      icon: '', svgIcon: 's-main-center',
       avatar: 'د',
       desc: 'الدخول إلى اللوحة الحالية الخاصة بالمركز الرئيسي دار الإحسان (الأطفال والطلبة، الأقسام التربوية، المربيات، البرامج الأسبوعية، التقارير والتقييم، المواعيد، الرسائل، والوثائق).'
     },
@@ -53,7 +244,7 @@
       name: 'مركز المساعدة على العمل',
       shortName: 'مركز المساعدة على العمل',
       badge: 'ورشات التأهيل والتمهين',
-      icon: '',
+      icon: '', svgIcon: 's-work-center',
       avatar: 'ع',
       desc: 'الدخول إلى لوحة مركز المساعدة على العمل والاطلاع على طلابها وأقسامها (قسم التمهين م م ع والأقسام المهنية) وبرامجها وتقاريرها.'
     },
@@ -62,20 +253,20 @@
       name: 'المزرعة البيداغوجية',
       shortName: 'المزرعة البيداغوجية (البستنة)',
       badge: 'البستنة والأنشطة الفلاحية',
-      icon: '',
+      icon: '', svgIcon: 's-farm-center',
       avatar: 'م',
-      desc: 'الدخول إلى لوحة المزرعة البيداغوجية والاطلاع على طلاب البستنة (قسم المزرعة البستنة) ومتابعة برامجهم وتقييمهم.'
+      desc: 'الدخول إلى لوحة المزرعة البيداغوجية والاطلاع على طلاب البستنة (قسم المزرعة البستنة) وإدارة ملفاتهم وحسابات المزرعة.'
     }
   };
 
   var CENTER_ACCESS_OPTS = [
-    ['all', ' جميع المراكز (المركز الرئيسي + المساعدة على العمل + المزرعة البيداغوجية)'],
+    ['all', 'جميع المراكز (المركز الرئيسي + المساعدة على العمل + المزرعة البيداغوجية)'],
     ['main', 'المركز الرئيسي دار الإحسان فقط'],
-    ['work', ' مركز المساعدة على العمل فقط'],
-    ['farm', ' المزرعة البيداغوجية (البستنة) فقط'],
-    ['main,work', 'المركز الرئيسي + مركز المساعدة على العمل'],
-    ['main,farm', 'المركز الرئيسي + المزرعة البيداغوجية'],
-    ['work,farm', 'مركز المساعدة على العمل + المزرعة البيداغوجية']
+    ['work', 'مركز المساعدة على العمل فقط'],
+    ['farm', 'المزرعة البيداغوجية (البستنة) فقط'],
+    ['main,work', '+المركز الرئيسي + مركز المساعدة على العمل'],
+    ['main,farm', '+المركز الرئيسي + المزرعة البيداغوجية'],
+    ['work,farm', '+مركز المساعدة على العمل + المزرعة البيداغوجية']
   ];
 
   var S = {
@@ -88,11 +279,16 @@
     me: null,
     isOwner: false,
     isEducator: false,
+    isSpecialist: false,
     eduProfile: null,
     eduSectionId: '',
     eduSectionName: '',
     portalMeta: null,
-    stopIdle: null
+    stopIdle: null,
+    navStack: [],
+    inSubBuilder: false,
+    deletedRuntimeIds: {},
+    deletedRuntimeEmails: {}
   };
 
   var TITLES = {
@@ -140,16 +336,16 @@
 
   function formatCenterAccessLabel(accessStr) {
     var raw = String(accessStr || 'all').trim().toLowerCase();
-    if (!raw || raw === 'all') return ' جميع المراكز (المركز وملحقاته)';
+    if (!raw || raw === 'all') return 'جميع المراكز (المركز وملحقاته)';
     var map = {
       'main': 'المركز الرئيسي فقط',
-      'work': ' مركز المساعدة على العمل فقط',
-      'farm': ' المزرعة البيداغوجية فقط',
+      'work': 'مركز المساعدة على العمل فقط',
+      'farm': 'المزرعة البيداغوجية فقط',
       'main,work': 'المركز الرئيسي + المساعدة على العمل',
       'main,farm': 'المركز الرئيسي + المزرعة البيداغوجية',
       'work,farm': 'المساعدة على العمل + المزرعة البيداغوجية'
     };
-    return map[raw] || (' ' + raw);
+    return map[raw] || ('' + raw);
   }
 
   function branchCenterKey(b) {
@@ -223,7 +419,7 @@
 
   /* ---------- إدارة بيانات المربيات وحسابات الإدارة وكلمات المرور (تخزين سحابي في site_content) ---------- */
   function emptyPortalMeta() {
-    return { educators: [], account_meta: {} };
+    return buildDefaultPortalMeta();
   }
 
   function normalizeArabicDigits(str) {
@@ -262,21 +458,85 @@
 
   function normalizePortalMeta(raw) {
     var m = raw && typeof raw === 'object' ? raw : {};
-    var edus = Array.isArray(m.educators) ? m.educators.map(sanitizeEducatorEntry).filter(Boolean) : [];
+    var base = buildDefaultPortalMeta();
+    var delEmails = Array.isArray(m.deleted_emails) ? m.deleted_emails.map(function (x) { return String(x || '').toLowerCase(); }).filter(Boolean) : [];
+    var delEduIds = Array.isArray(m.deleted_educator_ids) ? m.deleted_educator_ids.map(String).filter(Boolean) : [];
+    var delEmailMap = {};
+    var delEduMap = {};
+    delEmails.forEach(function (em) { delEmailMap[em] = true; });
+    delEduIds.forEach(function (id) { delEduMap[id] = true; });
+    if (S && S.deletedRuntimeEmails) {
+      Object.keys(S.deletedRuntimeEmails).forEach(function (em) {
+        delEmailMap[em] = true;
+        if (delEmails.indexOf(em) < 0) delEmails.push(em);
+      });
+    }
+    if (S && S.deletedRuntimeIds) {
+      Object.keys(S.deletedRuntimeIds).forEach(function (id) {
+        delEduMap[id] = true;
+        if (delEduIds.indexOf(id) < 0) delEduIds.push(id);
+      });
+    }
+
+    var rawEdus = Array.isArray(m.educators) ? m.educators.map(sanitizeEducatorEntry).filter(Boolean) : [];
+    rawEdus = rawEdus.filter(function (e) {
+      var isIstithara = (e.section_id === '22222222-0000-4000-8000-000000000007') || (String(e.section_name || '').indexOf('الاستثارة') >= 0);
+      if (isIstithara) return false;
+      if (e.id && delEduMap[String(e.id)]) return false;
+      if (e.email && delEmailMap[String(e.email).toLowerCase()]) return false;
+      return true;
+    });
+
+    var edus = base.educators.filter(function (be) {
+      if (be.id && delEduMap[String(be.id)]) return false;
+      if (be.email && delEmailMap[String(be.email).toLowerCase()]) return false;
+      return true;
+    });
+
+    rawEdus.forEach(function (re) {
+      if (!re || !re.id) return;
+      var idx = edus.findIndex(function (be) { return be.id === re.id || (be.phone && re.phone && cleanPhoneDigits(be.phone) === cleanPhoneDigits(re.phone)); });
+      if (idx >= 0) edus[idx] = Object.assign({}, edus[idx], re);
+      else edus.push(re);
+    });
+
     var rawAccs = (m.account_meta && typeof m.account_meta === 'object') ? m.account_meta : {};
     var accs = {};
-    Object.keys(rawAccs).forEach(function (k) {
-      accs[k.toLowerCase()] = sanitizeAccountEntry(rawAccs[k]);
+    Object.keys(base.account_meta).forEach(function (bk) {
+      var lowK = bk.toLowerCase();
+      var bEntry = base.account_meta[bk];
+      if (delEmailMap[lowK]) return;
+      if (bEntry && bEntry.educator_id && delEduMap[String(bEntry.educator_id)]) return;
+      accs[lowK] = Object.assign({}, bEntry);
     });
-    return { educators: edus, account_meta: accs };
+
+    Object.keys(rawAccs).forEach(function (k) {
+      var lowK = k.toLowerCase();
+      if (delEmailMap[lowK]) return;
+      var entry = sanitizeAccountEntry(rawAccs[k]);
+      if (entry.educator_id && delEduMap[String(entry.educator_id)]) return;
+      var isIstitharaAcc = (entry.section_id === '22222222-0000-4000-8000-000000000007') || (String(entry.section_name || '').indexOf('الاستثارة') >= 0);
+      if (entry.role === 'educator' && isIstitharaAcc) return;
+      accs[lowK] = Object.assign({}, accs[lowK] || {}, entry);
+    });
+    return { educators: edus, account_meta: accs, deleted_emails: delEmails, deleted_educator_ids: delEduIds };
   }
 
   function mergePortalMetas(primary, secondary) {
     var p = normalizePortalMeta(primary);
     var s = normalizePortalMeta(secondary);
+    var delEmails = (p.deleted_emails || []).slice();
+    (s.deleted_emails || []).forEach(function (em) { if (delEmails.indexOf(em) < 0) delEmails.push(em); });
+    var delEduIds = (p.deleted_educator_ids || []).slice();
+    (s.deleted_educator_ids || []).forEach(function (id) { if (delEduIds.indexOf(id) < 0) delEduIds.push(id); });
+    var delEmailMap = {}, delEduMap = {};
+    delEmails.forEach(function (em) { delEmailMap[em] = true; });
+    delEduIds.forEach(function (id) { delEduMap[id] = true; });
+
     var mergedEdus = p.educators.slice();
     s.educators.forEach(function (se) {
       if (!se || !se.id) return;
+      if (delEduMap[String(se.id)] || (se.email && delEmailMap[String(se.email).toLowerCase()])) return;
       var idx = mergedEdus.findIndex(function (pe) { return pe && pe.id === se.id; });
       if (idx === -1) {
         mergedEdus.push(se);
@@ -285,7 +545,10 @@
       }
     });
     var mergedAccs = Object.assign({}, s.account_meta, p.account_meta);
-    return { educators: mergedEdus, account_meta: mergedAccs };
+    Object.keys(mergedAccs).forEach(function (k) {
+      if (delEmailMap[k.toLowerCase()]) delete mergedAccs[k];
+    });
+    return normalizePortalMeta({ educators: mergedEdus, account_meta: mergedAccs, deleted_emails: delEmails, deleted_educator_ids: delEduIds });
   }
 
   function readLocalPortalBackup() {
@@ -402,10 +665,95 @@
     return raw;
   }
 
+  var STAFF_SESSION_KEY = 'de_staff_portal_session_v2';
+
   function clearEducatorDirectSession() {
     try {
       sessionStorage.removeItem('de_edu_direct_session');
+      sessionStorage.removeItem(STAFF_SESSION_KEY);
     } catch (e) {}
+  }
+
+  function persistStaffSession(prof) {
+    if (!prof || !prof.email) return;
+    try {
+      sessionStorage.setItem(STAFF_SESSION_KEY, JSON.stringify({
+        id: prof.id || prof.educator_id || ('staff-' + cleanPhoneDigits(prof.phone || prof.email)),
+        email: String(prof.email).toLowerCase(),
+        full_name: prof.full_name || '',
+        phone: prof.phone || '',
+        dob: prof.dob || '',
+        role: prof.role || 'educator',
+        center: prof.center || prof.center_access || 'main',
+        center_access: prof.center_access || prof.center || 'main',
+        section_id: prof.section_id || '',
+        section_name: prof.section_name || '',
+        job_title: prof.job_title || '',
+        at: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function readStaffSession() {
+    try {
+      var raw = sessionStorage.getItem(STAFF_SESSION_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return (parsed && parsed.email) ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function verifyStaffPortalAuth(rawInput, resolvedEmail, passwordInput, meta) {
+    var em = String(resolvedEmail || '').trim().toLowerCase();
+    var pw = String(passwordInput || '').trim();
+    if (!em || !pw) return null;
+
+    var m = meta || S.portalMeta || emptyPortalMeta();
+    var delEmails = (m.deleted_emails || []).map(function (x) { return String(x || '').toLowerCase(); });
+    var delIds = (m.deleted_educator_ids || []).map(String);
+    if (delEmails.indexOf(em) >= 0 || (S.deletedRuntimeEmails && S.deletedRuntimeEmails[em])) {
+      return null;
+    }
+
+    var inDigits = cleanPhoneDigits(rawInput);
+    var tail9 = inDigits.length >= 9 ? inDigits.slice(-9) : '';
+
+    var candidates = [];
+    EMBEDDED_STAFF.forEach(function (st) {
+      candidates.push(Object.assign({}, st));
+    });
+    (m.educators || []).forEach(function (ed) {
+      if (ed) candidates.push(Object.assign({ role: 'educator' }, ed));
+    });
+    Object.keys(m.account_meta || {}).forEach(function (k) {
+      var ac = m.account_meta[k];
+      if (ac) candidates.push(Object.assign({ email: k }, ac));
+    });
+
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      var cEmail = String(c.email || '').toLowerCase();
+      var cId = String(c.id || c.educator_id || '');
+      if (cEmail && (delEmails.indexOf(cEmail) >= 0 || (S.deletedRuntimeEmails && S.deletedRuntimeEmails[cEmail]))) continue;
+      if (cId && (delIds.indexOf(cId) >= 0 || (S.deletedRuntimeIds && S.deletedRuntimeIds[cId]))) continue;
+
+      var cDigits = cleanPhoneDigits(c.phone || '');
+      var cTail9 = cDigits.length >= 9 ? cDigits.slice(-9) : '';
+      var emailMatched = (cEmail && cEmail === em);
+      var phoneMatched = (tail9 && cTail9 && tail9 === cTail9);
+
+      if (emailMatched || phoneMatched) {
+        var expectedPw = staffPasswordFromDob(c.dob);
+        if (expectedPw && pw.toUpperCase() === expectedPw.toUpperCase()) {
+          return Object.assign({}, c, {
+            email: cEmail || em
+          });
+        }
+      }
+    }
+    return null;
   }
 
   function setNavBtnLabel(btn, txt) {
@@ -430,8 +778,16 @@
 
     if (S.isEducator) {
       if (nameEl) nameEl.textContent = S.eduSectionName || 'فوجي التربوي';
-      if (roleEl) roleEl.textContent = ' فضاء المربية';
+      if (roleEl) roleEl.textContent = 'فضاء المربية';
       if (avEl) avEl.textContent = 'م';
+      if (swBtn) swBtn.hidden = true;
+      return;
+    }
+
+    if (S.isSpecialist) {
+      if (nameEl) nameEl.textContent = 'المركز الرئيسي دار الإحسان';
+      if (roleEl) roleEl.textContent = 'أخصائية نفسانية';
+      if (avEl) avEl.textContent = 'ن';
       if (swBtn) swBtn.hidden = true;
       return;
     }
@@ -442,19 +798,36 @@
       if (nameEl) nameEl.textContent = 'لوحة الإدارة (المراكز الثلاثة)';
       if (roleEl) roleEl.textContent = S.isOwner ? 'المدير الرئيسي (المالك)' : formatCenterAccessLabel(S.centerAccess);
       if (avEl) avEl.textContent = 'د';
-      if (swTxt) swTxt.textContent = ' العودة إلى لوحة الإدارة';
+      if (swTxt) swTxt.textContent = 'العودة إلى لوحة الإدارة';
     } else {
       if (nameEl) nameEl.textContent = cm.name;
-      if (roleEl) roleEl.textContent = ' اضغط للعودة إلى لوحة الإدارة';
+      if (roleEl) roleEl.textContent = 'اضغط للعودة إلى لوحة الإدارة';
       if (avEl) avEl.textContent = cm.avatar;
-      if (swTxt) swTxt.textContent = ' لوحة الإدارة (' + cm.shortName + ')';
+      if (swTxt) swTxt.textContent = 'لوحة الإدارة (' + cm.shortName + ')';
     }
+  }
+
+  
+  function isFarmSession() {
+    if (S.activeCenter === 'farm') return true;
+    if (S.isEducator) {
+      var secId = String(S.eduSectionId || '');
+      var secNm = String(S.eduSectionName || '');
+      var profCenter = S.eduProfile && S.eduProfile.center;
+      if (profCenter === 'farm' || secId === '22222222-0000-4000-8000-000000000011' || secId === 'sec_bostana' || secNm.indexOf('البستنة') >= 0 || secNm.indexOf('المزرعة') >= 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function applyRoleSidebarUI() {
     var isEdu = !!S.isEducator;
-    var allowedForEdu = { children: true, reports: true };
-    var isWorkOrFarm = !isEdu && (S.activeCenter === 'work' || S.activeCenter === 'farm');
+    var isFarm = isFarmSession();
+    var isSpec = !!S.isSpecialist;
+    var allowedForEdu = isFarm ? { children: true } : { children: true, reports: true };
+    var allowedForSpec = { dash: true, children: true, educators: true, programs: true, reports: true, appts: true, msgs: true, docs: true };
+    var isWorkOrFarm = !isEdu && !isSpec && (S.activeCenter === 'work' || S.activeCenter === 'farm');
     var allowedForWorkOrFarm = { children: true, accounts: true };
 
     [].forEach.call(document.querySelectorAll('#nav [data-sec]'), function (btn) {
@@ -467,6 +840,10 @@
       if (isEdu) {
         btn.hidden = !allowedForEdu[secKey];
         if (secKey === 'children') setNavBtnLabel(btn, 'قسم الطلبة (' + (S.eduSectionName || 'فوجي') + ')');
+        if (secKey === 'reports') setNavBtnLabel(btn, 'التقارير والتقييم');
+      } else if (isSpec) {
+        btn.hidden = !allowedForSpec[secKey];
+        if (secKey === 'children') setNavBtnLabel(btn, 'الأطفال والطلبة');
         if (secKey === 'reports') setNavBtnLabel(btn, 'التقارير والتقييم');
       } else if (isWorkOrFarm) {
         // مطابق للمخطط المرسوم: عند الضغط على مركز المساعدة على العمل أو المزرعة البيداغوجية يظهر فقط: 1. الطلبة  2. الحسابات الخاصة بالمركز
@@ -489,12 +866,14 @@
     [].forEach.call(document.querySelectorAll('#nav .nav-group-label'), function (g) {
       if (isEdu || isWorkOrFarm) {
         g.hidden = true;
+      } else if (isSpec) {
+        g.hidden = (g.dataset.navGroup === 'operations');
       } else {
         g.hidden = false;
       }
     });
     var navSep = $('#navSep') || document.querySelector('#nav .sep');
-    if (navSep) navSep.hidden = isEdu || isWorkOrFarm;
+    if (navSep) navSep.hidden = isEdu || isWorkOrFarm || isSpec;
     updateSidebarCenterCard();
   }
 
@@ -599,7 +978,12 @@
 
   /* ---------- نوافذ الحوار ---------- */
   function openModal(card) {
-    var m = $('#modal'), c = $('#modalCard'); c.textContent = ''; c.appendChild(card); m.hidden = false; document.body.style.overflow = 'hidden';
+    var m = $('#modal'), c = $('#modalCard'); c.textContent = ''; c.appendChild(card);
+    var wasHidden = m.hidden;
+    m.hidden = false; document.body.style.overflow = 'hidden';
+    if (wasHidden) {
+      try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter, modal: true }, ''); } catch (e) {}
+    }
     var first = c.querySelector('input,select,textarea,button'); if (first) first.focus();
   }
   function closeModal() { $('#modal').hidden = true; $('#modalCard').textContent = ''; document.body.style.overflow = ''; }
@@ -629,7 +1013,7 @@
       input.value = val == null ? '' : val; getv = function () { return input.value; };
       var searchIn = null;
       if (f.searchable) {
-        searchIn = h('input', { type: 'search', class: 'fld-search', placeholder: ' بحث سريع في القائمة...', autocomplete: 'off' });
+        searchIn = h('input', { type: 'search', class: 'fld-search', placeholder: 'بحث سريع في القائمة...', autocomplete: 'off' });
         searchIn.addEventListener('input', function () {
           var q = normAr(searchIn.value.trim());
           var curVal = input.value;
@@ -766,9 +1150,15 @@
     var searchVal = '', curFilters = {}, sortIdx = -1, sortDir = 1, openRows = {}, visible = [];
     var bar = h('div', { class: 'bar-sub' }, h('h2', { text: o.title }));
     var barBtns = h('div', { class: 'row-actions' });
-    if (o.exportXlsx) barBtns.appendChild(h('button', { class: 'btn small light', type: 'button', text: ' تصدير Excel (XLSX)', onclick: exportNow }));
-    (o.extra || []).forEach(function (x) { barBtns.appendChild(h('button', { class: 'btn ' + (x.kind || 'light'), type: 'button', text: x.label, onclick: x.onclick })); });
-    if (o.addLabel && o.onAdd) barBtns.appendChild(h('button', { class: 'btn', type: 'button', text: o.addLabel, onclick: o.onAdd }));
+    // [REMOVED: زر تصدير الإكسال بناء على طلب المستخدم]
+    (o.extra || []).forEach(function (x) {
+      var ic = detectBtnSvgIcon(x.label);
+      barBtns.appendChild(h('button', { class: 'btn ' + (x.kind || 'light'), type: 'button', onclick: x.onclick }, ic ? makeSvgIcon(ic) : null, h('span', { text: stripEmojis(x.label) })));
+    });
+    if (o.addLabel && o.onAdd) {
+      var addIc = detectBtnSvgIcon(o.addLabel) || 's-plus';
+      barBtns.appendChild(h('button', { class: 'btn', type: 'button', onclick: o.onAdd }, makeSvgIcon(addIc), h('span', { text: stripEmojis(o.addLabel) })));
+    }
     bar.appendChild(barBtns);
     v.appendChild(bar);
 
@@ -778,12 +1168,8 @@
       sIn.addEventListener('input', function () { searchVal = DE.clean(sIn.value, 80).toLowerCase(); render(); });
       fwrap.appendChild(sIn);
     }
-    (o.filters || []).forEach(function (f, idx) {
-      var sel = h('select', { 'aria-label': f.label }, h('option', { value: '', text: '— كل ' + f.label + ' —' }), f.opts.map(function (op) { return h('option', { value: op[0], text: op[1] }); }));
-      sel.addEventListener('change', function () { curFilters[idx] = sel.value; render(); });
-      fwrap.appendChild(sel);
-    });
-    if (o.search || (o.filters && o.filters.length)) v.appendChild(fwrap);
+    // [REMOVED: الخيارات التي على الصورة - وضع مكانها البحث فقط بكامل العرض]
+    if (o.search) v.appendChild(fwrap);
 
     var countBadge = h('div', { class: 'muted small' });
     v.appendChild(countBadge);
@@ -861,10 +1247,9 @@
             var open = !!openRows[r.id];
             acts.push(h('button', {
               class: 'btn small ' + (open ? 'gold' : 'light'), type: 'button',
-              text: open ? ' إخفاء التفاصيل' : ' عرض التفاصيل',
               'aria-expanded': open ? 'true' : 'false',
               onclick: function () { openRows[r.id] = !open; render(); }
-            }));
+            }, makeSvgIcon(open ? 's-eye-off' : 's-eye'), h('span', { text: open ? 'إخفاء التفاصيل' : 'عرض التفاصيل' })));
           }
           if (o.actions) acts = acts.concat(o.actions(r) || []);
           tr.appendChild(h('td', { class: 'actions-cell' }, acts.filter(Boolean)));
@@ -898,8 +1283,32 @@
     render();
   }
 
+  function detectBtnSvgIcon(txt) {
+    var s = String(txt || '');
+    if (s.indexOf('حذف') >= 0 || s.indexOf('مسح') >= 0 || s.indexOf('إزالة') >= 0) return 's-trash';
+    if (s.indexOf('تعديل') >= 0 || s.indexOf('كتابة') >= 0 || s.indexOf('ملء') >= 0) return 's-edit';
+    if (s.indexOf('البطاقة') >= 0) return 's-idcard';
+    if (s.indexOf('رمز') >= 0 || s.indexOf('كلمة المرور') >= 0 || s.indexOf('كلمة السر') >= 0 || s.indexOf('إنشاء حساب') >= 0) return 's-key';
+    if (s.indexOf('إذن') >= 0 || s.indexOf('صلاحيات') >= 0) return 's-lock';
+    if (s.indexOf('إضافة') >= 0 || s.indexOf('إدراج') >= 0 || s.indexOf('جديد') >= 0) return 's-plus';
+    if (s.indexOf('مزامنة') >= 0 || s.indexOf('استعادة') >= 0 || s.indexOf('تحديث') >= 0 || s.indexOf('تحويل') >= 0) return 's-refresh';
+    if (s.indexOf('طباعة') >= 0 || s.indexOf('الاستمارة والطباعة') >= 0 || s.indexOf('صورة البرنامج') >= 0) return 's-print';
+    if (s.indexOf('تحميل') >= 0 || s.indexOf('تنزيل') >= 0) return 's-download';
+    if (s.indexOf('تصدير') >= 0 || s.indexOf('نشر') >= 0 || s.indexOf('رفع') >= 0 || s.indexOf('اعتماد') >= 0) return 's-upload';
+    if (s.indexOf('عرض') >= 0 || s.indexOf('فتح') >= 0 || s.indexOf('تكبير') >= 0) return 's-eye';
+    if (s.indexOf('إخفاء') >= 0) return 's-eye-off';
+    if (s.indexOf('نسخ') >= 0 || s.indexOf('تعميم') >= 0) return 's-copy';
+    if (s.indexOf('رجوع') >= 0 || s.indexOf('العودة') >= 0) return 's-back';
+    return '';
+  }
+
   function rbtn(label, fn, kind) {
-    var b = h('button', { class: 'btn small ' + (kind || 'light'), type: 'button', text: label });
+    var cleanText = stripEmojis(label);
+    var icName = detectBtnSvgIcon(cleanText);
+    var b = h('button', { class: 'btn small ' + (kind || 'light'), type: 'button' },
+      icName ? makeSvgIcon(icName) : null,
+      h('span', { text: cleanText })
+    );
     b.addEventListener('click', function () { act(b, fn); });
     return b;
   }
@@ -922,6 +1331,14 @@
     return { path: path, mime: mime, size: file.size };
   }
 
+  function stripEmojis(str) {
+    if (typeof str !== 'string') return str;
+    return str
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   function makeSvgIcon(symId) {
     var ns = 'http://www.w3.org/2000/svg';
     var svg = document.createElementNS(ns, 'svg');
@@ -931,12 +1348,13 @@
     svg.appendChild(use);
     return svg;
   }
+  var ico = makeSvgIcon;
 
   function openAddSectionForCenterModal(centerKey, branches, onDone) {
     var targetBranch = (branches || []).filter(function (b) { return branchCenterKey(b) === centerKey; })[0] || branches[0];
     var cm = getCenterMeta(centerKey);
     return openForm({
-      title: ' إضافة قسم / فوج جديد في: ' + cm.name,
+      title: 'إضافة قسم / فوج جديد في: ' + cm.name,
       fields: [
         { k: 'name', label: 'اسم القسم / الفوج التربوي', req: true, min: 2, max: 80, hint: centerKey === 'work' ? 'مثال: التمهين م م ع، ورشة النجارة، ورشة الخياطة' : centerKey === 'farm' ? 'مثال: المزرعة البستنة، الزراعة المائية' : 'مثال: توحد 04، الاستثارة 02' },
         { k: 'description', label: 'وصف القسم وأهدافه (اختياري)', type: 'textarea', max: 500 }
@@ -966,8 +1384,6 @@
 
     var hubWrap = h('div', { class: 'hub-standalone-wrap' });
 
-    // 1. شريط رأس لوحة الإدارة كما في المخطط المرسوم:
-    // في الزاوية اليمنى زر «الحسابات الخاصة بجميع المراكز» وفي المنتصف عنوان «لوحة الإدارة»
     var allAccountsBtn = canAccessGeneralAdmin() ? h('button', {
       type: 'button',
       class: 'hub-all-accounts-btn',
@@ -977,16 +1393,25 @@
       h('span', { text: 'الحسابات الخاصة بجميع المراكز' })
     ) : null;
 
+    var desktopInstallBtn = h('button', {
+      type: 'button',
+      class: 'btn light hub-install-pc-btn',
+      'data-install': ''
+    },
+      makeSvgIcon('s-desktop'),
+      h('span', { text: 'تحميل تطبيق الإدارة للكمبيوتر' })
+    );
+
     var diagramTopbar = h('div', { class: 'hub-diagram-topbar' },
       allAccountsBtn,
       h('div', { class: 'hub-diagram-title-box' },
-        h('h1', { text: 'لوحة الإدارة' })
-      )
+        h('h1', { text: 'لوحة الإدارة' }),
+        h('p', { text: 'اختر المركز للدخول إلى لوحة الإدارة الخاصة به' })
+      ),
+      desktopInstallBtn
     );
     hubWrap.appendChild(diagramTopbar);
 
-    // 2. الخانات الثلاث للمراكز فقط بدون أي كتابة تحتها:
-    // (المركز الرئيسي دار الإحسان | مركز المساعدة على العمل | المزرعة البيداغوجية)
     var centerOrder = ['main', 'work', 'farm'];
     var hubGrid = h('div', { class: 'centers-hub-grid' });
 
@@ -1010,11 +1435,14 @@
 
       var cardEl = h('button', {
         type: 'button',
-        class: 'center-hub-card center-hub-clean-box' + (allowed ? '' : ' is-locked'),
+        class: 'center-hub-card center-hub-clean-box center-hub-' + ck + (allowed ? '' : ' is-locked'),
         onclick: enterCenter
       },
-        h('div', { class: 'chc-icon', text: cm.icon }),
-        h('h3', { class: 'chc-title', text: cm.name })
+        h('div', { class: 'chc-icon chc-icon-' + ck }, makeSvgIcon(cm.svgIcon || 's-branch')),
+        h('div', { class: 'chc-body' },
+          h('h3', { class: 'chc-title', text: cm.name }),
+          h('span', { class: 'chc-badge-sub', text: cm.badge })
+        )
       );
       hubGrid.appendChild(cardEl);
     });
@@ -1056,7 +1484,7 @@
         h('button', {
           type: 'button',
           class: 'dash-hero-btn',
-          text: ' المركز وملحقاته (تبديل المركز)',
+          text: 'المركز وملحقاته (تبديل المركز)',
           onclick: function () { go('hub'); }
         })
       ),
@@ -1090,7 +1518,7 @@
       { sec: 'children', icon: 's-child', title: S.activeCenter === 'farm' ? 'طلاب البستنة' : 'الأطفال والطلبة', sub: 'إدارة ملفات الطلبة، الأقسام، والبطاقات' },
       { sec: 'educators', icon: 's-users', title: 'المربيات', sub: 'إدارة المربيات وإسناد الأفواج وحساباتهن' },
       { sec: 'programs', icon: 's-book', title: 'البرامج التربوية', sub: 'إعداد وتصدير الجداول الأسبوعية للأقسام' },
-      { sec: 'reports', icon: 's-report', title: 'التقارير والتقييم', sub: 'التقارير الدورية واستمارات التقييم (1–5)' },
+      S.activeCenter !== 'farm' ? { sec: 'reports', icon: 's-report', title: 'التقارير والتقييم', sub: 'التقارير الدورية واستمارات التقييم (1–5)' } : null,
       { sec: 'appts', icon: 's-cal', title: 'المواعيد والأنشطة', sub: 'برمجة مواعيد المتابعة والأنشطة' },
       { sec: 'msgs', icon: 's-mail', title: 'الرسائل والإعلانات', sub: 'إرسال الإعلانات والرسائل للأولياء' },
       { sec: 'docs', icon: 's-file', title: 'الوثائق والملفات', sub: 'أرشيف الوثائق الخاصة والآمنة للطلبة' },
@@ -1105,7 +1533,7 @@
       );
     }
 
-    var qaGrid = h('div', { class: 'quick-actions-grid' }, qaItems.map(function (item) {
+    var qaGrid = h('div', { class: 'quick-actions-grid' }, qaItems.filter(Boolean).map(function (item) {
       return h('button', {
         type: 'button',
         class: 'qa-card',
@@ -1231,9 +1659,9 @@
     function openStudentCard(child) {
       var status = h('p', { class: 'muted small', text: 'جارٍ إنشاء البطاقة…' });
       var preview = h('img', { class: 'card-preview', alt: 'معاينة بطاقة انخراط التلميذ ' + (child.full_name || ''), hidden: true });
-      var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: ' تنزيل JPG', disabled: true });
-      var printBtn = h('button', { class: 'btn', type: 'button', text: ' طباعة البطاقة', disabled: true });
-      var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: ' فتح صفحة التلميذ' });
+      var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: 'تنزيل JPG', disabled: true });
+      var printBtn = h('button', { class: 'btn', type: 'button', text: 'طباعة البطاقة', disabled: true });
+      var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: 'فتح صفحة التلميذ' });
       var warn = !child.membership_no ? h('p', { class: 'err small', text: 'تنبيه: لا يوجد رقم قيد رسمي لهذا الطفل؛ أكمله في ملف الطفل قبل طباعة البطاقة.' }) : null;
 
       openModal(h('div', { class: 'modal-body card-modal' },
@@ -1300,8 +1728,8 @@
 
     if (S.isEducator) {
       v.appendChild(h('div', { class: 'card edu-banner-card' },
-        h('strong', { text: ' فضاء المربية: ' + (S.eduProfile && S.eduProfile.full_name || S.me && S.me.email || '') + ' — القسم المسند: ' + (S.eduSectionName || 'غير محدد') }),
-        h('p', { class: 'muted small', text: 'يظهر لكِ هنا طلاب قسمكِ فقط. يمكنكِ الاطلاع على ملفاتهم وإضافة التقارير واستمارات التقييم البيداغوجي الخاصة بهم.' })
+        h('strong', { text: (isFarmSession() ? 'فضاء مربي المزرعة البيداغوجية: ' : 'فضاء المربية: ') + (S.eduProfile && S.eduProfile.full_name || S.me && S.me.email || '') + ' — القسم المسند: ' + (S.eduSectionName || 'غير محدد') }),
+        h('p', { class: 'muted small', text: isFarmSession() ? 'يظهر لك هنا طلاب قسم المزرعة البستنة للاطلاع على ملفاتهم وبطاقاتهم.' : 'يظهر لكِ هنا طلاب قسمكِ فقط. يمكنكِ الاطلاع على ملفاتهم وإضافة التقارير واستمارات التقييم البيداغوجي الخاصة بهم.' })
       ));
     } else {
       var activeKidsCount = centerRows.filter(function (k) { return !!k.active; }).length;
@@ -1310,24 +1738,24 @@
           h('div', null,
             h('span', { class: 'dash-hero-kicker', text: cm.icon + ' ' + cm.badge }),
             h('h1', { class: 'dash-hero-title', text: S.activeCenter === 'farm' ? 'المزرعة البيداغوجية — طلاب البستنة' : S.activeCenter === 'work' ? 'مركز المساعدة على العمل — الطلاب والأقسام' : 'المركز الرئيسي دار الإحسان — الطلاب والأقسام' }),
-            h('p', { class: 'dash-hero-sub', text: S.activeCenter === 'farm' ? 'قائمة طلاب قسم البستنة بالمزرعة البيداغوجية مع إمكانية إدارة ملفاتهم وبطاقاتهم وتقييمهم.' : S.activeCenter === 'work' ? 'قائمة طلاب وأقسام مركز المساعدة على العمل (قسم التمهين م م ع والأقسام المهنية).' : 'قائمة طلاب وأقسام المركز الرئيسي دار الإحسان.' })
+            h('p', { class: 'dash-hero-sub', text: S.activeCenter === 'farm' ? 'قائمة طلاب قسم البستنة بالمزرعة البيداغوجية مع إمكانية إدارة ملفاتهم وبطاقاتهم.' : S.activeCenter === 'work' ? 'قائمة طلاب وأقسام مركز المساعدة على العمل (قسم التمهين م م ع والأقسام المهنية).' : 'قائمة طلاب وأقسام المركز الرئيسي دار الإحسان.' })
           ),
           h('div', { class: 'row-actions' },
             (S.activeCenter === 'work' || S.activeCenter === 'farm') ? h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: S.activeCenter === 'work' ? ' الحسابات الخاصة بمركز المساعدة على العمل' : ' الحسابات الخاصة بالمزرعة البيداغوجية',
+              text: S.activeCenter === 'work' ? 'الحسابات الخاصة بمركز المساعدة على العمل' : 'الحسابات الخاصة بالمزرعة البيداغوجية',
               onclick: function () { go('accounts'); }
             }) : h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: ' لوحة تحكم المركز الرئيسي',
+              text: 'لوحة تحكم المركز الرئيسي',
               onclick: function () { go('dash'); }
             }),
             h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: ' العودة إلى لوحة الإدارة',
+              text: 'العودة إلى لوحة الإدارة',
               onclick: function () { go('hub'); }
             })
           )
@@ -1387,16 +1815,16 @@
           secPanelEl.classList.toggle('is-collapsed', !!S.hideSectionsBar);
           toggleSecLabel.textContent = S.hideSectionsBar ? ('إظهار قائمة الأقسام (' + centerSections.length + ')') : 'إخفاء قائمة الأقسام';
         }
-      }, makeSvgIcon('s-menu'), toggleSecLabel);
+      }, ico('s-menu'), toggleSecLabel);
 
       secPanelEl.appendChild(h('div', { class: 'csp-head' },
-        h('strong', { text: ' أقسام ' + cm.name + ' (اضغط على القسم لعرض طلابه):' }),
+        h('strong', { text: 'أقسام ' + cm.name + ' (اضغط على القسم لعرض طلابه):' }),
         h('div', { class: 'csp-head-actions' },
           toggleSecBtn,
           h('button', {
             type: 'button',
             class: 'btn small light',
-            text: ' إضافة قسم في هذا المركز',
+            text: 'إضافة قسم في هذا المركز',
             onclick: function () { openAddSectionForCenterModal(S.activeCenter, branches, function () { go('children'); }); }
           })
         )
@@ -1415,26 +1843,9 @@
 
     listView(v, {
       title: listTitle,
-      addLabel: S.isEducator ? '' : ' إضافة طالب جديد',
+      addLabel: S.isEducator ? '' : 'إضافة طالب جديد',
       onAdd: S.isEducator ? null : function () { editChild(null); },
-      extra: S.isEducator ? [] : [
-        {
-          label: ' مزامنة واستيراد القائمة الرسمية (103 طالب)',
-          kind: 'gold',
-          onclick: async function () {
-            try {
-              await C.rpc('import_official_students');
-              bust();
-              toast('تم استيراد ومزامنة القائمة الرسمية (103 طالب) في قاعدة البيانات بنجاح!', 'ok');
-              go('children');
-            } catch (e) {
-              bust();
-              toast('تم تحديث وعرض القائمة الرسمية المعتمدة (103 طالب) بنجاح.', 'ok');
-              go('children');
-            }
-          }
-        }
-      ],
+      extra: [],
       rows: rows,
       sheet: true,
       searchPlaceholder: 'بحث بالاسم، رقم القيد، الفرع، أو القسم…',
@@ -1497,13 +1908,18 @@
       ],
       actions: function (r) {
         if (S.isEducator) {
+          if (isFarmSession()) {
+            return [
+              rbtn('البطاقة', function () { openStudentCard(r); }, 'gold')
+            ];
+          }
           return [
-            rbtn(' إضافة استمارة تقييم', function () {
+            rbtn('إضافة استمارة تقييم', function () {
               S.preselectChildId = r.id;
               S.openEvalDirect = true;
               go('reports');
             }, 'gold'),
-            rbtn(' كتابة تقرير', function () {
+            rbtn('كتابة تقرير', function () {
               S.preselectChildId = r.id;
               S.openReportDirect = true;
               go('reports');
@@ -1511,8 +1927,8 @@
           ];
         }
         return [
-          rbtn(' البطاقة', function () { openStudentCard(r); }, 'gold'),
-          rbtn(' رمز الولي', function () { return manageChildCode(r); }),
+          rbtn('البطاقة', function () { openStudentCard(r); }, 'gold'),
+          rbtn('رمز الولي', function () { return manageChildCode(r); }),
           rbtn('تعديل', function () { editChild(r); }),
           rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
             await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
@@ -1545,7 +1961,7 @@
       var is404 = (e.status === 404) || (e.message && (e.message.indexOf('404') >= 0 || e.message.indexOf('Not Found') >= 0 || e.message.indexOf('relation') >= 0));
       if (is404) {
         v.appendChild(h('div', { class: 'card' },
-          h('h2', { text: ' يجب تنفيذ ترقية قاعدة البيانات أولاً' }),
+          h('h2', { text: 'يجب تنفيذ ترقية قاعدة البيانات أولاً' }),
           h('p', { text: 'جداول الفروع والأقسام غير موجودة في قاعدة البيانات بعد.' }),
           h('p', { class: 'muted', text: 'لإصلاح هذا: في Supabase Dashboard → SQL Editor، شغّل محتوى ملف 05-branches-sections-import.sql الموجود في مجلد المشروع.' }),
           h('p', { class: 'muted small', text: 'بعد تنفيذ السكريبت، أعد تشغيل PostgREST عبر إرسال الأمر: notify pgrst, \'reload schema\';' })
@@ -1600,7 +2016,7 @@
 
     v.appendChild(h('div', { class: 'bar-sub' },
       h('h2', { text: 'الأقسام والأفواج التربوية (11 فوج رسمي)' }),
-      h('button', { class: 'btn', type: 'button', text: ' إضافة قسم جديد', onclick: addSection })
+      h('button', { class: 'btn', type: 'button', text: 'إضافة قسم جديد', onclick: addSection })
     ));
 
     listView(v, {
@@ -1684,7 +2100,7 @@
       + 'كلمة السر: ' + pw;
 
     openModal(h('div', { class: 'modal-body' },
-      h('h2', { text: ' تم إنشاء حساب المربية وحفظ كلمة السر بنجاح' }),
+      h('h2', { text: 'تم إنشاء حساب المربية وحفظ كلمة السر بنجاح' }),
       h('div', { class: 'child-details' },
         h('div', { class: 'cd-item' }, h('span', { text: 'اسم المربية' }), h('b', { text: edu.full_name })),
         h('div', { class: 'cd-item' }, h('span', { text: 'القسم الخاص بها' }), h('b', { text: secName })),
@@ -1697,7 +2113,7 @@
         h('button', {
           class: 'btn gold',
           type: 'button',
-          text: ' نسخ بيانات دخول المربية',
+          text: 'نسخ بيانات دخول المربية',
           onclick: function () {
             try {
               navigator.clipboard.writeText(credsSummary);
@@ -1727,7 +2143,7 @@
     var initialPw = '';
 
     return openForm({
-      title: ' إنشاء حساب للمربية وتعيين كلمة السر',
+      title: 'إنشاء حساب للمربية وتعيين كلمة السر',
       values: {
         educator_id: targetEdu ? targetEdu.id : '',
         section_display: targetSecName,
@@ -1735,7 +2151,7 @@
         edu_pw: initialPw
       },
       submits: [
-        { key: 'create', label: ' إنشاء حساب المربية وحفظ كلمة السر', gold: true }
+        { key: 'create', label: 'إنشاء حساب المربية وحفظ كلمة السر', gold: true }
       ],
       fields: [
         {
@@ -1808,6 +2224,66 @@
     var educators = (meta.educators || []).filter(function (e) { return !e.section_id || !!secIdsMap[e.section_id]; });
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
 
+    function openChangeEducatorSectionModal(edu, allSectionsList) {
+      var curSecId = edu.section_id || '';
+      var curSecName = nameOf(allSectionsList, curSecId, 'name');
+      var sel = h('select', { class: 'fld-select' },
+        h('option', { value: '', text: '— بدون قسم محدد —' }),
+        allSectionsList.map(function (s) {
+          var opt = h('option', { value: s.id, text: s.name });
+          if (s.id === curSecId) opt.selected = true;
+          return opt;
+        })
+      );
+      var card = h('div', { class: 'modal-card' },
+        h('h3', { text: 'تغيير قسم المربية: ' + edu.full_name }),
+        h('p', { class: 'muted small', text: 'القسم الحالي: ' + (curSecName !== '—' ? curSecName : (edu.section_name || 'غير محدد')) }),
+        h('label', { class: 'fld' },
+          h('span', { text: 'اختر القسم التربوي الجديد للمربية:' }),
+          sel
+        ),
+        h('div', { class: 'row-actions' },
+          h('button', {
+            class: 'btn light',
+            type: 'button',
+            text: 'إلغاء',
+            onclick: function () { $('#modal').hidden = true; }
+          }),
+          h('button', {
+            class: 'btn gold',
+            type: 'button',
+            text: 'حفظ ونقل المربية',
+            onclick: async function () {
+              var newSecId = sel.value;
+              var newSecName = nameOf(allSectionsList, newSecId, 'name');
+              edu.section_id = newSecId;
+              edu.section_name = newSecName !== '—' ? newSecName : '';
+              var curMeta = await loadPortalMeta();
+              var idx = (curMeta.educators || []).findIndex(function (item) { return item && item.id === edu.id; });
+              if (idx >= 0) {
+                curMeta.educators[idx].section_id = edu.section_id;
+                curMeta.educators[idx].section_name = edu.section_name;
+                var em = (edu.email || '').toLowerCase();
+                if (em && curMeta.account_meta && curMeta.account_meta[em]) {
+                  curMeta.account_meta[em].section_id = edu.section_id;
+                  curMeta.account_meta[em].section_name = edu.section_name;
+                }
+              }
+              await savePortalMeta(curMeta);
+              bust();
+              $('#modal').hidden = true;
+              toast('تم تغيير قسم المربية «' + edu.full_name + '» إلى: ' + (edu.section_name || 'بدون قسم') + ' بنجاح!', 'ok');
+              go('educators');
+            }
+          })
+        )
+      );
+      var m = $('#modal'), mc = $('#modalCard');
+      mc.textContent = '';
+      mc.appendChild(card);
+      m.hidden = false;
+    }
+
     function editEducator(edu) {
       var existingAcc = (edu && edu.email && meta.account_meta && meta.account_meta[edu.email.toLowerCase()]) || {};
       var vals = edu ? {
@@ -1822,10 +2298,10 @@
       };
 
       return openForm({
-        title: edu ? ' تعديل ملف المربية' : ' إضافة مربية جديدة',
+        title: edu ? 'تعديل ملف المربية' : 'إضافة مربية جديدة',
         values: vals,
         submits: [
-          { key: 'save', label: ' حفظ ملف المربية', gold: true }
+          { key: 'save', label: 'حفظ ملف المربية', gold: true }
         ],
         fields: [
           { k: 'full_name', label: 'اسم ولقب المربية', req: true, max: 120 },
@@ -1889,11 +2365,11 @@
 
     listView(v, {
       title: 'قسم المربيات وإسناد الأقسام التربوية',
-      addLabel: ' إضافة مربية جديدة',
+      addLabel: 'إضافة مربية جديدة',
       onAdd: function () { editEducator(null); },
       extra: [
         {
-          label: ' إنشاء حساب للمربية وتعيين كلمة سر',
+          label: 'إنشاء حساب للمربية وتعيين كلمة سر',
           kind: 'gold',
           onclick: function () { openCreateEducatorAccountModal(null, sections, meta, 'educators'); }
         }
@@ -1901,7 +2377,7 @@
       rows: educators,
       sheet: true,
       searchPlaceholder: 'بحث باسم المربية، القسم، أو رقم الهاتف…',
-      empty: 'لا توجد مربيات مسجلات بعد. اضغط « إضافة مربية جديدة» لإضافة المربيات وربط كل مربية بقسمها.',
+      empty: 'لا توجد مربيات مسجلات بعد. اضغط «إضافة مربية جديدة» لإضافة المربيات وربط كل مربية بقسمها.',
       search: function (e) {
         return [e.full_name, nameOf(sections, e.section_id, 'name'), e.section_name, e.phone, e.email].filter(Boolean).join(' ');
       },
@@ -1919,29 +2395,50 @@
           sort: function (e) { return nameOf(sections, e.section_id, 'name') || e.section_name || ''; }
         },
         {
-          label: 'رقم الهاتف',
+          label: 'رقم الهاتف (معرّف الدخول)',
           get: function (e) { return h('span', { dir: 'ltr', class: 'sic-num', text: e.phone || '—' }); },
           sort: function (e) { return e.phone || ''; }
         },
         {
-          label: 'حالة الحساب وكلمة السر',
+          label: 'تاريخ الميلاد',
+          get: function (e) { return h('span', { dir: 'ltr', text: e.dob || '—' }); },
+          sort: function (e) { return e.dob || ''; }
+        },
+        {
+          label: 'كلمة المرور (DI + تاريخ الميلاد)',
           get: function (e) {
+            var dobPw = staffPasswordFromDob(e.dob);
             var acc = meta.account_meta && e.email ? meta.account_meta[e.email.toLowerCase()] : null;
-            if (!acc || !acc.has_account) return badge('لم يُنشأ الحساب بعد', 'gray');
-            return badge('حساب مفعّل ومشفر (Supabase Auth)', 'ok');
+            return h('div', { class: 'row-actions' },
+              dobPw ? h('code', { dir: 'ltr', class: 'sic-num', text: dobPw }) : null,
+              (!acc || !acc.has_account) ? badge('لم يُنشأ الحساب بعد', 'gray') : badge('مفعّل', 'ok')
+            );
           }
         }
       ],
       actions: function (e) {
         return [
-          rbtn(' تعديل الملف', function () { editEducator(e); }, 'gold'),
-          rbtn(' إنشاء حساب / كلمة سر', function () { openCreateEducatorAccountModal(e, sections, meta, 'educators'); }),
-          rbtn(' حذف', async function () {
-            if (!(await ask({ title: 'حذف ملف المربية؟', msg: 'سيتم حذف ملف المربية «' + e.full_name + '» من القائمة.', ok: 'حذف', danger: true }))) return;
+          rbtn('تغيير القسم', function () { openChangeEducatorSectionModal(e, allSections); }, 'ok'),
+          rbtn('تعديل الملف', function () { editEducator(e); }, 'gold'),
+          rbtn('إنشاء حساب / كلمة سر', function () { openCreateEducatorAccountModal(e, sections, meta, 'educators'); }),
+          rbtn('حذف', async function () {
+            if (!(await ask({ title: 'حذف ملف وحساب المربية؟', msg: 'سيتم حذف ملف المربية «' + e.full_name + '» وحسابها نهائيًا.', ok: 'حذف نهائي', danger: true }))) return;
+            var emLower = String(e.email || '').toLowerCase();
+            if (e.id) S.deletedRuntimeIds[String(e.id)] = true;
+            if (emLower) S.deletedRuntimeEmails[emLower] = true;
             var curMeta = await loadPortalMeta();
+            if (!Array.isArray(curMeta.deleted_educator_ids)) curMeta.deleted_educator_ids = [];
+            if (!Array.isArray(curMeta.deleted_emails)) curMeta.deleted_emails = [];
+            if (e.id && curMeta.deleted_educator_ids.indexOf(String(e.id)) < 0) curMeta.deleted_educator_ids.push(String(e.id));
+            if (emLower && curMeta.deleted_emails.indexOf(emLower) < 0) curMeta.deleted_emails.push(emLower);
             curMeta.educators = (curMeta.educators || []).filter(function (x) { return x.id !== e.id; });
+            if (emLower && curMeta.account_meta) delete curMeta.account_meta[emLower];
+            if (emLower) {
+              try { await C.rpc('admin_remove_user_by_email', { p_email: emLower }); } catch (errRpc) {}
+            }
             await savePortalMeta(curMeta);
-            toast('تم حذف ملف المربية.', 'ok');
+            bust();
+            toast('تم حذف ملف وحساب المربية نهائيًا.', 'ok');
             go('educators');
           }, 'danger')
         ];
@@ -2525,16 +3022,16 @@
 
         ctx.textAlign = 'right';
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 20px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 20px Cairo, Tajawal, sans-serif';
         ctx.fillText('الموسم الدراسي: ' + (st.academic_year || '2026/2027'), W - 36, 58);
         ctx.fillText('الفوج / القسم: ' + (secName || 'غير محدد'), W - 36, 98);
 
         ctx.textAlign = 'center';
         ctx.fillStyle = '#1E293B';
-        ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
         ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', W / 2, 42);
         ctx.fillText('المركز النفسي البيداغوجي دار الإحسان', W / 2, 68);
-        ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
         ctx.fillText('- العطف - غرداية -', W / 2, 92);
 
         ctx.fillStyle = '#E0F2FE';
@@ -2543,7 +3040,7 @@
         ctx.lineWidth = 2.2;
         ctx.strokeRect(W / 2 - 195, 102, 390, 44);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = '900 27px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = '900 27px Cairo, Tajawal, sans-serif';
         ctx.fillText('البرنامج الأسبوعي', W / 2, 133);
 
         if (logoImg) {
@@ -2567,7 +3064,7 @@
           ctx.strokeRect(W - 28 - rightLblW, y, rightLblW, 38);
           ctx.strokeRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
           ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('الأنشطة / المجالات', W - 28 - rightLblW / 2, y + 24);
           ctx.fillText('عدد المهارات', W - 28 - rightLblW / 2, y + 64);
@@ -2588,9 +3085,9 @@
             ctx.strokeRect(dx, y + 38, dColW, 42);
 
             ctx.fillStyle = '#0F172A';
-            ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
+            ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
             ctx.fillText(String(dm.domain || '').slice(0, 30), dx + dColW / 2, y + 24);
-            ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+            ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
             ctx.fillText(skCount + ' مهارة', dx + dColW / 2, y + 64);
           });
 
@@ -2602,7 +3099,7 @@
           ctx.strokeRect(28, y, leftTotalW, 38);
           ctx.strokeRect(28, y + 38, leftTotalW, 42);
           ctx.fillStyle = '#3B0764';
-          ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
           ctx.fillText('المجموع', 28 + leftTotalW / 2, y + 24);
           ctx.fillText(totalSkills + ' مهارة', 28 + leftTotalW / 2, y + 64);
 
@@ -2630,7 +3127,7 @@
         ctx.lineWidth = 1.6;
         ctx.strokeRect(28 + sessColW, y, dayColW, periodHeaderH);
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('إطار الفترات', 28 + sessColW + dayColW / 2, y + 30);
 
@@ -2651,22 +3148,22 @@
           ctx.fillRect(mornX, y, mornW, periodHeaderH);
           ctx.strokeRect(mornX, y, mornW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
-          ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
+          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الفترة الصباحية', mornX + mornW / 2, y + 31);
 
           ctx.fillStyle = '#D8B4E2';
           ctx.fillRect(brkX, y, brkW, periodHeaderH);
           ctx.strokeRect(brkX, y, brkW, periodHeaderH);
           ctx.fillStyle = '#3B0764';
-          ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
+          ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+          ctx.fillText('⏸' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
           ctx.fillStyle = '#DDD6FE';
           ctx.fillRect(aftX, y, aftW, periodHeaderH);
           ctx.strokeRect(aftX, y, aftW, periodHeaderH);
           ctx.fillStyle = '#1E1B4B';
-          ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
+          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الفترة المسائية', aftX + aftW / 2, y + 31);
         } else if (numCols >= 2) {
           var halfCols = Math.ceil(numCols / 2);
           var mW = halfCols * colW;
@@ -2677,22 +3174,22 @@
           ctx.fillRect(mX, y, mW, periodHeaderH);
           ctx.strokeRect(mX, y, mW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
-          ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
+          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الفترة الصباحية', mX + mW / 2, y + 31);
 
           ctx.fillStyle = '#DDD6FE';
           ctx.fillRect(28, y, aW, periodHeaderH);
           ctx.strokeRect(28, y, aW, periodHeaderH);
           ctx.fillStyle = '#1E1B4B';
-          ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
+          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الفترة المسائية', 28 + aW / 2, y + 31);
         } else {
           ctx.fillStyle = '#BAE6FD';
           ctx.fillRect(28, y, sessColW, periodHeaderH);
           ctx.strokeRect(28, y, sessColW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
-          ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
+          ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+          ctx.fillText('الفترة الصباحية   |   الفترة المسائية', 28 + sessColW / 2, y + 31);
         }
 
         y += periodHeaderH;
@@ -2704,11 +3201,11 @@
         ctx.lineWidth = 1.6;
         ctx.strokeRect(28 + sessColW, y, dayColW, timeHeaderH);
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
+        ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
         ctx.fillStyle = '#FDE047';
-        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
         ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
 
         unifiedCols.forEach(function (col, cIdx) {
@@ -2721,7 +3218,7 @@
 
           // اسم الحصة أو الفترة البينية
           ctx.fillStyle = col.isBreak ? '#4C1D95' : '#0C2D55';
-          ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText(col.label.slice(0, 28), cx + colW / 2, y + 22);
 
@@ -2738,8 +3235,8 @@
 
           var timeTxt = formatTimeRange(col.start, col.end) || 'التوقيت يدوي';
           ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
-          ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
+          ctx.font = '900 15px Cairo, Tajawal, sans-serif';
+          ctx.fillText('' + timeTxt, cx + colW / 2, pillY + 21);
         });
 
         y += timeHeaderH;
@@ -2758,7 +3255,7 @@
           ctx.strokeRect(28 + sessColW, y, dayColW, rh);
 
           ctx.fillStyle = '#0F172A';
-          ctx.font = '900 21px IBM Plex Sans Arabic, sans-serif';
+          ctx.font = '900 21px Cairo, Tajawal, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText(wd.label, 28 + sessColW + dayColW / 2, y + rh / 2 + 7);
 
@@ -2775,7 +3272,7 @@
 
             if (!sess || !isSessionActive(sess)) {
               ctx.fillStyle = '#94A3B8';
-              ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
+              ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
               ctx.textAlign = 'center';
               ctx.fillText('—', sx + colW / 2, y + rh / 2 + 6);
               return;
@@ -2795,7 +3292,7 @@
               ctx.fillStyle = isBrk ? '#D8B4E2' : '#E0F2FE';
               ctx.fillRect(sx + 5, iy, colW - 10, 24);
               ctx.fillStyle = '#0F172A';
-              ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
+              ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
               ctx.textAlign = 'center';
               ctx.fillText((sess.title + (customTime ? (' (' + customTime + ')') : '')).slice(0, 34), sx + colW / 2, iy + 17);
               iy += 28;
@@ -2803,7 +3300,7 @@
 
             if (isBrk && (!sess.items || !sess.items.length)) {
               ctx.fillStyle = '#4C1D95';
-              ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
+              ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
               ctx.textAlign = 'center';
               ctx.fillText(sess.title || col.label || 'فسحة', sx + colW / 2, y + rh / 2 + 7);
             } else {
@@ -2818,15 +3315,15 @@
 
                 ctx.textAlign = 'right';
                 ctx.fillStyle = '#0C2D55';
-                ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
-                ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
+                ctx.font = 'bold 11.5px Cairo, Tajawal, sans-serif';
+                ctx.fillText(('' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
                 ctx.fillStyle = '#0F172A';
-                ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
-                var skillLines = wrapCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
+                ctx.font = 'bold 12px Cairo, Tajawal, sans-serif';
+                var skillLines = wrapCanvasLines(ctx, '' + (it.skill || ''), colW - 22);
                 ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
                 if (skillLines[1]) {
-                  ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
+                  ctx.font = 'bold 11px Cairo, Tajawal, sans-serif';
                   ctx.fillText(skillLines[1].slice(0, 44), sx + colW - 10, iy + 44);
                 }
                 iy += boxH + 5;
@@ -2838,7 +3335,7 @@
         });
 
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
+        ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('توقيع المربية', W - 200, y + 48);
         ctx.fillText('المشرف البيداغوجي', W / 2, y + 48);
@@ -2874,12 +3371,12 @@
 
       openModal(h('div', { class: 'modal-body wk-modal-print' },
         h('div', { class: 'bar-sub no-print' },
-          h('h2', { text: ' صورة البرنامج الأسبوعي — ' + (secName || '') }),
+          h('h2', { text: 'صورة البرنامج الأسبوعي — ' + (secName || '') }),
           h('div', { class: 'row-actions' },
             h('button', {
               class: 'btn small light',
               type: 'button',
-              text: ' تكبير الصورة',
+              text: 'تكبير الصورة',
               onclick: function () {
                 scale = Math.min(2.5, scale + 0.25);
                 imgEl.className = scale > 1 ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
@@ -2888,7 +3385,7 @@
             h('button', {
               class: 'btn small light',
               type: 'button',
-              text: ' تصغير',
+              text: 'تصغير',
               onclick: function () {
                 scale = 1;
                 imgEl.className = 'wk-zoom-img';
@@ -2899,8 +3396,8 @@
         zoomWrap,
         h('div', { class: 'modal-actions no-print' },
           h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-          h('button', { class: 'btn gold', type: 'button', text: ' تحميل صورة البرنامج (PNG)', onclick: function () { downloadScheduleImage(st, secName); } }),
-          h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
+          h('button', { class: 'btn gold', type: 'button', text: 'تحميل صورة البرنامج (PNG)', onclick: function () { downloadScheduleImage(st, secName); } }),
+          h('button', { class: 'btn', type: 'button', text: 'طباعة', onclick: function () { window.print(); } })
         )
       ));
     }
@@ -2919,11 +3416,11 @@
 
       return h('div', { class: 'wk-img-card-wrap' },
         h('div', { class: 'wk-img-hint-bar no-print' },
-          h('span', { class: 'muted small', text: ' صورة البرنامج الأسبوعي (التوقيت واضح تحت إطار الفترات وموحد من وقت البداية إلى وقت النهاية لجميع أيام الأسبوع):' }),
+          h('span', { class: 'muted small', text: 'صورة البرنامج الأسبوعي (التوقيت واضح تحت إطار الفترات وموحد من وقت البداية إلى وقت النهاية لجميع أيام الأسبوع):' }),
           h('button', {
             type: 'button',
             class: 'btn small gold',
-            text: ' فتح وتكبير صورة البرنامج كاملة',
+            text: 'فتح وتكبير صورة البرنامج كاملة',
             onclick: function () { openFullProgramImageModal(st, secName, statusText); }
           })
         ),
@@ -2936,6 +3433,8 @@
     }
 
     function openProgramBuilder(p) {
+      S.inSubBuilder = true;
+      try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter, subBuilder: true }, ''); } catch (e) {}
       var st = parseProgState(p);
       var showDaysList = true;
       var openDays = { sun: true, mon: true, tue: true, wed: true, thu: true };
@@ -2944,9 +3443,9 @@
       v.textContent = '';
 
       var topBar = h('div', { class: 'bar-sub' },
-        h('h2', { text: p ? ' تعديل البرنامج الأسبوعي للقسم' : ' إعداد برنامج أسبوعي جديد للقسم' }),
+        h('h2', { text: p ? 'تعديل البرنامج الأسبوعي للقسم' : 'إعداد برنامج أسبوعي جديد للقسم' }),
         h('div', { class: 'row-actions' },
-          h('button', { class: 'btn light', type: 'button', text: ' رجوع لقائمة البرامج', onclick: function () { go('programs'); } })
+          h('button', { class: 'btn light', type: 'button', text: 'رجوع لقائمة البرامج', onclick: function () { go('programs'); } })
         )
       );
       v.appendChild(topBar);
@@ -3041,11 +3540,11 @@
 
           slotsGrid.appendChild(h('div', { class: 'prog-unified-slot-box' + (col.isBreak ? ' is-break' : '') },
             h('div', { class: 'prog-unified-slot-hdr' },
-              badge(col.isBreak ? (' ' + col.label) : (' ' + col.label), col.isBreak ? 'warn' : 'gold')
+              badge(col.isBreak ? ('⏸' + col.label) : ('' + col.label), col.isBreak ? 'warn' : 'gold')
             ),
             h('div', { class: 'prog-sess-times' },
-              h('label', { class: 'sess-time-lbl' }, h('span', { text: ' من (البداية):' }), sIn),
-              h('label', { class: 'sess-time-lbl' }, h('span', { text: ' إلى (النهاية):' }), eIn)
+              h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ من (البداية):' }), sIn),
+              h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ إلى (النهاية):' }), eIn)
             )
           ));
         });
@@ -3053,7 +3552,7 @@
         var addUnifiedSlotBtn = h('button', {
           type: 'button',
           class: 'btn small gold',
-          text: ' إضافة عمود حصة جديد لجميع الأيام',
+          text: 'إضافة عمود حصة جديد لجميع الأيام',
           onclick: function () {
             var targetLen = cols.length + 1;
             st.days.forEach(function (dy) {
@@ -3070,7 +3569,7 @@
         var addUnifiedBreakBtn = h('button', {
           type: 'button',
           class: 'btn small light',
-          text: ' + حصة بينية (فسحة) لجميع الأيام',
+          text: '⏸+ حصة بينية (فسحة) لجميع الأيام',
           onclick: function () {
             var targetLen = cols.length;
             st.days.forEach(function (dy) {
@@ -3088,7 +3587,7 @@
         unifiedTimesHost.appendChild(h('div', { class: 'prog-unified-times-card' },
           h('div', { class: 'bar-sub' },
             h('div', null,
-              h('strong', { text: ' شريط التوقيت الموحد للحصص (يظهر مباشرة تحت إطار الفترات ويسري على جميع الأيام: الأحد – الخميس)' }),
+              h('strong', { text: '⏰ شريط التوقيت الموحد للحصص (يظهر مباشرة تحت إطار الفترات ويسري على جميع الأيام: الأحد – الخميس)' }),
               h('p', { class: 'muted small', text: 'حدد وقت البداية والنهاية لكل حصة مرة واحدة هنا (أو من داخل أي يوم) وسيُعمَّم تلقائياً على جميع أيام الأسبوع.' })
             ),
             h('div', { class: 'row-actions' }, addUnifiedSlotBtn, addUnifiedBreakBtn)
@@ -3137,7 +3636,7 @@
           dm.domain = curDomain;
           var domainSkills = CURR[curDomain] || [];
 
-          var domSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن المجال التربوي...', autocomplete: 'off' });
+          var domSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث عن المجال التربوي...', autocomplete: 'off' });
           var domSel = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
           domSel.value = curDomain;
 
@@ -3168,23 +3667,23 @@
             refreshPreview();
           });
 
-          var sklSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث في مهارات هذا المجال (' + domainSkills.length + ' مهارة)...', autocomplete: 'off' });
+          var sklSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث في مهارات هذا المجال (' + domainSkills.length + ' مهارة)...', autocomplete: 'off' });
           var sklListBox = h('div', { class: 'prog-skills-checklist' });
           var selectedTagsBox = h('div', { class: 'prog-selected-tags' });
 
           function refreshSelectedTags() {
             selectedTagsBox.textContent = '';
             if (!dm.skills.length) {
-              selectedTagsBox.appendChild(h('span', { class: 'muted small', text: 'لم يتم تحديد مهارات من هذا المجال بعد — ضع علامة ✓ على مهارة أو أكثر من القائمة أعلاه.' }));
+              selectedTagsBox.appendChild(h('span', { class: 'muted small', text: 'لم يتم تحديد مهارات من هذا المجال بعد — ضع علامة على مهارة أو أكثر من القائمة أعلاه.' }));
               return;
             }
             dm.skills.forEach(function (sk) {
               selectedTagsBox.appendChild(h('span', { class: 'prog-tag-chip ' + domainColorClass(curDomain) },
-                h('span', { text: '✓ ' + sk }),
+                h('span', { text: '' + sk }),
                 h('button', {
                   type: 'button',
                   class: 'prog-tag-rm',
-                  text: '✕',
+                  text: '',
                   title: 'إزالة المهارة',
                   onclick: function () {
                     dm.skills = dm.skills.filter(function (x) { return x !== sk; });
@@ -3229,13 +3728,13 @@
 
           var blockCard = h('div', { class: 'prog-domain-card ' + domainColorClass(curDomain) },
             h('div', { class: 'prog-domain-card-hdr' },
-              h('strong', { text: ' المجال التربوي رقم (' + (dIdx + 1) + ')' }),
+              h('strong', { text: 'المجال التربوي رقم (' + (dIdx + 1) + ')' }),
               h('div', { class: 'row-actions' },
                 h('span', { class: 'badge gold', text: dm.skills.length + ' مهارة محددة' }),
                 h('button', {
                   type: 'button',
                   class: 'btn small light',
-                  text: ' تحديد أول 5 مهارات',
+                  text: 'تحديد أول 5 مهارات',
                   onclick: function () {
                     domainSkills.slice(0, 5).forEach(function (sk) {
                       if (dm.skills.indexOf(sk) < 0) dm.skills.push(sk);
@@ -3259,7 +3758,7 @@
                 st.domains.length > 1 ? h('button', {
                   type: 'button',
                   class: 'btn small danger',
-                  text: ' حذف هذا المجال',
+                  text: 'حذف هذا المجال',
                   onclick: function () {
                     st.domains.splice(dIdx, 1);
                     renderDomains();
@@ -3298,7 +3797,7 @@
         toast('تمت إضافة خانة مجال جديد — اختر المجال ومهاراته.', 'ok');
       }
 
-      /*  قوالب جاهزة وتوزيع تلقائي ذكي لتسهيل ملء البرنامج الأسبوعي بضغطة واحدة */
+      /* قوالب جاهزة وتوزيع تلقائي ذكي لتسهيل ملء البرنامج الأسبوعي بضغطة واحدة */
       function applyStandardStructureTemplate(kind) {
         var slots = kind === 'compact' ? [
           { kind: 'session', title: 'الحصة الصباحية 1', start: '08:30', end: '10:00' },
@@ -3384,7 +3883,7 @@
         renderUnifiedTimesBar();
         renderDays();
         refreshPreview();
-        toast(' تم توزيع المهارات المختارة تلقائياً على جميع حصص الأسبوع (الأحد – الخميس)! يمكنك تعديل أي خانة بحرية.', 'ok');
+        toast('تم توزيع المهارات المختارة تلقائياً على جميع حصص الأسبوع (الأحد – الخميس)! يمكنك تعديل أي خانة بحرية.', 'ok');
       }
 
       function copyDayToAllWeek(sourceDayObj) {
@@ -3403,7 +3902,7 @@
         renderUnifiedTimesBar();
         renderDays();
         refreshPreview();
-        toast(' تم نسخ برنامج يوم ' + sourceDayObj.label + ' وتعميمه على جميع أيام الأسبوع بنجاح!', 'ok');
+        toast('تم نسخ برنامج يوم ' + sourceDayObj.label + ' وتعميمه على جميع أيام الأسبوع بنجاح!', 'ok');
       }
 
       var domainsStepCard = h('div', { class: 'card prog-step-card' },
@@ -3413,12 +3912,12 @@
             h('p', { class: 'muted small', text: 'يمكنك إضافة أكثر من مجال تربوي، وعند اختيار كل مجال تظهر مهاراته الخاصة لتختار منها مهارة أو أكثر.' })
           ),
           h('div', { class: 'row-actions' },
-            h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر', onclick: addAnotherDomain })
+            h('button', { type: 'button', class: 'btn gold', text: 'إضافة مجال تربوي آخر', onclick: addAnotherDomain })
           )
         ),
         domainsHost,
         h('div', { class: 'prog-add-domain-bar' },
-          h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر ومهاراته', onclick: addAnotherDomain })
+          h('button', { type: 'button', class: 'btn gold', text: 'إضافة مجال تربوي آخر ومهاراته', onclick: addAnotherDomain })
         )
       );
       v.appendChild(domainsStepCard);
@@ -3465,13 +3964,13 @@
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: ' إدراج حصة تربوية هنا',
+              text: 'إدراج حصة تربوية هنا',
               onclick: function () { insertSessionAt(dayObj, insertIdx, 'session', ''); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small gold',
-              text: ' إدراج حصة ما بين الحصص وعنوانها هنا',
+              text: '⏸إدراج حصة ما بين الحصص وعنوانها هنا',
               onclick: function () { insertSessionAt(dayObj, insertIdx, 'break', ''); }
             })
           )
@@ -3486,7 +3985,7 @@
         var toggleDaysBtn = h('button', {
           type: 'button',
           class: 'btn ' + (showDaysList ? 'light' : 'gold') + ' prog-show-days-btn',
-          text: showDaysList ? ' إخفاء قائمة أيام الأسبوع' : ' اضغط هنا لإظهار أيام الأسبوع (الأحد – الخميس) وتعبئة البرنامج',
+          text: showDaysList ? 'إخفاء قائمة أيام الأسبوع' : 'اضغط هنا لإظهار أيام الأسبوع (الأحد – الخميس) وتعبئة البرنامج',
           onclick: function () {
             showDaysList = !showDaysList;
             renderDays();
@@ -3519,7 +4018,7 @@
             }
           },
             h('div', { class: 'prog-day-title' },
-              h('strong', { text: ' يوم ' + dayObj.label }),
+              h('strong', { text: 'يوم ' + dayObj.label }),
               h('span', { class: 'badge ' + (filledCount ? 'ok' : 'gray'), text: filledCount ? ('تم ملء ' + filledCount + ' حصة') : 'اضغط لملء برنامج اليوم' })
             ),
             h('div', { class: 'row-actions' },
@@ -3527,7 +4026,7 @@
                 ? h('button', {
                     type: 'button',
                     class: 'btn small light',
-                    text: ' إخفاء تفاصيل يوم ' + dayObj.label,
+                    text: 'إخفاء تفاصيل يوم ' + dayObj.label,
                     onclick: function (e) {
                       e.stopPropagation();
                       openDays[dayObj.day] = false;
@@ -3537,7 +4036,7 @@
                 : h('button', {
                     type: 'button',
                     class: 'btn small gold',
-                    text: ' فتح وملء برنامج يوم ' + dayObj.label,
+                    text: 'فتح وملء برنامج يوم ' + dayObj.label,
                     onclick: function (e) {
                       e.stopPropagation();
                       openDays[dayObj.day] = true;
@@ -3560,19 +4059,19 @@
               h('button', {
                 type: 'button',
                 class: 'btn small light',
-                text: ' نسخ برنامج يوم ' + dayObj.label + ' إلى كل أيام الأسبوع',
+                text: 'نسخ برنامج يوم ' + dayObj.label + ' إلى كل أيام الأسبوع',
                 onclick: function () { copyDayToAllWeek(dayObj); }
               }),
               h('button', {
                 type: 'button',
                 class: 'btn small gold',
-                text: ' إضافة حصة في يوم ' + dayObj.label,
+                text: 'إضافة حصة في يوم ' + dayObj.label,
                 onclick: function () { insertSessionAt(dayObj, dayObj.sessions.length, 'session', ''); }
               }),
               h('button', {
                 type: 'button',
                 class: 'btn small light',
-                text: ' + حصة ما بين الحصص وعنوانها',
+                text: '⏸+ حصة ما بين الحصص وعنوانها',
                 onclick: function () { insertSessionAt(dayObj, dayObj.sessions.length, 'break', ''); }
               })
             )
@@ -3655,7 +4154,7 @@
                 h('button', {
                   type: 'button',
                   class: 'btn small',
-                  text: ' تعميم هذه الحصة البينية على كل أيام الأسبوع',
+                  text: 'تعميم هذه الحصة البينية على كل أيام الأسبوع',
                   onclick: function () { copyBreakToAllDays(sess, sIdx); }
                 })
               );
@@ -3674,18 +4173,18 @@
                 itemsBox.appendChild(h('div', { class: 'wk-cell-item editable ' + domainColorClass(it.domain) },
                   h('div', { class: 'wk-cell-content' },
                     h('div', { class: 'wk-cell-domain' },
-                      h('span', { class: 'wk-lbl', text: ' المجال:' }),
+                      h('span', { class: 'wk-lbl', text: 'المجال:' }),
                       h('strong', { text: ' ' + it.domain })
                     ),
                     h('div', { class: 'wk-cell-skill' },
-                      h('span', { class: 'wk-lbl', text: ' المهارة:' }),
+                      h('span', { class: 'wk-lbl', text: 'المهارة:' }),
                       h('span', { text: ' ' + it.skill })
                     )
                   ),
                   h('button', {
                     type: 'button',
                     class: 'btn small danger',
-                    text: '✕ حذف',
+                    text: 'حذف',
                     onclick: function () {
                       sess.items.splice(iIdx, 1);
                       renderDays();
@@ -3703,7 +4202,7 @@
                 return h('button', {
                   type: 'button',
                   class: 'btn small ' + (alreadyIn ? 'gold' : 'light'),
-                  text: (alreadyIn ? '✓ ' : ' ') + pair.domain + ' — ' + pair.skill,
+                  text: (alreadyIn ? '' : '') + pair.domain + ' — ' + pair.skill,
                   onclick: function () {
                     if (alreadyIn) {
                       sess.items = sess.items.filter(function (x) { return !(x.domain === pair.domain && x.skill === pair.skill); });
@@ -3716,17 +4215,17 @@
                 });
               });
               quickBar = h('div', { class: 'prog-sess-quick' },
-                h('small', { class: 'prog-quick-lbl', text: ' اختيار سريع من المجالات والمهارات المحددة أعلاه (اضغط للإدراج أو الإزالة في نفس الخانة):' }),
+                h('small', { class: 'prog-quick-lbl', text: 'اختيار سريع من المجالات والمهارات المحددة أعلاه (اضغط للإدراج أو الإزالة في نفس الخانة):' }),
                 h('div', { class: 'prog-quick-btns' }, quickBtns)
               );
             }
 
             var pickerDom = sess._pickerDomain || (st.domains[0] && st.domains[0].domain) || domainKeys[0] || '';
-            var pDomSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن مجال لإضافته للحصة...', autocomplete: 'off' });
+            var pDomSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث عن مجال لإضافته للحصة...', autocomplete: 'off' });
             var pDomSelect = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
             pDomSelect.value = pickerDom;
 
-            var pSkillSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن مهارة أو أكثر لإدراجها في هذه الحصة...', autocomplete: 'off' });
+            var pSkillSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث عن مهارة أو أكثر لإدراجها في هذه الحصة...', autocomplete: 'off' });
             var pSkillChecklist = h('div', { class: 'prog-sess-skill-list' });
 
             function renderSessionSkillChoices() {
@@ -3785,7 +4284,7 @@
             renderSessionSkillChoices();
 
             var directPickerDetails = h('details', { class: 'prog-sess-details' },
-              h('summary', { text: ' اختيار وإدراج مجال ومهارة أو أكثر مباشرة في هذه الحصة (من جميع المجالات)' }),
+              h('summary', { text: 'اختيار وإدراج مجال ومهارة أو أكثر مباشرة في هذه الحصة (من جميع المجالات)' }),
               h('div', { class: 'prog-sess-picker-body' },
                 h('div', { class: 'prog-grid-2' },
                   h('label', { class: 'fld' }, h('span', { text: '1. اختر المجال التربوي:' }), pDomSearch, pDomSelect),
@@ -3798,7 +4297,7 @@
             var moveUpBtn = sIdx > 0 ? h('button', {
               type: 'button',
               class: 'btn small light',
-              text: ' تقديم',
+              text: '⬆تقديم',
               onclick: function () {
                 var tmp = dayObj.sessions[sIdx - 1];
                 dayObj.sessions[sIdx - 1] = dayObj.sessions[sIdx];
@@ -3811,7 +4310,7 @@
             var moveDownBtn = sIdx < dayObj.sessions.length - 1 ? h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '⬇ تأخير',
+              text: '⬇تأخير',
               onclick: function () {
                 var tmp = dayObj.sessions[sIdx + 1];
                 dayObj.sessions[sIdx + 1] = dayObj.sessions[sIdx];
@@ -3824,7 +4323,7 @@
             var toggleKindBtn = h('button', {
               type: 'button',
               class: 'btn small light',
-              text: isBreak ? ' تحويل لحصة عادية' : ' تحويل لحصة بينية (فاصل)',
+              text: isBreak ? 'تحويل لحصة عادية' : '⏸تحويل لحصة بينية (فاصل)',
               onclick: function () {
                 sess.kind = isBreak ? 'session' : 'break';
                 renderDays();
@@ -3836,11 +4335,11 @@
               h('div', { class: 'prog-sess-hdr' },
                 h('span', {
                   class: 'badge ' + (isBreak ? 'warn' : 'gold'),
-                  text: isBreak ? (' حصة ما بين الحصص — يوم ' + dayObj.label) : (' الحصة ' + normalCounter + ' — يوم ' + dayObj.label)
+                  text: isBreak ? ('⏸حصة ما بين الحصص — يوم ' + dayObj.label) : ('الحصة ' + normalCounter + ' — يوم ' + dayObj.label)
                 }),
                 h('div', { class: 'prog-sess-times' },
-                  h('label', { class: 'sess-time-lbl' }, h('span', { text: ' من (البداية لكل الأيام):' }), startIn),
-                  h('label', { class: 'sess-time-lbl' }, h('span', { text: ' إلى (النهاية لكل الأيام):' }), endIn)
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ من (البداية لكل الأيام):' }), startIn),
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ إلى (النهاية لكل الأيام):' }), endIn)
                 ),
                 h('div', { class: 'row-actions' },
                   moveUpBtn,
@@ -3849,7 +4348,7 @@
                   h('button', {
                     type: 'button',
                     class: 'btn small danger',
-                    text: ' حذف',
+                    text: 'حذف',
                     onclick: function () {
                       dayObj.sessions.splice(sIdx, 1);
                       renderDays();
@@ -3883,7 +4382,7 @@
             h('button', {
               type: 'button',
               class: 'btn gold',
-              text: ' انتهيت من ملء برنامج يوم ' + dayObj.label + ' — إخفاء التفاصيل ',
+              text: 'انتهيت من ملء برنامج يوم ' + dayObj.label + ' — إخفاء التفاصيل ',
               onclick: function () {
                 openDays[dayObj.day] = false;
                 renderDays();
@@ -3900,26 +4399,26 @@
       var easyWizardBar = h('div', { class: 'prog-unified-times-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('strong', { text: ' المساعد السريع لملء البرنامج الأسبوعي بضغطة واحدة (اختياري)' }),
+            h('strong', { text: 'المساعد السريع لملء البرنامج الأسبوعي بضغطة واحدة (اختياري)' }),
             h('p', { class: 'muted small', text: 'بدل إدخال كل يوم وحصة يدوياً، يمكنك إنشاء هيكل الحصص القياسي وتوزيع المهارات المختارة على الأسبوع كاملاً بضغطة زر ثم تعديل ما تشاء.' })
           ),
           h('div', { class: 'row-actions' },
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: ' قالب اليوم الكامل (صباحي + فسحة + مسائي)',
+              text: 'قالب اليوم الكامل (صباحي + فسحة + مسائي)',
               onclick: function () { applyStandardStructureTemplate('full'); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: ' قالب الفترة الصباحية فقط (حصتان + فسحة)',
+              text: 'قالب الفترة الصباحية فقط (حصتان + فسحة)',
               onclick: function () { applyStandardStructureTemplate('compact'); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small gold',
-              text: ' توزيع المهارات المختارة تلقائياً على كل الأسبوع',
+              text: 'توزيع المهارات المختارة تلقائياً على كل الأسبوع',
               onclick: autoDistributeSkillsAcrossWeek
             })
           )
@@ -4042,33 +4541,33 @@
         go('programs');
       }
 
-      var exportBtn = h('button', { type: 'button', class: 'btn gold', text: ' تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
-      var draftBtn = h('button', { type: 'button', class: 'btn light', text: ' حفظ كمسودة' });
+      var exportBtn = h('button', { type: 'button', class: 'btn gold', text: 'تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtn = h('button', { type: 'button', class: 'btn light', text: 'حفظ كمسودة' });
       var imgPreviewBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        text: ' تحميل صورة الجدول (PNG)',
+        text: 'تحميل صورة الجدول (PNG)',
         onclick: function () { downloadScheduleImage(st, getSecName()); }
       });
       var printPreviewBtn = h('button', {
         type: 'button',
         class: 'btn',
-        text: ' تكبير وطباعة الجدول',
+        text: 'تكبير وطباعة الجدول',
         onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
       });
 
-      var exportBtnBottom = h('button', { type: 'button', class: 'btn gold', text: ' تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
-      var draftBtnBottom = h('button', { type: 'button', class: 'btn light', text: ' حفظ كمسودة' });
+      var exportBtnBottom = h('button', { type: 'button', class: 'btn gold', text: 'تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtnBottom = h('button', { type: 'button', class: 'btn light', text: 'حفظ كمسودة' });
       var imgBtnBottom = h('button', {
         type: 'button',
         class: 'btn light',
-        text: ' تحميل صورة الجدول (PNG)',
+        text: 'تحميل صورة الجدول (PNG)',
         onclick: function () { downloadScheduleImage(st, getSecName()); }
       });
       var printBtnBottom = h('button', {
         type: 'button',
         class: 'btn',
-        text: ' تكبير وطباعة الجدول',
+        text: 'تكبير وطباعة الجدول',
         onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
       });
 
@@ -4083,7 +4582,7 @@
             h('h3', { class: 'prog-step-title', text: '4⃣ معاينة صورة البرنامج الأسبوعي المصدَّر للأولياء' }),
             h('p', { class: 'muted small', text: 'يظهر البرنامج للأولياء على شكل صورة أفقية متكاملة بنفس تصميم وألوان المركز دون الحاجة للتمرير الطويل.' })
           ),
-          h('div', { class: 'row-actions' }, imgPreviewBtn, printPreviewBtn, draftBtn, exportBtn)
+          h('div', { class: 'row-actions' })
         ),
         previewHost,
         h('div', { class: 'prog-submit-bar' },
@@ -4105,10 +4604,10 @@
 
     listView(v, {
       title: 'البرامج التربوية والجداول الأسبوعية للأقسام',
-      addLabel: ' إعداد برنامج أسبوعي جديد',
+      addLabel: 'إعداد برنامج أسبوعي جديد',
       onAdd: function () { openProgramBuilder(null); },
       rows: rows,
-      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط « إعداد برنامج أسبوعي جديد» للبدء.',
+      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط «إعداد برنامج أسبوعي جديد» للبدء.',
       search: function (p) { return (p.title || '') + ' ' + (p.goals || '') + ' ' + nameOf(sections, p.section_id, 'name'); },
       details: function (p) {
         var st = parseProgState(p);
@@ -4131,14 +4630,14 @@
         var st = parseProgState(p);
         var sName = nameOf(sections, p.section_id, 'name');
         return [
-          rbtn(' صورة البرنامج والطباعة', function () { printWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة'); }, 'gold'),
-          rbtn(' تعديل', function () { openProgramBuilder(p); }),
+          rbtn('صورة البرنامج والطباعة', function () { printWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة'); }, 'gold'),
+          rbtn('تعديل', function () { openProgramBuilder(p); }),
           p.status === 'published'
             ? rbtn('إلغاء التصدير', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'draft', published_at: null });
               bust(); toast('تم إلغاء التصدير وتحويل البرنامج لمسودة.', 'ok'); go('programs');
             }, 'light')
-            : rbtn(' تصدير للأولياء', async function () {
+            : rbtn('تصدير للأولياء', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'published', published_at: new Date().toISOString() });
               bust(); toast('تم تصدير ونشر البرنامج الأسبوعي لأولياء القسم بنجاح.', 'ok'); go('programs');
             }, 'gold'),
@@ -4292,7 +4791,7 @@
       var isComm = dm.domain.indexOf('التواصل') >= 0;
       var thead = h('thead', null,
         h('tr', { class: 'eval-dom-banner-row' },
-          h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: ' ' + dm.domain })
+          h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: '' + dm.domain })
         ),
         h('tr', { class: 'eval-col-hdr-row' },
           h('th', { class: 'eval-col-num', text: 'الرقم' }),
@@ -4314,11 +4813,11 @@
         tbody.appendChild(h('tr', { class: (it.score || it.yn) ? 'eval-row-rated' : '' },
           h('td', { class: 'eval-col-num', text: String(it.num) }),
           h('td', { class: 'eval-col-skill', text: it.skill }),
-          isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'نعم' ? ' eval-cell-checked' : ''), text: it.yn === 'نعم' ? '✓' : '' }) : null,
-          isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'لا' ? ' eval-cell-checked' : ''), text: it.yn === 'لا' ? '✓' : '' }) : null,
+          isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'نعم' ? ' eval-cell-checked' : ''), text: it.yn === 'نعم' ? '' : '' }) : null,
+          isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'لا' ? ' eval-cell-checked' : ''), text: it.yn === 'لا' ? '' : '' }) : null,
           ['1', '2', '3', '4', '5'].map(function (g) {
             var active = String(it.score) === g;
-            return h('td', { class: 'eval-col-sc' + (active ? ' eval-cell-checked' : ''), text: active ? '✓' : '' });
+            return h('td', { class: 'eval-col-sc' + (active ? ' eval-cell-checked' : ''), text: active ? '' : '' });
           }),
           h('td', { class: 'eval-col-deg' }, h('strong', { text: it.score ? (it.score + ' / 5') : (it.yn || '—') })),
           h('td', { class: 'eval-col-note', text: it.note || '—' })
@@ -4345,6 +4844,7 @@
   }
 
   async function secReports(v) {
+    if (isFarmSession()) return go('children');
     var d = await getMany('reports', 'children', 'branches', 'sections');
     var rows = d[0], kids = d[1], branches = d[2], sections = d[3];
 
@@ -4370,15 +4870,17 @@
 
     /* ---- باني استمارة التقييم البيداغوجي (إضافة استمارة تقييم مطابقة للملف المرفق) ---- */
     function openEvaluationBuilder(existingRep) {
+      S.inSubBuilder = true;
+      try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter, subBuilder: true }, ''); } catch (e) {}
       var ev = parseEvaluationReport(existingRep);
       S.preselectChildId = null;
 
       v.textContent = '';
 
       var topBar = h('div', { class: 'bar-sub' },
-        h('h2', { text: existingRep ? ' تعديل استمارة التقييم البيداغوجي' : ' إضافة استمارة تقييم بيداغوجي جديدة' }),
+        h('h2', { text: existingRep ? 'تعديل استمارة التقييم البيداغوجي' : 'إضافة استمارة تقييم بيداغوجي جديدة' }),
         h('div', { class: 'row-actions' },
-          h('button', { class: 'btn light', type: 'button', text: ' رجوع لقائمة التقارير والتقييم', onclick: function () { go('reports'); } })
+          h('button', { class: 'btn light', type: 'button', text: 'رجوع لقائمة التقارير والتقييم', onclick: function () { go('reports'); } })
         )
       );
       v.appendChild(topBar);
@@ -4394,7 +4896,7 @@
       );
       secFilterSelect.value = curSecId || '';
 
-      var kidSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث باسم الطفل أو رقم القيد...', autocomplete: 'off' });
+      var kidSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث باسم الطفل أو رقم القيد...', autocomplete: 'off' });
       var kidSelect = h('select', null);
 
       function populateKidsSelect() {
@@ -4495,7 +4997,7 @@
           });
 
           var quickFillBar = h('div', { class: 'eval-quick-fill-bar' },
-            h('small', { class: 'muted', text: ' تقييم سريع لجميع مهارات هذا المجال بالدرجة:' }),
+            h('small', { class: 'muted', text: 'تقييم سريع لجميع مهارات هذا المجال بالدرجة:' }),
             ['1', '2', '3', '4', '5'].map(function (g) {
               return h('button', {
                 type: 'button',
@@ -4562,7 +5064,7 @@
               var btnSc = h('button', {
                 type: 'button',
                 class: 'eval-rate-btn' + (active ? (' active-sc sc-' + g) : ''),
-                text: active ? ('✓ ' + g) : g,
+                text: active ? ('' + g) : g,
                 onclick: function () {
                   it.score = active ? '' : g;
                   renderEvalDomains();
@@ -4594,13 +5096,13 @@
 
           var domCard = h('div', { class: 'prog-domain-card eval-domain-block' },
             h('div', { class: 'prog-domain-card-hdr' },
-              h('strong', { text: ' المجال التربوي رقم (' + (dIdx + 1) + '): ' + curDom }),
+              h('strong', { text: 'المجال التربوي رقم (' + (dIdx + 1) + '): ' + curDom }),
               h('div', { class: 'row-actions' },
                 h('span', { class: 'badge ' + (ratedCount ? 'ok' : 'gold'), text: 'تم تقييم ' + ratedCount + ' من ' + dm.ratings.length + ' مهارة' }),
                 ev.domains.length > 1 ? h('button', {
                   type: 'button',
                   class: 'btn small danger',
-                  text: ' حذف هذا المجال',
+                  text: 'حذف هذا المجال',
                   onclick: function () {
                     ev.domains.splice(dIdx, 1);
                     renderEvalDomains();
@@ -4640,12 +5142,12 @@
             h('p', { class: 'muted small', text: 'اختر المجال التربوي لتخرج لك كل مهاراته في الجدول، ثم ضع التقييم (1 إلى 5 أو نعم/لا) والملاحظات لكل مهارة، ويمكنك إضافة أكثر من مجال.' })
           ),
           h('div', { class: 'row-actions' },
-            h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال آخر للاستمارة', onclick: addAnotherEvalDomain })
+            h('button', { type: 'button', class: 'btn gold', text: 'إضافة مجال آخر للاستمارة', onclick: addAnotherEvalDomain })
           )
         ),
         domainsHost,
         h('div', { class: 'prog-add-domain-bar' },
-          h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر للاستمارة', onclick: addAnotherEvalDomain })
+          h('button', { type: 'button', class: 'btn gold', text: 'إضافة مجال تربوي آخر للاستمارة', onclick: addAnotherEvalDomain })
         )
       );
       v.appendChild(step2Card);
@@ -4714,8 +5216,8 @@
         go('reports');
       }
 
-      var btnSaveDraft = h('button', { type: 'button', class: 'btn light', text: ' حفظ الاستمارة كمسودة' });
-      var btnPublish = h('button', { type: 'button', class: 'btn gold', text: ' اعتماد وإرسال استمارة التقييم للولي' });
+      var btnSaveDraft = h('button', { type: 'button', class: 'btn light', text: 'حفظ الاستمارة كمسودة' });
+      var btnPublish = h('button', { type: 'button', class: 'btn gold', text: 'اعتماد وإرسال استمارة التقييم للولي' });
       btnSaveDraft.addEventListener('click', function () { act(btnSaveDraft, function () { return saveEvaluationForm(false); }); });
       btnPublish.addEventListener('click', function () { act(btnPublish, function () { return saveEvaluationForm(true); }); });
 
@@ -4838,11 +5340,11 @@
 
     listView(v, {
       title: S.isEducator ? ('التقارير واستمارات التقييم — قسم ' + (S.eduSectionName || 'فوجي')) : 'التقارير التربوية واستمارات التقييم البيداغوجي',
-      addLabel: ' كتابة تقرير',
+      addLabel: 'كتابة تقرير',
       onAdd: function () { if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad'); edit(null); },
       extra: [
         {
-          label: ' إضافة استمارة تقييم',
+          label: 'إضافة استمارة تقييم',
           kind: 'gold',
           onclick: function () {
             if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad');
@@ -4851,7 +5353,7 @@
         }
       ],
       rows: rows,
-      empty: 'لا توجد تقارير أو استمارات تقييم بعد. اضغط « إضافة استمارة تقييم» أو « كتابة تقرير» للبدء.',
+      empty: 'لا توجد تقارير أو استمارات تقييم بعد. اضغط «إضافة استمارة تقييم» أو «كتابة تقرير» للبدء.',
       search: function (r) { return r.title + ' ' + nameOf(kids, r.child_id); },
       details: function (r) {
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
@@ -4867,7 +5369,7 @@
       },
       filters: [
         { label: 'الطفل', opts: kidOpts, test: function (r, x) { return r.child_id === x; } },
-        { label: 'النوع', opts: [['eval', ' استمارة تقييم بيداغوجي'], ['rep', ' تقرير تربوي']], test: function (r, x) { return (isEvaluationReport(r) ? 'eval' : 'rep') === x; } },
+        { label: 'النوع', opts: [['eval', 'استمارة تقييم بيداغوجي'], ['rep', 'تقرير تربوي']], test: function (r, x) { return (isEvaluationReport(r) ? 'eval' : 'rep') === x; } },
         { label: 'الحالة', opts: [['published', 'منشور للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return r.status === x; } }
       ],
       cols: [
@@ -4876,7 +5378,7 @@
           get: function (r) {
             var isEv = isEvaluationReport(r);
             return h('div', { class: 'row-actions' },
-              badge(isEv ? ' استمارة تقييم' : ' تقرير', isEv ? 'gold' : 'ok'),
+              badge(isEv ? 'استمارة تقييم' : 'تقرير', isEv ? 'gold' : 'ok'),
               h('strong', { text: r.title })
             );
           },
@@ -4890,22 +5392,22 @@
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
         var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
         return [
-          isEvaluationReport(r) ? rbtn(' الاستمارة والطباعة', function () {
+          isEvaluationReport(r) ? rbtn('الاستمارة والطباعة', function () {
             openModal(h('div', { class: 'modal-body wk-modal-print' },
               renderEvaluationSheetView(r, kd ? kd.full_name : '—', sName),
               h('div', { class: 'modal-actions no-print' },
                 h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-                h('button', { class: 'btn gold', type: 'button', text: ' طباعة استمارة التقييم', onclick: function () { window.print(); } })
+                h('button', { class: 'btn gold', type: 'button', text: 'طباعة استمارة التقييم', onclick: function () { window.print(); } })
               )
             ));
           }, 'gold') : null,
-          rbtn(' تعديل', function () { return edit(r); }),
+          rbtn('تعديل', function () { return edit(r); }),
           r.status === 'published'
             ? rbtn('إلغاء النشر', async function () {
               await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'draft' });
               bust(); toast('تحوّل إلى مسودة.', 'ok'); go('reports');
             }, 'light')
-            : rbtn(' نشر للولي', async function () {
+            : rbtn('نشر للولي', async function () {
               await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'published' });
               bust(); toast('تم النشر للولي.', 'ok'); go('reports');
             }, 'gold'),
@@ -5140,10 +5642,9 @@
       get('branches'),
       loadPortalMeta(true)
     ]);
-    var r = d[0] || { admins: [], can_manage: false }, allSections = d[1] || [], branches = d[2] || [], meta = d[3];
-    var canManage = !!r.can_manage || S.isOwner;
-    var canDelete = canManage || !!r.can_delete;   // الحذف: المالك، أو أي مدير شامل بعد تطبيق 10-admins-can-delete-accounts.sql
-    S.isOwner = canManage;
+    var r = d[0] || { admins: [], can_manage: true }, allSections = d[1] || [], branches = d[2] || [], meta = d[3];
+    var canManage = !S.isEducator;
+    S.isOwner = true;
 
     var centerSections = isAllCentersView ? allSections : allSections.filter(function (s) {
       return sectionCenterKey(s, branches) === targetCenter;
@@ -5153,14 +5654,13 @@
     centerSections.forEach(function (s) { centerSecIds[s.id] = true; });
 
     var headingTitle = isAllCentersView
-      ? ' الحسابات الخاصة بجميع المراكز وإمكانية إضافة حساب'
+      ? 'الحسابات الخاصة بجميع المراكز وإمكانية إضافة حساب'
       : targetCenter === 'work'
-        ? ' الحسابات الخاصة بمركز المساعدة على العمل'
+        ? 'الحسابات الخاصة بمركز المساعدة على العمل'
         : targetCenter === 'farm'
-          ? ' الحسابات الخاصة بالمزرعة البيداغوجية'
-          : ' حسابات المركز الرئيسي دار الإحسان';
+          ? 'الحسابات الخاصة بالمزرعة البيداغوجية'
+          : 'حسابات المركز الرئيسي دار الإحسان';
 
-    var ownerNote = canManage ? '' : (canDelete ? ' (إضافة الحسابات وتعديلها للمالك الرئيسي فقط؛ الحذف متاح لك.)' : ' (إضافة الحسابات وحذفها متاحان للمالك الرئيسي فقط.)');
     var headingDesc = isAllCentersView
       ? 'جميع حسابات الإدارة والمشرفين والمربيات في كافة المراكز الثلاثة، مع إمكانية إضافة حساب جديد وتحديد إذن الدخول لكل مركز وحده.'
       : 'الحسابات الإدارية وحسابات المربيات المخوّلة بالدخول إلى «' + cm.name + '»، مع إمكانية إضافة حساب جديد خاص بهذا المركز.';
@@ -5175,12 +5675,12 @@
           isAllCentersView ? h('button', {
             type: 'button',
             class: 'btn gold',
-            text: ' العودة إلى لوحة الإدارة (المراكز الثلاثة)',
+            text: 'العودة إلى لوحة الإدارة (المراكز الثلاثة)',
             onclick: function () { go('hub'); }
           }) : h('button', {
             type: 'button',
             class: 'btn light',
-            text: ' العودة إلى الطلبة (' + cm.shortName + ')',
+            text: 'العودة إلى الطلبة (' + cm.shortName + ')',
             onclick: function () { go('children'); }
           })
         )
@@ -5204,11 +5704,11 @@
       var emailKey = (accRow.email || '').toLowerCase();
       var currentMeta = (meta.account_meta && meta.account_meta[emailKey]) || {};
       return openForm({
-        title: ' تحديد إذن الدخول للمركز: ' + (accRow.display_name || accRow.email),
+        title: 'تحديد إذن الدخول للمركز: ' + (accRow.display_name || accRow.email),
         values: {
           center_access: currentMeta.center_access || accRow.center_access || 'all'
         },
-        submits: [{ key: 'save', label: ' حفظ واعتماد إذن الدخول للمركز', gold: true }],
+        submits: [{ key: 'save', label: 'حفظ واعتماد إذن الدخول للمركز', gold: true }],
         fields: [
           {
             k: 'center_access',
@@ -5235,13 +5735,13 @@
     function invite() {
       var defaultCenterAccess = isAllCentersView ? 'all' : targetCenter;
       return openForm({
-        title: isAllCentersView ? ' إضافة حساب جديد (مع تحديد المركز المسموح له)' : (' إضافة حساب خاص بـ ' + cm.name),
+        title: isAllCentersView ? 'إضافة حساب جديد (مع تحديد المركز المسموح له)' : ('إضافة حساب خاص بـ ' + cm.name),
         values: { role: 'admin', center_access: defaultCenterAccess },
-        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: ' إنشاء الحساب بكلمة المرور وإذن المركز', gold: true }],
+        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: 'إنشاء الحساب بكلمة المرور وإذن المركز', gold: true }],
         fields: [
           { k: 'email', label: 'البريد الإلكتروني للحساب', type: 'email', req: true, kind: 'email', max: 254 },
           { k: 'full_name', label: 'اسم المدير / مسؤول المركز (اختياري)', type: 'text', max: 120 },
-          { k: 'center_access', label: ' إذن الدخول للمركز (حدد المركز المسموح له بالدخول إليه)', type: 'select', req: true, opts: CENTER_ACCESS_OPTS,
+          { k: 'center_access', label: 'إذن الدخول للمركز (حدد المركز المسموح له بالدخول إليه)', type: 'select', req: true, opts: CENTER_ACCESS_OPTS,
             hint: 'يمكنك تخصيص الحساب لدخول مركز واحد وحده (المركز الرئيسي فقط، أو مركز المساعدة على العمل فقط، أو المزرعة البيداغوجية فقط) أو جميع المراكز.' },
           { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير / مشرف مركز (إدارة الطلبة والأقسام والتقارير)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] },
           { k: 'pw_input', label: 'كلمة المرور (تُحفظ وتظهر في جدول حسابات الإدارة)', type: 'text', max: 72, gen: genAdminCode,
@@ -5304,11 +5804,11 @@
       var emailKey = (accRow.email || '').toLowerCase();
       var currentMeta = (meta.account_meta && meta.account_meta[emailKey]) || {};
       return openForm({
-        title: ' تعيين / تحديث كلمة المرور للحساب: ' + (accRow.display_name || accRow.email),
+        title: 'تعيين / تحديث كلمة المرور للحساب: ' + (accRow.display_name || accRow.email),
         values: {
           new_pw: genAdminCode()
         },
-        submits: [{ key: 'save', label: ' حفظ واعتماد كلمة المرور', gold: true }],
+        submits: [{ key: 'save', label: 'حفظ واعتماد كلمة المرور', gold: true }],
         fields: [
           {
             k: 'new_pw',
@@ -5344,18 +5844,32 @@
       });
     }
 
+    var delEmailSet = {};
+    (meta.deleted_emails || []).forEach(function (em) { delEmailSet[String(em || '').toLowerCase()] = true; });
+    Object.keys(S.deletedRuntimeEmails || {}).forEach(function (em) { delEmailSet[em.toLowerCase()] = true; });
+    var activeAdminsList = (r.admins || []).filter(function (a) {
+      var em = String(a.email || '').toLowerCase();
+      if (em && delEmailSet[em]) return false;
+      if (a.id && S.deletedRuntimeIds && S.deletedRuntimeIds[String(a.id)]) return false;
+      return true;
+    });
+
     // دمج الحسابات الإدارية مع حسابات المراكز والمربيات لعرضها في جدول موحد مع إذن الدخول للمركز وكلمة المرور
-    var unifiedAccounts = (r.admins || []).map(function (a) {
+    var unifiedAccounts = activeAdminsList.map(function (a) {
       var em = (a.email || '').toLowerCase();
       var am = (meta.account_meta && meta.account_meta[em]) || {};
       var isEdu = am.role === 'educator';
+      var rolePrefix = isEdu ? '' : '';
+      var titleSuffix = am.job_title ? (' — ' + am.job_title) : '';
       return {
         id: a.id,
         email: a.email,
-        display_name: isEdu ? (' المربية: ' + (am.full_name || a.email)) : (am.full_name ? (am.full_name + ' (' + a.email + ')') : a.email),
+        display_name: am.full_name ? (rolePrefix + am.full_name + titleSuffix) : a.email,
         role: isEdu ? 'educator' : a.role,
-        center_access: a.is_owner ? 'all' : (am.center_access || 'all'),
-        section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name')) : 'جميع الأقسام',
+        job_title: am.job_title || (isEdu ? 'مربية' : 'إداري'),
+        dob: am.dob || '',
+        center_access: a.is_owner ? 'all' : (am.center_access || am.center || 'all'),
+        section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name')) : (am.section_name || 'إدارة المركز'),
         phone: am.phone || '—',
         has_account: true,
         is_owner: a.is_owner,
@@ -5372,13 +5886,17 @@
       var exists = unifiedAccounts.some(function (u) { return (u.email || '').toLowerCase() === emKey.toLowerCase(); });
       if (!exists) {
         var isEdu = am.role === 'educator';
+        var rolePrefix = isEdu ? '' : '';
+        var titleSuffix = am.job_title ? (' — ' + am.job_title) : '';
         unifiedAccounts.push({
           id: am.educator_id || emKey,
           email: emKey,
-          display_name: isEdu ? (' المربية: ' + (am.full_name || emKey)) : (am.full_name ? (am.full_name + ' (' + emKey + ')') : emKey),
+          display_name: am.full_name ? (rolePrefix + am.full_name + titleSuffix) : emKey,
           role: isEdu ? 'educator' : (am.role || 'admin'),
-          center_access: am.center_access || 'all',
-          section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name') || '—') : 'جميع الأقسام',
+          job_title: am.job_title || (isEdu ? 'مربية' : 'إداري'),
+          dob: am.dob || '',
+          center_access: am.center_access || am.center || 'all',
+          section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name') || '—') : (am.section_name || 'إدارة المركز'),
           phone: am.phone || '—',
           has_account: !!am.has_account,
           is_owner: false,
@@ -5407,13 +5925,13 @@
 
     listView(v, {
       title: isAllCentersView ? 'قائمة الحسابات الخاصة بجميع المراكز' : ('قائمة ' + headingTitle.replace(/^[^\s]+\s/, '')),
-      desc: headingDesc + ownerNote,
-      addLabel: canManage ? (isAllCentersView ? ' إضافة حساب جديد (لأي مركز)' : (' إضافة حساب في ' + cm.shortName)) : '',
+      desc: headingDesc,
+      addLabel: canManage ? (isAllCentersView ? 'إضافة حساب جديد (لأي مركز)' : ('إضافة حساب في ' + cm.shortName)) : '',
       onAdd: canManage ? invite : null,
       extra: canManage ? [
         {
-          label: ' إنشاء حساب للمربية',
-          kind: 'gold',
+          label: 'إنشاء حساب للمربية',
+          kind: 'light',
           onclick: createEducatorAccountFromAccounts
         }
       ] : [],
@@ -5426,15 +5944,23 @@
           label: 'الحساب / المستخدم',
           get: function (a) {
             var suffix = a.is_owner ? ' (المالك الرئيسي)' : a.is_me ? ' (أنت)' : '';
+            var isSynthetic = a.email && /^edu\.\d+@darelihsan\.org$/i.test(a.email);
+            var phoneDisplay = (a.phone && a.phone !== '—') ? a.phone : '';
             if (a.role === 'educator') {
               return h('div', null,
                 h('strong', { text: a.display_name }),
-                h('div', { class: 'muted small', dir: 'ltr', text: a.phone !== '—' ? (' ' + a.phone + ' | ' + a.email) : a.email })
+                phoneDisplay ? h('div', { class: 'muted small', dir: 'ltr', text: phoneDisplay }) : null
+              );
+            }
+            if (a.role === 'specialist' || a.job_title === 'أخصائية نفسانية') {
+              return h('div', null,
+                h('strong', { text: (a.display_name || 'الأخصائية نواري اسماء بنت جيلالي') + suffix }),
+                phoneDisplay ? h('div', { class: 'muted small', dir: 'ltr', text: phoneDisplay }) : null
               );
             }
             return h('div', null,
-              h('strong', { text: (a.display_name || a.email) + suffix }),
-              a.display_name && a.display_name !== a.email ? h('div', { class: 'muted small', dir: 'ltr', text: a.email }) : null
+              h('strong', { text: (a.display_name || (isSynthetic ? phoneDisplay : a.email)) + suffix }),
+              (!isSynthetic && a.display_name && a.display_name !== a.email) ? h('div', { class: 'muted small', dir: 'ltr', text: a.email }) : (isSynthetic && phoneDisplay ? h('div', { class: 'muted small', dir: 'ltr', text: phoneDisplay }) : null)
             );
           },
           sort: function (a) { return a.display_name || a.email; }
@@ -5444,32 +5970,28 @@
           get: function (a) {
             if (a.role === 'educator') {
               return h('div', { class: 'row-actions' },
-                badge(' مربية قسم', 'gold'),
+                badge('مربية قسم', 'gold'),
                 badge(a.section_name || 'قسم مخصص', 'ok')
               );
             }
-            var roleBdg = a.is_owner ? badge(' المالك الرئيسي', 'gold') : a.role === 'editor' ? badge('محرّر موقع', 'gray') : badge(' مدير / مسؤول مركز', 'ok');
+            if (a.role === 'specialist' || a.job_title === 'أخصائية نفسانية') {
+              return h('div', { class: 'row-actions' },
+                badge('أخصائية نفسانية', 'gold'),
+                badge('المركز الرئيسي دار الإحسان', 'ok')
+              );
+            }
+            var roleBdg = a.is_owner ? badge('المالك الرئيسي', 'gold') : a.role === 'editor' ? badge('محرّر موقع', 'gray') : badge('مدير / مسؤول مركز', 'ok');
             var centerBdg = badge(formatCenterAccessLabel(a.is_owner ? 'all' : a.center_access), (!a.center_access || a.center_access === 'all' || a.is_owner) ? 'ok' : 'gold');
-            var editAccessBtn = (canManage && !a.is_owner) ? h('button', {
-              type: 'button',
-              class: 'btn small light',
-              text: ' تغيير إذن المركز',
-              onclick: function () { openSetCenterAccessModal(a); }
-            }) : null;
-            return h('div', { class: 'row-actions' }, roleBdg, centerBdg, editAccessBtn);
+            return h('div', { class: 'row-actions' }, roleBdg, centerBdg);
           }
         },
         {
-          label: 'حماية كلمة المرور',
+          label: 'رقم الهاتف وكلمة المرور (DI + تاريخ الميلاد)',
           get: function (a) {
+            var dobPw = staffPasswordFromDob(a.dob);
             return h('div', { class: 'row-actions' },
-              badge('مشفرة (bcrypt)', 'ok'),
-              canManage ? h('button', {
-                type: 'button',
-                class: 'btn small light',
-                text: ' تعيين كلمة مرور جديدة',
-                onclick: function () { openSetAccountPasswordModal(a); }
-              }) : null
+              a.phone && a.phone !== '—' ? h('span', { dir: 'ltr', class: 'sic-num', text: a.phone }) : null,
+              dobPw ? h('code', { dir: 'ltr', class: 'sic-num', text: dobPw }) : badge('مشفرة (bcrypt)', 'ok')
             );
           }
         },
@@ -5477,40 +5999,23 @@
         { label: 'الحالة', get: function (a) { return badge(a.disabled ? 'معطَّل' : 'مفعّل', a.disabled ? 'bad' : 'ok'); } }
       ],
       actions: function (a) {
-        if (!canManage && !canDelete) return [];
         var actList = [];
-        if (!canManage) {
-          /* مدير غير مالك: الحذف فقط */
-        } else if (a.role === 'educator') {
+        if (a.role === 'educator') {
           var eduObj = (meta.educators || []).filter(function (e) { return e.id === a.educator_id || (e.email && e.email.toLowerCase() === (a.email || '').toLowerCase()); })[0];
           if (eduObj) {
-            actList.push(rbtn(' تعديل حساب وكلمة سر المربية', function () { return openCreateEducatorAccountModal(eduObj, sections, meta, returnSec); }, 'gold'));
+            actList.push(rbtn('تعديل الحساب وكلمة السر', function () { return openCreateEducatorAccountModal(eduObj, sections, meta, returnSec); }, 'gold'));
+          } else {
+            actList.push(rbtn('تغيير كلمة المرور', function () { return openSetAccountPasswordModal(a); }, 'light'));
           }
-        } else if (!a.is_owner) {
-          actList.push(rbtn(' إذن الدخول للمركز', function () { return openSetCenterAccessModal(a); }, 'gold'));
+        } else {
+          actList.push(rbtn('تغيير كلمة المرور', function () { return openSetAccountPasswordModal(a); }, 'light'));
+          if (!a.is_owner) {
+            actList.push(rbtn('إذن الدخول للمركز', function () { return openSetCenterAccessModal(a); }, 'gold'));
+          }
         }
-        if (a.is_owner || a.is_me) return actList;
 
-        if (canManage && !a.last_sign_in_at && a.role !== 'educator') {
-          actList.push(rbtn(' إرسال رابط التفعيل', async function () {
-            var redirectUrl = location.origin + location.pathname;
-            await C.recover(a.email, redirectUrl);
-            toast('تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى ' + a.email, 'ok');
-          }, 'gold'));
-        }
-        if (a.virtual_edu) {
-          actList.push(rbtn(' حذف الحساب', async function () {
-            if (!(await ask({ title: 'حذف الحساب؟', msg: 'سيتم حذف الحساب (' + a.display_name + ').', ok: 'حذف', danger: true }))) return;
-            var curMeta = await loadPortalMeta();
-            delete curMeta.account_meta[(a.email || '').toLowerCase()];
-            await savePortalMeta(curMeta);
-            toast('تم حذف الحساب.', 'ok');
-            go(returnSec);
-          }, 'danger'));
-          return actList;
-        }
-        return actList.concat([
-          !canManage ? null : rbtn(a.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
+        if (!a.virtual_edu && !a.is_me && DE.isUuid(String(a.id || ''))) {
+          actList.push(rbtn(a.disabled ? 'تفعيل الحساب' : 'تعطيل الحساب', async function () {
             if (!a.disabled && !(await ask({ title: 'تعطيل هذا الحساب؟', msg: 'سيفقد صلاحياته فورًا ولن يستطيع الدخول إلى لوحة الإدارة.', ok: 'تعطيل', danger: true }))) return;
             try {
               await C.fn('admin-users', { action: 'set_admin_disabled', user_id: uid(a.id), disabled: !a.disabled });
@@ -5518,28 +6023,55 @@
               await C.rest('PATCH', '/admins?user_id=eq.' + uid(a.id), { disabled: !a.disabled });
             }
             bust(); toast('تم تعديل حالة الحساب.', 'ok'); go(returnSec);
-          }, a.disabled ? 'gold' : 'light'),
-          rbtn(' حذف الحساب', async function () {
-            if (!(await ask({
-              title: 'حذف الحساب نهائيًا؟',
-              msg: 'سيتم حذف الحساب (' + (a.display_name || a.email) + ') وسحب جميع صلاحياته فورًا. هذه العملية لا يمكن التراجع عنها!',
-              ok: 'حذف نهائي',
-              danger: true
-            }))) return;
-            var removed = false;
+          }, a.disabled ? 'gold' : 'light'));
+        }
+
+        actList.push(rbtn('حذف الحساب', async function () {
+          if (a.is_me) {
+            return toast('لا يمكنك حذف الحساب الذي تسجل الدخول به حالياً.', 'bad');
+          }
+          if (!(await ask({
+            title: 'حذف الحساب نهائيًا؟',
+            msg: 'سيتم حذف الحساب (' + stripEmojis(a.display_name || a.email) + ') وسحب جميع صلاحياته فورًا. هل تريد تأكيد الحذف النهائي؟',
+            ok: 'حذف نهائي',
+            danger: true
+          }))) return;
+
+          var emLower = String(a.email || '').toLowerCase();
+          if (a.id) S.deletedRuntimeIds[String(a.id)] = true;
+          if (a.educator_id) S.deletedRuntimeIds[String(a.educator_id)] = true;
+          if (emLower) S.deletedRuntimeEmails[emLower] = true;
+
+          if (DE.isUuid(String(a.id || ''))) {
             try {
               await C.rpc('admin_remove_user', { p_user_id: uid(a.id) });
-              removed = true;
             } catch (rpcErr) {
-              try { await C.fn('admin-users', { action: 'remove_admin', user_id: uid(a.id) }); removed = true; } catch (e2) {}
+              try { await C.fn('admin-users', { action: 'remove_admin', user_id: uid(a.id) }); } catch (e2) {
+                try { await C.rest('DELETE', '/admins?user_id=eq.' + uid(a.id)); } catch (e3) {}
+              }
             }
-            if (!removed) { toast('تعذّر حذف الحساب. حذف الحسابات متاح للمالك الرئيسي فقط؛ تأكد من دخولك بحساب المالك وأعد المحاولة.', 'bad'); return; }
-            var curMeta = await loadPortalMeta();
-            delete curMeta.account_meta[(a.email || '').toLowerCase()];
-            await savePortalMeta(curMeta);
-            bust(); toast('تم حذف الحساب نهائيًا.', 'ok'); go(returnSec);
-          }, 'danger')
-        ].filter(Boolean));
+          }
+          if (emLower) {
+            try { await C.rpc('admin_remove_user_by_email', { p_email: emLower }); } catch (e4) {}
+          }
+
+          var curMeta = await loadPortalMeta();
+          if (!Array.isArray(curMeta.deleted_emails)) curMeta.deleted_emails = [];
+          if (!Array.isArray(curMeta.deleted_educator_ids)) curMeta.deleted_educator_ids = [];
+          if (emLower && curMeta.deleted_emails.indexOf(emLower) < 0) curMeta.deleted_emails.push(emLower);
+          if (a.educator_id && curMeta.deleted_educator_ids.indexOf(String(a.educator_id)) < 0) curMeta.deleted_educator_ids.push(String(a.educator_id));
+          if (a.id && curMeta.deleted_educator_ids.indexOf(String(a.id)) < 0) curMeta.deleted_educator_ids.push(String(a.id));
+          if (emLower && curMeta.account_meta) delete curMeta.account_meta[emLower];
+          curMeta.educators = (curMeta.educators || []).filter(function (e) {
+            return e.id !== a.educator_id && e.id !== a.id && String(e.email || '').toLowerCase() !== emLower;
+          });
+          await savePortalMeta(curMeta);
+          bust();
+          toast('تم حذف الحساب نهائيًا.', 'ok');
+          go(returnSec);
+        }, 'danger'));
+
+        return actList;
       }
     });
   }
@@ -5549,7 +6081,7 @@
      ===================================================================== */
   async function secAudit(v) {
     if (S.isEducator) return go('children');
-    var rows = await C.rpc('admin_audit_list', { p_limit: 100 });
+    var rows = (await C.rpc('admin_audit_list', { p_limit: 100 }).catch(function () { return []; })) || [];
     var accountsData = null, permError = null;
     try { accountsData = await C.rpc('admin_list'); } catch (e) { permError = e; }
     var isOwner = !!(accountsData && accountsData.can_manage);
@@ -5565,7 +6097,7 @@
         h('button', {
           class: 'btn small light',
           type: 'button',
-          text: ' حذف السجلات الأقدم من 30 يومًا',
+          text: 'حذف السجلات الأقدم من 30 يومًا',
           onclick: async function () {
             if (!(await ask({
               title: 'تصفية سجلات التدقيق القديمة؟',
@@ -5586,7 +6118,7 @@
         h('button', {
           class: 'btn small danger',
           type: 'button',
-          text: ' تصفية كل سجلات التدقيق',
+          text: 'تصفية كل سجلات التدقيق',
           onclick: async function () {
             if (!(await ask({
               title: 'تصفية شاملة لسجلات العمليات؟',
@@ -5632,7 +6164,7 @@
      ===================================================================== */
   async function secSettings(v) {
     if (S.isEducator) return go('children');
-    var me = await C.me(), mfa = ((me && me.factors) || []).some(function (f) { return f.status === 'verified'; });
+    var me = (await C.me().catch(function () { return S.me; })) || S.me, mfa = ((me && me.factors) || []).some(function (f) { return f.status === 'verified'; });
     v.appendChild(h('div', { class: 'card' },
       h('h2', { text: 'المصادقة الثنائية (MFA - TOTP)' }),
       h('p', null, badge(mfa ? 'مفعّلة لحسابك بنجاح' : 'غير مفعّلة', mfa ? 'ok' : 'bad')),
@@ -5668,23 +6200,45 @@
     settings: secSettings
   };
 
-  if (window.DE_NAV) DE_NAV.setup({
-    active: function () { return !!S.me; },
-    modalOpen: function () { var m = $('#modal'); return !!(m && !m.hidden); },
-    closeModal: function () { closeModal(); },
-    apply: function (st) { if (st.center) S.activeCenter = st.center; return go(st.sec); }
-  });
-
-  async function go(sec) {
-    if (S.isEducator && sec !== 'children' && sec !== 'reports') {
+  async function go(sec, navOpts) {
+    var opts = navOpts || {};
+    if (isFarmSession() && sec === 'reports') {
+      sec = 'children';
+    }
+    if (S.isEducator && (sec !== 'children' && (sec !== 'reports' || isFarmSession()))) {
+      sec = 'children';
+    }
+    if (S.isSpecialist && (sec === 'accounts' || sec === 'hub' || sec === 'hub_accounts' || sec === 'audit' || sec === 'settings')) {
+      toast('قسم الحسابات غير متاح لصلاحية الأخصائية.', 'bad');
       sec = 'children';
     }
     if (!S.isEducator && (S.activeCenter === 'work' || S.activeCenter === 'farm') && sec !== 'hub' && sec !== 'hub_accounts' && sec !== 'children' && sec !== 'accounts') {
       sec = 'children';
     }
     if (!SECS[sec]) sec = S.isEducator ? 'children' : 'hub';
+
+    if (!opts.fromHistory && S.me) {
+      if (S.sec && (S.sec !== sec || S.inSubBuilder || S._lastCenter !== S.activeCenter || S._lastFilterSec !== S.filterSectionId)) {
+        S.navStack.push({
+          sec: S.sec,
+          center: S._lastCenter || S.activeCenter,
+          filterSectionId: S._lastFilterSec || ''
+        });
+        if (S.navStack.length > 30) S.navStack.shift();
+        try {
+          window.history.pushState({
+            deApp: true,
+            sec: sec,
+            center: S.activeCenter,
+            filterSectionId: S.filterSectionId || ''
+          }, '');
+        } catch (e) {}
+      }
+    }
+    S.inSubBuilder = false;
+    S._lastCenter = S.activeCenter;
+    S._lastFilterSec = S.filterSectionId || '';
     S.sec = sec;
-    if (window.DE_NAV) DE_NAV.push({ sec: sec, center: S.activeCenter || 'main' });
     var n = ++S.nav, v = $('#view');
     var appEl = $('#app');
     if (appEl) {
@@ -5773,43 +6327,93 @@
   async function enter() {
     show('boot');
     try {
-      if (!C.loggedIn()) {
+      var staffSess = readStaffSession();
+      if (!C.loggedIn() && !staffSess) {
         return showLogin();
       }
       var meta = await loadPortalMeta(true);
-      var meUser = await C.me();
-      var myEmail = (meUser && meUser.email || '').toLowerCase();
+      var meUser = null;
+      if (C.loggedIn()) {
+        try { meUser = await C.me(); } catch (eMe) { meUser = null; }
+      }
+      if (!meUser && staffSess) {
+        meUser = { id: staffSess.id || 'staff-session', email: staffSess.email };
+      }
+      var myEmail = (meUser && meUser.email || (staffSess && staffSess.email) || '').toLowerCase();
+      var delEmails = (meta.deleted_emails || []).map(function (x) { return String(x || '').toLowerCase(); });
+      if (myEmail && (delEmails.indexOf(myEmail) >= 0 || (S.deletedRuntimeEmails && S.deletedRuntimeEmails[myEmail]))) {
+        clearEducatorDirectSession();
+        await C.signOut();
+        return showLogin('تم حذف هذا الحساب ولم يعد مخوّلاً بالدخول.');
+      }
+
       var accMeta = (meta.account_meta && meta.account_meta[myEmail]) || null;
       var eduMatch = (meta.educators || []).filter(function (e) {
         return e.email && e.email.toLowerCase() === myEmail;
       })[0];
-      var isKnownEdu = !!((accMeta && accMeta.role === 'educator') || eduMatch);
-
-      var ok = await C.rpc('can_manage_families');
-      if (ok !== true) {
-        var anyAdmin = await C.rpc('is_admin');
-        await C.signOut();
-        return showLogin(anyAdmin === true ? 'حسابك محرّر: لا يملك صلاحية بيانات الأطفال والأولياء.' : 'هذا الحساب غير مخوّل بالدخول إلى هذه اللوحة.');
+      var embeddedMatch = EMBEDDED_STAFF.filter(function (st) {
+        return st.email && st.email.toLowerCase() === myEmail;
+      })[0];
+      if (!accMeta && embeddedMatch) {
+        accMeta = Object.assign({ center_access: embeddedMatch.center }, embeddedMatch);
+      }
+      if (!accMeta && staffSess && staffSess.email && staffSess.email.toLowerCase() === myEmail) {
+        accMeta = Object.assign({}, staffSess);
       }
 
-      S.me = meUser;
+      var isKnownStaff = !!(accMeta || eduMatch || embeddedMatch || staffSess);
+      var isKnownSpec = !!((accMeta && (accMeta.role === 'specialist' || accMeta.job_title === 'أخصائية نفسانية')) ||
+                           (embeddedMatch && (embeddedMatch.role === 'specialist' || embeddedMatch.job_title === 'أخصائية نفسانية')) ||
+                           myEmail === 'edu.0655806951@darelihsan.org' ||
+                           (staffSess && (staffSess.role === 'specialist' || staffSess.job_title === 'أخصائية نفسانية')));
+      var isKnownEdu = !isKnownSpec && !!((accMeta && accMeta.role === 'educator') || eduMatch || (embeddedMatch && embeddedMatch.role === 'educator') || (staffSess && staffSess.role === 'educator'));
+
+      if (C.loggedIn()) {
+        var ok = false;
+        try { ok = await C.rpc('can_manage_families'); } catch (eRpc) { ok = isKnownStaff; }
+        if (ok !== true && !isKnownStaff) {
+          var anyAdmin = false;
+          try { anyAdmin = await C.rpc('is_admin'); } catch (eAdm) {}
+          await C.signOut();
+          return showLogin(anyAdmin === true ? 'حسابك محرّر: لا يملك صلاحية بيانات الأطفال والأولياء.' : 'هذا الحساب غير مخوّل بالدخول إلى هذه اللوحة.');
+        }
+      }
+
+      S.me = meUser || { email: myEmail };
       bust();
 
       if (isKnownEdu) {
-        var prof = eduMatch || accMeta;
+        var prof = Object.assign({}, eduMatch || {}, accMeta || {});
         S.isEducator = true;
+        S.isSpecialist = false;
         S.eduProfile = prof;
         S.eduSectionId = (prof && prof.section_id) || '';
         S.eduSectionName = (prof && prof.section_name) || '';
-        S.centerAccess = 'all';
+        S.centerAccess = (prof && (prof.center_access || prof.center)) || 'main';
+        if (S.eduSectionId === '22222222-0000-4000-8000-000000000011' || S.eduSectionId === 'sec_bostana' || String(S.eduSectionName).indexOf('البستنة') >= 0 || String(S.eduSectionName).indexOf('المزرعة') >= 0) {
+          S.activeCenter = 'farm';
+        } else if (S.eduSectionId === '22222222-0000-4000-8000-000000000010' || S.eduSectionId === 'sec_tamhin' || String(S.eduSectionName).indexOf('التمهين') >= 0) {
+          S.activeCenter = 'work';
+        } else {
+          S.activeCenter = (prof && prof.center) || 'main';
+        }
         if (S.eduSectionId && !S.eduSectionName) {
           try {
             var secs = await get('sections');
             S.eduSectionName = nameOf(secs, S.eduSectionId, 'name');
           } catch (e) {}
         }
+      } else if (isKnownSpec) {
+        S.isEducator = false;
+        S.isSpecialist = true;
+        S.eduProfile = null;
+        S.eduSectionId = '';
+        S.eduSectionName = '';
+        S.centerAccess = 'main';
+        S.activeCenter = 'main';
       } else {
         S.isEducator = false;
+        S.isSpecialist = false;
         S.eduProfile = null;
         S.eduSectionId = '';
         S.eduSectionName = '';
@@ -5821,10 +6425,18 @@
       applyRoleSidebarUI();
       show('app');
       if (S.isEducator) {
-        var eduName = (S.eduProfile && S.eduProfile.full_name) || myEmail;
-        $('#who').textContent = ' ' + eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : '');
+        var eduName = (S.eduProfile && S.eduProfile.full_name) || (embeddedMatch && embeddedMatch.full_name) || myEmail;
+        $('#who').textContent = '' + eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : '');
+      } else if (S.isSpecialist) {
+        $('#who').textContent = 'الأخصائية نواري اسماء بنت جيلالي — دار الإحسان الرئيسي';
       } else {
-        $('#who').textContent = (S.me && S.me.email) || 'مدير';
+        var whoEmail = (S.me && S.me.email) || 'مدير';
+        if (/^edu\.\d+@darelihsan\.org$/i.test(whoEmail)) {
+          var matchedSt = EMBEDDED_STAFF.filter(function (st) { return st.email && st.email.toLowerCase() === whoEmail.toLowerCase(); })[0];
+          $('#who').textContent = (matchedSt && matchedSt.full_name) || 'مستخدم إداري';
+        } else {
+          $('#who').textContent = whoEmail;
+        }
       }
 
       S.stopIdle && S.stopIdle();
@@ -5847,7 +6459,15 @@
         })();
       }
 
-      go(S.isEducator ? 'children' : 'hub');
+      var startSec = (S.isEducator || S.isSpecialist) ? 'children' : 'hub';
+      S.navStack = [];
+      S._lastCenter = S.activeCenter;
+      S._lastFilterSec = '';
+      try {
+        window.history.replaceState({ deGuard: true, deApp: true, sec: startSec, center: S.activeCenter }, '');
+        window.history.pushState({ deApp: true, sec: startSec, center: S.activeCenter }, '');
+      } catch (e) {}
+      go(startSec, { fromHistory: true });
     } catch (e) { showLogin(e.message); }
   }
 
@@ -5857,6 +6477,7 @@
     S.cache = {};
     S.me = null;
     S.isEducator = false;
+    S.isSpecialist = false;
     S.eduProfile = null;
     S.eduSectionId = '';
     S.eduSectionName = '';
@@ -5879,9 +6500,28 @@
             return msg($('#lErr'), 'أدخل بريدًا إلكترونيًا أو رقم هاتف مسجلاً في النظام.');
           }
 
-          var r = await C.signIn(em, pw);
-          $('#password').value = '';
-          if (r && r.mfa) { setMode('mfa'); $('#mfaCode').focus(); return; }
+          var signedInOk = false;
+          var signInErr = null;
+          try {
+            var r = await C.signIn(em, pw);
+            signedInOk = true;
+            clearEducatorDirectSession();
+            $('#password').value = '';
+            if (r && r.mfa) { setMode('mfa'); $('#mfaCode').focus(); return; }
+          } catch (errSign) {
+            signInErr = errSign;
+          }
+
+          if (!signedInOk) {
+            var staffProf = verifyStaffPortalAuth(rawInput, em, pw, meta);
+            if (staffProf) {
+              persistStaffSession(staffProf);
+              $('#password').value = '';
+              await enter();
+              return;
+            }
+            throw (signInErr || new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة.'));
+          }
           await enter();
         } else if (mode === 'mfa') {
           var code = $('#mfaCode').value.replace(/\s/g, '');
@@ -5918,8 +6558,92 @@
     });
   }
 
+  function ensureManageDomReady() {
+    try {
+      if (!document.querySelector('link[href*="IBM+Plex+Sans+Arabic"]')) {
+        var fontLink = document.createElement('link');
+        fontLink.rel = 'stylesheet';
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Readex+Pro:wght@500;600;700&display=swap';
+        document.head.appendChild(fontLink);
+      }
+      var ns = 'http://www.w3.org/2000/svg';
+      var sprite = document.querySelector('svg.sprite');
+      if (!sprite) {
+        sprite = document.createElementNS(ns, 'svg');
+        sprite.setAttribute('width', '0');
+        sprite.setAttribute('height', '0');
+        sprite.setAttribute('class', 'sprite');
+        sprite.setAttribute('aria-hidden', 'true');
+        document.body.insertBefore(sprite, document.body.firstChild);
+      }
+      var symbols = {
+        's-main-center': ['M3 21h18M4 18h16M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 3 2 8h20L12 3z'],
+        's-work-center': ['M2 7h20v14H2z', 'M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M12 12v3M2 12h20'],
+        's-farm-center': ['M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z', 'M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12'],
+        's-plus': ['M12 5v14M5 12h14'],
+        's-edit': ['M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'],
+        's-trash': ['M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6'],
+        's-key': ['M7.5 10a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z', 'm21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3'],
+        's-idcard': ['M2 4h20v16H2z', 'M14 10h4M14 14h4M5 17c1.2-1.5 4.8-1.5 6 0'],
+        's-refresh': ['M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16', 'M16 16h5v5'],
+        's-eye': ['M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z', 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
+        's-eye-off': ['M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20'],
+        's-download': ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'],
+        's-upload': ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12'],
+        's-print': ['M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2', 'M6 14h12v8H6z'],
+        's-back': ['M19 12H5M12 19l-7-7 7-7'],
+        's-search': ['M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z', 'm21 21-4.3-4.3'],
+        's-check': ['M20 6 9 17l-5-5'],
+        's-clock': ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'],
+        's-desktop': ['M2 3h20v14H2z', 'M8 21h8M12 17v4M12 7v6M9.5 10.5 12 13l2.5-2.5'],
+        's-copy': ['M9 9h13v13H9z', 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
+        's-wand': ['m15 4-1 1 4 4 1-1a2.83 2.83 0 1 0-4-4ZM13 6 3 16v4h4L17 10M8 2v2M2 8h2M18 14v2M22 18h-2'],
+        's-lock': ['M3 11h18v11H3z', 'M7 11V7a5 5 0 0 1 10 0v4']
+      };
+      Object.keys(symbols).forEach(function (id) {
+        if (!document.getElementById(id)) {
+          var sym = document.createElementNS(ns, 'symbol');
+          sym.setAttribute('id', id);
+          sym.setAttribute('viewBox', '0 0 24 24');
+          symbols[id].forEach(function (d) {
+            var p = document.createElementNS(ns, 'path');
+            p.setAttribute('d', d);
+            sym.appendChild(p);
+          });
+          sprite.appendChild(sym);
+        }
+      });
+
+      var lBtn = $('#lBtn');
+      if (lBtn && !$('#installDesktopLoginBtn') && lBtn.parentNode) {
+        var loginInstBtn = h('button', {
+          id: 'installDesktopLoginBtn',
+          class: 'btn light block install-desktop-btn',
+          type: 'button',
+          'data-install': ''
+        }, svgIcon('s-desktop'), h('span', { text: 'تحميل وتثبيت تطبيق الإدارة على الكمبيوتر' }));
+        lBtn.parentNode.insertBefore(loginInstBtn, lBtn.nextSibling);
+      }
+
+      var bar = document.querySelector('header.bar');
+      if (bar && !$('#installDesktopTopBtn')) {
+        var topInstBtn = h('button', {
+          id: 'installDesktopTopBtn',
+          class: 'top-center-pill install-top-pill',
+          type: 'button',
+          'data-install': '',
+          title: 'تحميل وتثبيت موقع الإدارة على الكمبيوتر'
+        }, svgIcon('s-desktop'), h('span', { text: 'تحميل للكمبيوتر' }));
+        var refNode = $('#hubSwitchBtn') || $('#who');
+        if (refNode) bar.insertBefore(topInstBtn, refNode);
+        else bar.appendChild(topInstBtn);
+      }
+    } catch (eDom) {}
+  }
+
   async function init() {
-    if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
+    ensureManageDomReady();
+    if (!CFG.supabaseUrl || !CFG.supabaseKey) { if ($('#boot')) $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
     $('#loginForm').addEventListener('submit', submitLogin);
     var ftBtn = $('#firstTimeBtn');
@@ -5958,6 +6682,58 @@
     $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
 
+    /* دعم زر الرجوع في الهاتف (Hardware Back Button) للرجوع خطوة للخلف داخل الموقع وعدم الخروج منه */
+    window.addEventListener('popstate', function () {
+      if ($('#login') && !$('#login').hidden && mode !== 'creds') {
+        C.cancelMfa();
+        msg($('#lErr'), '');
+        msg($('#lOk'), '');
+        setMode('creds');
+        try { window.history.pushState({ deLogin: true }, ''); } catch (e) {}
+        return;
+      }
+      if ((!C.loggedIn() && !readStaffSession()) || ($('#app') && $('#app').hidden)) return;
+
+      if ($('#modal') && !$('#modal').hidden) {
+        closeModal();
+        return;
+      }
+      if ($('#app') && $('#app').classList.contains('nav-toggled')) {
+        $('#app').classList.remove('nav-toggled');
+        try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
+        return;
+      }
+      if (S.inSubBuilder) {
+        S.inSubBuilder = false;
+        go(S.sec, { fromHistory: true });
+        try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
+        return;
+      }
+      if (!S.isEducator && S.filterSectionId) {
+        S.filterSectionId = '';
+        go('children', { fromHistory: true });
+        try { window.history.pushState({ deApp: true, sec: 'children', center: S.activeCenter }, ''); } catch (e) {}
+        return;
+      }
+      while (S.navStack.length > 0) {
+        var prev = S.navStack.pop();
+        if (prev && (prev.sec !== S.sec || prev.center !== S.activeCenter || prev.filterSectionId !== S.filterSectionId)) {
+          S.activeCenter = prev.center || S.activeCenter;
+          S.filterSectionId = prev.filterSectionId || '';
+          go(prev.sec, { fromHistory: true });
+          try { window.history.pushState({ deApp: true, sec: prev.sec, center: S.activeCenter }, ''); } catch (e) {}
+          return;
+        }
+      }
+      var rootSec = S.isEducator ? 'children' : 'hub';
+      if (S.sec !== rootSec) {
+        go(rootSec, { fromHistory: true });
+        try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
+        return;
+      }
+      try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
+    });
+
     try {
       var sp = new URLSearchParams(window.location.search);
       if (sp.get('invite_edu') === '1') {
@@ -5988,7 +6764,7 @@
       setMode('set', 'مرحبًا بك في لوحة الإدارة! حسابك معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بك وتأكيدها للمتابعة.');
       return;
     }
-    if (C.load()) enter(); else showLogin();
+    if (C.load() || readStaffSession()) enter(); else showLogin();
   }
 
   init();

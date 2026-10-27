@@ -5,18 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'">
 <title>لوحة إدارة المركز – دار الإحسان</title>
 <link rel="icon" href="logo.png">
 <link rel="manifest" href="manage.webmanifest">
-<meta name="theme-color" content="#0C2D55">
+<meta name="theme-color" content="#082D50">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="إدارة دار الإحسان">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=19">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Readex+Pro:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="portal.css?v=20">
 <link rel="stylesheet" href="manage-theme.css?v=20">
-<link rel="stylesheet" href="icons.css?v=1">
-<link rel="stylesheet" href="pwa.css?v=2">
+<link rel="stylesheet" href="pwa.css?v=20">
+<script src="pwa.js?v=20" defer></script>
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -35,8 +39,29 @@
 <symbol id="s-branch" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M13 11h4M13 15h4M13 19h4M9 11H7M9 15H7M9 19H7"/></symbol>
 <symbol id="s-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
 <symbol id="s-card" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 10h20M7 15h3M14 15h3"/></symbol>
-<symbol id="s-install" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
 <symbol id="s-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+<symbol id="s-main-center" viewBox="0 0 24 24"><path d="M3 21h18M4 18h16M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 3 2 8h20L12 3z"/></symbol>
+<symbol id="s-work-center" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M12 12v3M2 12h20"/></symbol>
+<symbol id="s-farm-center" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+<symbol id="s-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="s-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+<symbol id="s-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></symbol>
+<symbol id="s-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+<symbol id="s-idcard" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="11" r="2.5"/><path d="M14 10h4M14 14h4M5 17c1.2-1.5 4.8-1.5 6 0"/></symbol>
+<symbol id="s-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></symbol>
+<symbol id="s-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="s-eye-off" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"/></symbol>
+<symbol id="s-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+<symbol id="s-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+<symbol id="s-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+<symbol id="s-back" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+<symbol id="s-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="s-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="s-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+<symbol id="s-desktop" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M12 7v6M9.5 10.5 12 13l2.5-2.5"/></symbol>
+<symbol id="s-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+<symbol id="s-wand" viewBox="0 0 24 24"><path d="m15 4-1 1 4 4 1-1a2.83 2.83 0 1 0-4-4ZM13 6 3 16v4h4L17 10M8 2v2M2 8h2M18 14v2M22 18h-2"/></symbol>
+<symbol id="s-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
 </svg>
 
 <div id="boot" class="boot" role="status">جارٍ التحميل…</div>
@@ -47,18 +72,18 @@
     <h1>لوحة إدارة المركز</h1>
     <p class="muted" id="lHint">للحسابات الإدارية والمربيات المخوّلات فقط.</p>
     <div id="stCreds">
-      <label class="fld"><span>البريد الإلكتروني أو رقم الهاتف</span><input id="email" type="text" inputmode="email" autocomplete="username" dir="ltr" maxlength="254" placeholder="email@example.com / 06..."></label>
+      <label class="fld"><span>رقم الهاتف أو البريد الإلكتروني</span><input id="email" type="text" inputmode="email" autocomplete="username" dir="ltr" maxlength="254" placeholder="05... / 06... / email@example.com"></label>
       <label class="fld"><span>كلمة المرور</span><input id="password" type="password" autocomplete="current-password" dir="ltr" maxlength="72"></label>
     </div>
     <div id="stMfa" hidden>
       <label class="fld"><span>رمز المصادقة الثنائية (6 أرقام)</span><input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr"></label>
     </div>
     <div id="stForgot" hidden>
-      <label class="fld"><span>البريد الإلكتروني أو رقم الهاتف</span><input id="fEmail" type="text" inputmode="email" autocomplete="username" maxlength="254" dir="ltr"></label>
+      <label class="fld"><span>رقم الهاتف أو البريد الإلكتروني</span><input id="fEmail" type="text" inputmode="email" autocomplete="username" maxlength="254" dir="ltr"></label>
     </div>
     <div id="stInvite" hidden>
-      <p class="hint">مرحبًا بك! إذا تمت دعوتك كمدير أو مربية للمركز، أدخل بريدك الإلكتروني أو رقم هاتفك المدعو به هنا لتفعيل حسابك وإنشاء كلمة المرور الخاصة بك مباشرة.</p>
-      <label class="fld"><span>البريد الإلكتروني أو رقم الهاتف المدعو به</span><input id="invEmail" type="text" inputmode="email" autocomplete="username" dir="ltr" maxlength="254" placeholder="name@example.com / 06..."></label>
+      <p class="hint">أدخل بريدك الإلكتروني أو رقم هاتفك لتفعيل حسابك وإنشاء كلمة المرور الخاصة بك مباشرة.</p>
+      <label class="fld"><span>رقم الهاتف أو البريد الإلكتروني</span><input id="invEmail" type="text" inputmode="email" autocomplete="username" dir="ltr" maxlength="254" placeholder="06... / name@example.com"></label>
     </div>
     <div id="stSet" hidden>
       <label class="fld"><span id="lblSetEmail">اسم المستخدم (البريد أو رقم الهاتف)</span><input id="setEmail" type="text" autocomplete="username" dir="ltr" readonly class="fld-readonly"></label>
@@ -67,11 +92,14 @@
     </div>
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
-    <button id="lBtn" class="btn block" type="submit">دخول</button>
-    <button id="firstTimeBtn" class="linkbtn" type="button"> مدعو جديد؟ تفعيل الحساب وإنشاء كلمة المرور</button>
+    <button id="lBtn" class="btn block" type="submit">تسجيل الدخول</button>
+    <button id="installDesktopLoginBtn" class="btn light block install-desktop-btn" type="button" data-install>
+      <svg class="i"><use href="#s-desktop"/></svg>
+      <span>تحميل وتثبيت تطبيق الإدارة على الكمبيوتر</span>
+    </button>
+    <button id="firstTimeBtn" class="linkbtn" type="button" hidden>تفعيل حساب مدعو جديد</button>
     <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
     <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
-    <button data-install class="linkbtn" type="button" hidden> تثبيت لوحة الإدارة على الكمبيوتر كتطبيق</button>
   </form>
 </main>
 
@@ -129,16 +157,18 @@
     <header class="bar">
       <button id="menuBtn" class="icon-btn menu-toggle-btn" type="button" aria-label="إظهار أو إخفاء القائمة" title="إظهار / إخفاء القائمة"><svg class="i"><use href="#s-menu"/></svg></button>
       <div class="ttl">
-        <strong id="secTitle">المركز وملحقاته</strong>
+        <strong id="secTitle">لوحة الإدارة</strong>
         <span id="topDate" class="top-date-txt"></span>
       </div>
+      <button id="installDesktopTopBtn" class="top-center-pill install-top-pill" type="button" data-install title="تحميل وتثبيت موقع الإدارة على الكمبيوتر">
+        <svg class="i"><use href="#s-desktop"/></svg>
+        <span>تحميل للكمبيوتر</span>
+      </button>
       <button id="hubSwitchBtn" class="top-center-pill" type="button" title="العودة إلى لوحة اختيار المركز وملحقاته">
         <svg class="i"><use href="#s-branch"/></svg>
-        <span id="hubSwitchTxt">تبديل المركز</span>
+        <span id="hubSwitchTxt">لوحة الإدارة</span>
       </button>
       <span id="who" class="chip">—</span>
-      <a href="site.html" target="_blank" rel="noopener" class="icon-btn" aria-label="الموقع العام" title="زيارة الموقع العام"><svg class="i"><use href="#s-web"/></svg></a>
-      <button id="installBtn" data-install class="icon-btn install-btn" type="button" hidden title="تثبيت لوحة الإدارة على الكمبيوتر كتطبيق"><svg class="i"><use href="#s-install"/></svg><span>تثبيت على الكمبيوتر</span></button>
       <button id="logoutBtn" class="icon-btn" type="button" aria-label="تسجيل الخروج" title="تسجيل الخروج"><svg class="i"><use href="#s-out"/></svg></button>
     </header>
     <main id="view" class="content" tabindex="-1"></main>
@@ -150,16 +180,13 @@
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="cms-config.js?v=9"></script>
-<script src="centers.js?v=2"></script>
+<script src="centers.js?v=1"></script>
 <script src="de-core.js?v=11"></script>
 <script src="xlsx-writer.js?v=1"></script>
 <script src="qr-gen.js?v=9"></script>
 <script src="qr-encoder.js?v=1"></script>
 <script src="card.js?v=1"></script>
 <script src="curriculum.js?v=1"></script>
-<script src="icons.js?v=1"></script>
-<script src="navback.js?v=1"></script>
-<script src="pwa.js?v=2"></script>
-<script src="manage.js?v=23"></script>
+<script src="manage.js?v=20"></script>
 </body>
 </html>
