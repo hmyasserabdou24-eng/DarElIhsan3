@@ -1387,7 +1387,7 @@
           secPanelEl.classList.toggle('is-collapsed', !!S.hideSectionsBar);
           toggleSecLabel.textContent = S.hideSectionsBar ? ('إظهار قائمة الأقسام (' + centerSections.length + ')') : 'إخفاء قائمة الأقسام';
         }
-      }, ico('s-menu'), toggleSecLabel);
+      }, makeSvgIcon('s-menu'), toggleSecLabel);
 
       secPanelEl.appendChild(h('div', { class: 'csp-head' },
         h('strong', { text: '🏫 أقسام ' + cm.name + ' (اضغط على القسم لعرض طلابه):' }),
