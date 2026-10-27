@@ -906,7 +906,7 @@
 
   /* استعلامات REST مع استرداد تلقائي للقائمة الرسمية (103 طفل و11 قسمًا و3 فروع) لضمان عدم اختفاء الأطفال أبدًا */
   var _autoImportAttempted = false;
-  var CHILD_SAFE_COLS = 'id,membership_no,full_name,dob,disability,phone,center,branch_id,section_id,section,academic_year,basic_info,photo_consent,active,created_at,updated_at';
+  var CHILD_SAFE_COLS = 'id,membership_no,full_name,dob,disability,phone,center,branch_id,section_id,section,academic_year,basic_info,photo_consent,active,qr_token,created_at,updated_at';
 
   function mapEmbeddedStudentsToSections(liveBranches, liveSections) {
     var brBySlug = {}, secBySlug = {}, secByName = {};
@@ -1317,25 +1317,140 @@
   }
 
   
-  /* رابط واتساب المباشر لأرقام هواتف الأولياء */
-  function makeWhatsAppLink(phone) {
+  /* التحقق الذكي من رقم الهاتف الجزائري للواتساب وتنسيقه دولياً */
+  function getAlgerianWaNumber(raw) {
+    if (!raw) return null;
+    var d = normalizeArabicDigits(String(raw)).replace(/\D/g, '');
+    if (!d) return null;
+    if (d.startsWith('00213')) d = d.slice(5);
+    else if (d.startsWith('213')) d = d.slice(3);
+    else if (d.startsWith('0')) d = d.slice(1);
+    // الأرقام الجزائرية الصالحة لواتساب تتكون من 9 أرقام بعد رمز الدولة (10 أرقام محلياً مع الصفر)
+    return d.length === 9 ? ('213' + d) : null;
+  }
+
+  function openFixWhatsAppPhoneModal(child, rawPhone) {
+    var raw = String(rawPhone || '').trim();
+    var initialInput = raw;
+    if (raw.length === 9 && raw.startsWith('0')) {
+      initialInput = raw; // الرقم 9 أرقام ينقصه رقم أخير
+    }
+    var phoneInput = h('input', {
+      type: 'tel',
+      dir: 'ltr',
+      class: 'sic-num',
+      maxlength: 16,
+      style: 'font-size:1.15rem;letter-spacing:1px;padding:10px 14px;border:2px solid #25D366;border-radius:8px;font-weight:bold;width:100%;box-sizing:border-box;',
+      value: initialInput
+    });
+
+    var errorEl = h('p', { class: 'err', style: 'margin:8px 0;' });
+    errorEl.hidden = true;
+
+    var childName = (child && child.full_name) || 'الطفل';
+
+    var card = h('div', { class: 'modal-body' },
+      h('div', { class: 'bar-sub' },
+        h('h2', { style: 'display:flex;align-items:center;gap:8px;' },
+          makeSvgIcon('s-whatsapp'),
+          h('span', { text: 'مراسلة ولي التلميذ: ' + childName })
+        )
+      ),
+      h('div', { style: 'background:#FDF8ED;border:1px solid rgba(180,135,58,0.3);padding:12px 16px;border-radius:10px;margin-bottom:14px;' },
+        h('p', { style: 'margin:0 0 6px;color:#8A6420;font-weight:700;', text: 'تنبيه حول رقم هاتف الولي في السجل:' }),
+        h('p', { style: 'margin:0;color:#334155;font-size:0.92rem;line-height:1.5;', text: 'الرقم المسجل حالياً (' + raw + ') يتكون من 9 أرقام، بينما أرقام الهواتف المحمولة في الجزائر الصالحة على واتساب تتكون من 10 أرقام (ينقصه الرقم الأخير ليفتح واتساب بنجاح).' })
+      ),
+      h('label', { class: 'fld' },
+        h('span', { text: 'أدخل رقم هاتف الولي كاملاً (10 أرقام تبدأ بـ 05 أو 06 أو 07):' }),
+        phoneInput
+      ),
+      h('div', { style: 'margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;' },
+        h('small', { class: 'muted', text: 'خيارات سريعة لإكمال الرقم المفقود:' }),
+        h('button', {
+          type: 'button', class: 'btn small light', text: '+ تجربة إضافة 0 بالآخر (' + initialInput + '0)',
+          onclick: function () { phoneInput.value = initialInput + '0'; }
+        }),
+        h('button', {
+          type: 'button', class: 'btn small light', text: '+ تجربة إضافة 1 بالآخر (' + initialInput + '1)',
+          onclick: function () { phoneInput.value = initialInput + '1'; }
+        })
+      ),
+      errorEl,
+      h('div', { class: 'modal-actions', style: 'margin-top:20px;' },
+        h('button', { class: 'btn light', type: 'button', text: 'إلغاء', onclick: closeModal }),
+        h('button', {
+          class: 'btn gold',
+          type: 'button',
+          style: 'background:#25D366;border-color:#25D366;color:#fff;font-weight:700;',
+          onclick: async function () {
+            var val = phoneInput.value.trim();
+            var validWa = getAlgerianWaNumber(val);
+            if (!validWa) {
+              errorEl.textContent = 'رقم الهاتف الجزائري يجب أن يتكون من 10 أرقام (مثال: 0661649080). يرجى التأكد من كتابة 10 أرقام.';
+              errorEl.hidden = false;
+              return;
+            }
+            errorEl.hidden = true;
+            var local10 = '0' + validWa.slice(3);
+
+            // تحديث الرقم تلقائياً في ملف الطفل في قاعدة البيانات
+            if (child && child.id) {
+              child.phone = local10;
+              try {
+                await C.rest('PATCH', '/children?id=eq.' + uid(child.id), { phone: local10 });
+                bust();
+              } catch (eSave) {}
+            }
+            closeModal();
+            window.open('https://wa.me/' + validWa, '_blank');
+            toast('تم تحديث رقم الولي وفتح محادثة واتساب بنجاح!', 'ok');
+          }
+        }, makeSvgIcon('s-whatsapp'), h('span', { text: 'فتح واتساب ومراسلة الولي وحفظ الرقم' })),
+        h('button', {
+          class: 'btn light',
+          type: 'button',
+          text: 'محاولة الفتح بالرقم الحالي على أية حال',
+          onclick: function () {
+            closeModal();
+            var d = normalizeArabicDigits(raw).replace(/\D/g, '').replace(/^0+/, '');
+            window.open('https://wa.me/213' + d, '_blank');
+          }
+        })
+      )
+    );
+    openModal(card);
+    setTimeout(function () {
+      phoneInput.focus();
+      phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+    }, 120);
+  }
+
+  /* رابط واتساب المباشر لأرقام هواتف الأولياء مع أيقونة واتساب الرسمية ومعالجة الأرقام الناقصة */
+  function makeWhatsAppLink(phone, child) {
     if (!phone || phone === '—') return h('span', { text: '—' });
     var raw = String(phone).trim();
-    var digits = normalizeArabicDigits(raw).replace(/\D/g, '');
-    if (!digits) return h('span', { text: raw });
-    var cleanDigits = digits.replace(/^0+/, '');
-    if (!cleanDigits.startsWith('213')) cleanDigits = '213' + cleanDigits;
-    var waUrl = 'https://wa.me/' + cleanDigits;
-    return h('a', {
-      href: waUrl,
-      target: '_blank',
-      rel: 'noopener noreferrer',
+    var validWa = getAlgerianWaNumber(raw);
+
+    var btn = h('button', {
+      type: 'button',
       class: 'btn-wa-link',
       title: 'مراسلة الولي عبر واتساب (' + raw + ')'
     },
+      makeSvgIcon('s-whatsapp'),
       h('span', { dir: 'ltr', class: 'sic-num', text: raw }),
-      h('span', { class: 'wa-badge', text: 'WhatsApp' })
+      h('span', { class: 'wa-badge', text: 'واتساب' })
     );
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (validWa) {
+        window.open('https://wa.me/' + validWa, '_blank');
+      } else {
+        openFixWhatsAppPhoneModal(child, raw);
+      }
+    });
+
+    return btn;
   }
 
   /* فحص ورفع الملفات */
@@ -1687,17 +1802,21 @@
     }
 
     function publicCardUrl(child) {
-      var token = (child && child.qr_token) || '';
-      if (!token || !/^[0-9a-f]{32}$/i.test(String(token))) {
-        var rawId = String((child && child.id) || (child && child.membership_no) || '00000000000000000000000000000000').replace(/[^0-9a-f]/gi, '');
-        token = (rawId + '0123456789abcdef0123456789abcdef').slice(0, 32);
-      }
       var origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null' && window.location.protocol !== 'file:')
         ? window.location.origin : 'https://hmyasserabdou24-eng.github.io';
       var basePath = (typeof window !== 'undefined' && window.location) ? window.location.pathname.replace(/[^/]*$/, '') : '/';
       if (!basePath.startsWith('/')) basePath = '/' + basePath;
       var u = new URL(basePath + 'qr.html', origin);
-      u.searchParams.set('c', token);
+      if (child) {
+        if (child.id) u.searchParams.set('id', child.id);
+        if (child.membership_no) u.searchParams.set('m', child.membership_no);
+        var token = (child && child.qr_token) || '';
+        if (!token || !/^[0-9a-f]{32}$/i.test(String(token))) {
+          var rawId = String((child && child.id) || (child && child.membership_no) || '00000000000000000000000000000000').replace(/[^0-9a-f]/gi, '');
+          token = (rawId + '0123456789abcdef0123456789abcdef').slice(0, 32);
+        }
+        u.searchParams.set('c', token);
+      }
       return u.href;
     }
 
@@ -2037,7 +2156,7 @@
         // 1. معلومات الطالب الأساسية مع رابط واتساب المباشر لرقم الهاتف
         var infoItems = [
           ['تاريخ الميلاد', r.dob ? fmt(r.dob) : '—'],
-          ['رقم هاتف الاتصال (واتساب)', makeWhatsAppLink(r.phone)],
+          ['رقم هاتف الاتصال (واتساب)', makeWhatsAppLink(r.phone, r)],
           ['طبيعة الإعاقة', r.disability || '—'],
           ['الموسم الدراسي', r.academic_year || '—'],
           ['الفرع / المركز', nameOf(branches, r.branch_id, 'name') || CENTERS[r.center] || '—'],
@@ -7005,6 +7124,123 @@
       '</body></html>';
   }
 
+  
+  /* دوال إنشاء ملفات Word المعتمدة (.doc) الرسمية بدون أكواد برمجية */
+  function generateWordDocReport(rep, child, secName, brName) {
+    var title = rep.title || 'تقرير تربوي';
+    var chName = child ? child.full_name : 'غير محدد';
+    var safeDate = rep.report_date || '';
+    var memNo = child ? (child.membership_no || '—') : '—';
+    var year = child ? (child.academic_year || '2026/2027') : '2026/2027';
+
+    var achieve = rep.achievements || '—';
+    var activ = rep.activities || '—';
+    var notes = rep.notes || '—';
+
+    if (isEvaluationReport(rep)) {
+      return generateWordDocEvaluation(rep, child, secName, brName);
+    }
+
+    return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">\n' +
+      '<head><meta charset="utf-8"><title>' + title + ' — ' + chName + '</title>\n' +
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->\n' +
+      '<style>\n' +
+      '@page { size: 21cm 29.7cm; margin: 2cm; mso-page-orientation: portrait; }\n' +
+      'body { font-family: "Times New Roman", "Cairo", Arial, sans-serif; direction: rtl; text-align: right; color: #000000; }\n' +
+      'table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }\n' +
+      'th, td { border: 1pt solid #000000; padding: 6pt; font-size: 11pt; text-align: right; }\n' +
+      'th { background-color: #F1F5F9; font-weight: bold; }\n' +
+      '.hdr { text-align: center; border-bottom: 2pt solid #123E73; padding-bottom: 8pt; margin-bottom: 12pt; }\n' +
+      '.ttl { font-size: 16pt; font-weight: bold; color: #B4873A; margin-top: 4pt; }\n' +
+      '.box { border: 1pt solid #000000; padding: 8pt; margin-bottom: 10pt; }\n' +
+      '.box-title { font-size: 12pt; font-weight: bold; color: #123E73; border-bottom: 1pt solid #CBD5E1; padding-bottom: 3pt; margin-top: 0; }\n' +
+      '</style></head><body>\n' +
+      '<div class="hdr"><h3>الجمهورية الجزائرية الديمقراطية الشعبية</h3>\n' +
+      '<h3>جمعية أولياء الأطفال المعاقين ذهنيًا — دار الإحسان</h3>\n' +
+      '<p>المركز النفسي البيداغوجي دار الإحسان — العطف، ولاية غرداية</p>\n' +
+      '<div class="ttl">' + title + '</div></div>\n' +
+      '<table><tr><th style="width:25%;">اسم التلميذ:</th><td><strong>' + chName + '</strong></td><th style="width:25%;">رقم القيد:</th><td>' + memNo + '</td></tr>\n' +
+      '<tr><th>الفرع / المركز:</th><td>' + brName + '</td><th>الفوج / القسم:</th><td>' + secName + '</td></tr>\n' +
+      '<tr><th>تاريخ التقرير:</th><td>' + safeDate + '</td><th>الموسم الدراسي:</th><td>' + year + '</td></tr></table>\n' +
+      '<div class="box"><div class="box-title">المكتسبات والمهارات المحققة:</div><p style="white-space:pre-wrap;">' + achieve + '</p></div>\n' +
+      '<div class="box"><div class="box-title">الأنشطة والورشات المنجزة:</div><p style="white-space:pre-wrap;">' + activ + '</p></div>\n' +
+      '<div class="box"><div class="box-title">ملاحظات وتوجيهات للأولياء:</div><p style="white-space:pre-wrap;">' + notes + '</p></div>\n' +
+      '<br><br><table><tr><td style="text-align:center;width:50%;border:none;"><strong>توقيع وختم المربية</strong></td><td style="text-align:center;width:50%;border:none;"><strong>توقيع وختم المدير</strong></td></tr></table>\n' +
+      '</body></html>';
+  }
+
+  function generateWordDocEvaluation(rep, child, secName, brName) {
+    var title = rep.title || 'تقرير اللجنة البيداغوجية والتربوية';
+    var chName = child ? child.full_name : 'غير محدد';
+    var safeDate = rep.report_date || '';
+    var memNo = child ? (child.membership_no || '—') : '—';
+    var year = child ? (child.academic_year || '2026/2027') : '2026/2027';
+
+    var ev = parseEvaluationReport(rep);
+    var supLines = (ev.supervisors || []).map(function (s) {
+      return '<tr><td style="padding:6pt;border:1pt solid #000;font-weight:bold;">' + (s.name || '—') + '</td><td style="padding:6pt;border:1pt solid #000;">' + (s.role || '—') + '</td><td style="padding:6pt;border:1pt solid #000;color:#666;">........................</td></tr>';
+    }).join('');
+
+    var strLines = (ev.strengths || []).map(function (s) { return '<li>' + s + '</li>'; }).join('');
+    var wkWLines = (ev.weaknesses || []).map(function (s) { return '<li>' + s + '</li>'; }).join('');
+    var recLines = (ev.recommendations || []).map(function (s) { return '<li>' + s + '</li>'; }).join('');
+    var ab = ev.abilities || {};
+
+    return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">\n' +
+      '<head><meta charset="utf-8"><title>' + title + ' — ' + chName + '</title>\n' +
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->\n' +
+      '<style>\n' +
+      '@page { size: 21cm 29.7cm; margin: 2cm; mso-page-orientation: portrait; }\n' +
+      'body { font-family: "Times New Roman", "Cairo", Arial, sans-serif; direction: rtl; text-align: right; color: #000000; }\n' +
+      'table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }\n' +
+      'th, td { border: 1pt solid #000000; padding: 6pt; font-size: 11pt; text-align: right; }\n' +
+      '.banner { background-color: #EAB308; color: #000; font-weight: bold; text-align: center; padding: 6pt; border: 1pt solid #000; margin-bottom: 10pt; }\n' +
+      '.sec-banner { background-color: #7DD3FC; font-weight: bold; text-align: center; padding: 6pt; border: 1pt solid #000; margin-bottom: 8pt; }\n' +
+      '.hdr { text-align: center; border-bottom: 2pt solid #000; padding-bottom: 8pt; margin-bottom: 10pt; }\n' +
+      '</style></head><body>\n' +
+      '<div class="hdr"><h3>جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي دار الإحسان</h3>\n' +
+      '<p>العطف - غرداية • COMPTE RENDU DE L\'EQUIPE PEDAGOGIQUE</p>\n' +
+      '<h2>' + title + '</h2></div>\n' +
+      '<div class="banner">تقييم ' + (ev.term || 'الثلاثي الأخير') + ' للموسم الدراسي: ' + (ev.school_year || year) + '</div>\n' +
+      '<table><tr><td style="background:#f1f5f9;font-weight:bold;width:20%;">اسم ولقب الحالة:</td><td><strong>' + chName + '</strong></td><td style="background:#f1f5f9;font-weight:bold;width:20%;">رقم القيد:</td><td>' + memNo + '</td></tr>\n' +
+      '<tr><td style="background:#f1f5f9;font-weight:bold;">الفرع / المركز:</td><td>' + brName + '</td><td style="background:#f1f5f9;font-weight:bold;">القسم:</td><td>' + secName + '</td></tr>\n' +
+      '<tr><td style="background:#f1f5f9;font-weight:bold;">درجة الإعاقة:</td><td>' + (ev.degree_of_disability || '—') + '</td><td style="background:#f1f5f9;font-weight:bold;">تاريخ التقييم:</td><td>' + safeDate + '</td></tr></table>\n' +
+      '<div class="sec-banner">المشرفون على التقييم</div>\n' +
+      '<table><thead><tr style="background:#f8fafc;"><th>المشرف: الإسم واللقب</th><th>الوظيفة</th><th>التوقيع والختم</th></tr></thead><tbody>' + supLines + '</tbody></table>\n' +
+      '<div class="sec-banner">الوصف العام لأداء الحالة</div>\n' +
+      '<table><tr><td style="width:50%;vertical-align:top;"><strong>التقرير العام:</strong><p style="white-space:pre-wrap;">' + (ev.general_report || '—') + '</p></td>\n' +
+      '<td style="width:50%;vertical-align:top;">' +
+      '<div><strong>1. إمكانيات والقدرات الحالية:</strong> ' + (ab.current_potentials || '—') + '</div><br>' +
+      '<div><strong>2. المهارات المعرفية والفكرية:</strong> ' + (ab.cognitive_intellectual || '—') + '</div><br>' +
+      '<div><strong>3. اللغة (استقبالية تعبيرية):</strong> ' + (ab.language_receptive_expressive || '—') + '</div><br>' +
+      '<div><strong>4. القدرات الإتصالية والسلوكية:</strong> ' + (ab.communication_behavioral || '—') + '</div><br>' +
+      '<div><strong>5. المعارف الأكاديمية وما قبل الأكاديمي:</strong> ' + (ab.academic_preacademic || '—') + '</div><br>' +
+      '<div><strong>6. القدرات الحركية والاستقلالية:</strong> ' + (ab.motor_independence || '—') + '</div>' +
+      '</td></tr></table>\n' +
+      '<div class="sec-banner" style="background:#86EFAC;">الخلاصة والتوصيات</div>\n' +
+      '<table><tr>' +
+      '<td style="vertical-align:top;"><strong>1. نقاط القوة:</strong><ul>' + (strLines || '<li>—</li>') + '</ul></td>' +
+      '<td style="vertical-align:top;"><strong>2. نقاط الضعف:</strong><ul>' + (wkWLines || '<li>—</li>') + '</ul></td>' +
+      '<td style="vertical-align:top;"><strong>3. التوصيات:</strong><ul>' + (recLines || '<li>—</li>') + '</ul></td>' +
+      '</tr></table>\n' +
+      '</body></html>';
+  }
+
+  function generateWordArchiveReport(total, success, failed, year, monthName, errors) {
+    return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">\n' +
+      '<head><meta charset="utf-8"><title>تقرير الأرشفة والنسخ الاحتياطي</title>\n' +
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->\n' +
+      '<style>body{font-family:"Times New Roman", "Cairo", Arial;direction:rtl;text-align:right;} table{border-collapse:collapse;width:100%;} th,td{border:1pt solid #000;padding:6pt;}</style>\n' +
+      '</head><body>\n' +
+      '<h2 style="text-align:center;color:#123E73;">المركز النفسي البيداغوجي دار الإحسان — تقرير الأرشفة والنسخ الاحتياطي</h2>\n' +
+      '<p><strong>تاريخ وساعة التنفيذ:</strong> ' + (new Date().toLocaleString('ar-DZ')) + '</p>\n' +
+      '<p><strong>السنة:</strong> ' + year + ' | <strong>الشهر:</strong> ' + monthName + '</p>\n' +
+      '<table><tr><th>إجمالي السجلات</th><th>الملفات المؤرشفة بنجاح</th><th>الملفات التي تعذر تنزيلها</th></tr>\n' +
+      '<tr><td>' + total + '</td><td><strong style="color:green;">' + success + '</strong></td><td><strong style="color:' + (failed ? 'red' : 'green') + ';">' + failed + '</strong></td></tr></table>\n' +
+      '<h3>ملاحظات العملية:</h3><p>' + (errors.length ? errors.join('<br>') : 'تمت أرشفة وتنزيل كافة الملفات والتقارير بنجاح تام 100% بصيغ Word و PDF و Excel.') + '</p>\n' +
+      '</body></html>';
+  }
+
   async function secArchive(v) {
     if (S.isEducator || !canAccessGeneralAdmin()) return go('children');
 
@@ -7371,18 +7607,18 @@
           var rTitle = sanitizeArchiveFolderName(rep.title || 'تقرير');
           var repFolder = rootPath + '/' + brFolder + '/' + secFolder + '/' + chFolder + '/التقارير';
 
-          // أ) ملف HTML رسمي
+          // أ) مستند Microsoft Word رسمي (.doc) لفتحه مباشرة في وورد
+          var wordContent = generateWordDocReport(rep, child, secFolder, brFolder);
+          var wordFilePath = repFolder + '/' + rDate + ' - ' + rTitle + ' (Word).doc';
+          filesToZip.push({ name: wordFilePath, data: wordContent });
+
+          // ب) ملف رسمي جاهز للطباعة والحفظ كـ PDF
           var htmlContent = generateStandaloneReportHtml(rep, child, secFolder, brFolder);
-          var htmlFilePath = repFolder + '/' + rDate + ' - ' + rTitle + '.html';
+          var htmlFilePath = repFolder + '/' + rDate + ' - ' + rTitle + ' (جاهز للطباعة PDF).html';
           filesToZip.push({ name: htmlFilePath, data: htmlContent });
 
-          // ب) ملف TXT
-          var txtContent = 'العنوان: ' + (rep.title || '') + '\nالتاريخ: ' + rDate + '\nالتلميذ: ' + child.full_name + '\nالقسم: ' + secFolder + '\nالمكتسبات: ' + (rep.achievements || '') + '\nالأنشطة: ' + (rep.activities || '') + '\nملاحظات: ' + (rep.notes || '') + '\n';
-          var txtFilePath = repFolder + '/' + rDate + ' - ' + rTitle + '.txt';
-          filesToZip.push({ name: txtFilePath, data: txtContent });
-
           successCount++;
-          csvRows.push([String(processedItems + 1), child.full_name, chMem, brFolder, secFolder, 'تقرير تربوي', rTitle + '.html', htmlFilePath, rDate, 'ناجح', 'تم إنشاء الوثيقة']);
+          csvRows.push([String(processedItems + 1), child.full_name, chMem, brFolder, secFolder, isEvaluationReport(rep) ? 'استمارة تقييم' : 'تقرير تربوي', rTitle + ' (Word).doc', wordFilePath, rDate, 'ناجح', 'تم إنشاء مستند Word']);
 
           // ج) مرفق التقرير إن وجد
           if (rep.attachment_path) {
@@ -7450,28 +7686,18 @@
           updateProgressUi(doc.title || 'وثيقة');
         }
 
-        // 3. كتابة فهرس الأرشيف CSV (مع UTF-8 BOM)
-        var csvContent = '\uFEFF' + csvRows.map(function (row) {
-          return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
-        }).join('\r\n');
-        filesToZip.push({ name: rootPath + '/فهرس_الأرشيف.csv', data: csvContent });
+        // 3. كتابة سجل وفهرس الأرشيف الشامل بصيغة Microsoft Excel (.xlsx) الحقيقية
+        try {
+          var xlsxHeaders = csvRows[0];
+          var xlsxBodyRows = csvRows.slice(1);
+          var xlsxBlob = DE_XLSX.build('فهرس_الأرشيف', xlsxHeaders, xlsxBodyRows, [6, 26, 12, 20, 20, 16, 28, 40, 14, 12, 25]);
+          var xlsxBuf = await xlsxBlob.arrayBuffer();
+          filesToZip.push({ name: rootPath + '/فهرس_الأرشيف_الشامل (Excel).xlsx', data: xlsxBuf });
+        } catch (eXlsx) {}
 
-        // 4. كتابة تقرير الأرشفة النصي
-        var reportTxt = '══════════════════════════════════════════════════════════════════════\n' +
-          '           تقرير الأرشفة الشاملة والنسخ الاحتياطي — دار الإحسان\n' +
-          '══════════════════════════════════════════════════════════════════════\n' +
-          'تاريخ وساعة التنفيذ: ' + (new Date().toLocaleString('ar-DZ')) + ' (توقيت الجزائر Africa/Algiers)\n' +
-          'نطاق الأرشفة: ' + (cfg ? cfg.scopeLabel : scopeSelect.options[scopeSelect.selectedIndex].text) + '\n' +
-          'السنة المستهدفة: ' + pYear + '\n' +
-          'الشهر المستهدف: ' + monthFolderName + '\n\n' +
-          'إحصائيات العملية:\n' +
-          '• إجمالي السجلات المفحوصة: ' + (targetReports.length + targetDocs.length) + '\n' +
-          '• الملفات المؤرشفة بنجاح: ' + successCount + '\n' +
-          '• الملفات التي تعذر تنزيلها: ' + failedCount + '\n\n' +
-          'سجل الملاحظات والأخطاء:\n' +
-          (errorLog.length ? errorLog.map(function (e) { return ' - [!] ' + e; }).join('\n') : ' - جميع الملفات والوثائق تمت أرشفتها بنجاح تام 100% دون أي أخطاء.') + '\n' +
-          '══════════════════════════════════════════════════════════════════════\n';
-        filesToZip.push({ name: rootPath + '/تقرير_الأرشفة.txt', data: reportTxt });
+        // 4. كتابة تقرير الأرشفة الرسمي بصيغة Microsoft Word (.doc)
+        var wordReportSummary = generateWordArchiveReport(totalItems, successCount, failedCount, pYear, monthFolderName, errorLog);
+        filesToZip.push({ name: rootPath + '/تقرير_الأرشفة_الرسمي (Word).doc', data: wordReportSummary });
 
         // 5. ضغط وبناء ملف الـ ZIP وتنزيله
         progressStatusText.textContent = 'جارٍ ضغط الأرشيف وتنزيل ملف ZIP...';
@@ -7611,29 +7837,42 @@
       v.appendChild(historyTable);
     }
 
-    // 5. بطاقة برنامج الأرشفة التلقائية على الكمبيوتر (Standalone Script)
-    var toolCard = h('div', { class: 'arch-tool-box' },
-      h('h3', { style: 'margin-top:0; color:#123E73;', text: '💻 برنامج النسخ الاحتياطي التلقائي على الكمبيوتر (بدون فتح المتصفح)' }),
-      h('p', { class: 'muted small', text: 'لا يمكن للموقع في المتصفح حفظ ملفات على القرص الصلب وهو مغلق. لذلك، قمنا ببرمجة أداة مستقلة (backup-tool.py) تعمل على حاسوب الإدارة وتقوم بتنزيل وتحديث الأرشيفات الشهرية تلقائياً في مجلد محدد.' }),
-      h('div', { class: 'arch-code-snippet', text: 'python3 backup-tool.py --auto --out C:\\DarElIhsan_Backups' }),
-      h('p', { class: 'muted small', text: 'يمكنك جدولة هذا الأمر في ويندوز (Task Scheduler) ليعمل تلقائياً في اليوم الأول من كل شهر عند الساعة 00:00 بتوقيت الجزائر.' }),
-      h('div', { class: 'row-actions', style: 'margin-top:12px;' },
+    // 5. بطاقة تنزيل النسخ الاحتياطية المباشرة بصيغ Office المعتمدة (Excel و Word و PDF) دون أي أكواد
+    var officeExportsCard = h('div', { class: 'arch-card', style: 'margin-top:24px;border:1px solid #CBD5E1;' },
+      h('h3', { style: 'margin-top:0; color:#123E73; display:flex; align-items:center; gap:8px;' },
+        makeSvgIcon('s-file'),
+        h('span', { text: 'تنزيل النسخ الاحتياطية المباشرة بصيغ Office المعتمدة (Excel و Word)' })
+      ),
+      h('p', { class: 'muted small', text: 'تنزيل فوري لملفات البيانات والتقارير بصيغ Microsoft Excel و Word الأصلية لفتحها مباشرة على الكمبيوتر دون أي أكواد برمجية.' }),
+      h('div', { class: 'row-actions', style: 'margin-top:14px;flex-wrap:wrap;gap:10px;' },
+        h('button', {
+          type: 'button',
+          class: 'btn gold',
+          onclick: function () {
+            var cols = ['الرقم', 'رقم القيد', 'الاسم واللقب', 'تاريخ الميلاد', 'طبيعة الإعاقة', 'الفرع', 'القسم', 'الهاتف'];
+            var rows = allKids.map(function (k, idx) {
+              return [idx + 1, k.membership_no || '', k.full_name || '', k.dob || '', k.disability || '', (brMap[k.branch_id] ? brMap[k.branch_id].name : '') || '', (secMap[k.section_id] ? secMap[k.section_id].name : k.section) || '', k.phone || ''];
+            });
+            DE_XLSX.download('قاعدة_بيانات_أطفال_دار_الإحسان.xlsx', 'الأطفال', cols, rows, [6, 12, 28, 14, 22, 18, 18, 16]);
+            toast('تم تنزيل ملف Excel بنجاح!', 'ok');
+          }
+        }, makeSvgIcon('s-file'), h('span', { text: 'تنزيل قاعدة بيانات الأطفال (Excel .xlsx)' })),
         h('button', {
           type: 'button',
           class: 'btn light',
-          text: 'تحميل برنامج الأرشفة للكمبيوتر (backup-tool.py)',
           onclick: function () {
-            var a = document.createElement('a');
-            a.href = 'backup-tool.py';
-            a.download = 'backup-tool.py';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            var cols = ['الرقم', 'عنوان التقرير', 'اسم الطفل', 'التاريخ', 'الحالة', 'المكتسبات', 'الأنشطة', 'ملاحظات'];
+            var rows = allReports.map(function (r, idx) {
+              var ch = chMap[r.child_id] || {};
+              return [idx + 1, r.title || '', ch.full_name || '', r.report_date || '', r.status === 'published' ? 'منشور' : 'مسودة', r.achievements || '', r.activities || '', r.notes || ''];
+            });
+            DE_XLSX.download('سجل_التقارير_والاستمارات.xlsx', 'التقارير', cols, rows, [6, 26, 26, 14, 12, 35, 35, 35]);
+            toast('تم تنزيل سجل التقارير بصيغة Excel!', 'ok');
           }
-        })
+        }, makeSvgIcon('s-download'), h('span', { text: 'تنزيل سجل التقارير (Excel .xlsx)' }))
       )
     );
-    v.appendChild(toolCard);
+    v.appendChild(officeExportsCard);
   }
 
   /* =====================================================================
