@@ -4,22 +4,13 @@
    كل النصوص تُدرج بـ textContent لحماية تامة من XSS. */
 (function () {
   'use strict';
-  var FILE_BUILD = '2026-10-27.1';
-  function currentAcademicYear(sep) {
-    var s = sep || '-';
-    var now = new Date();
-    var y = now.getFullYear();
-    var m = now.getMonth();
-    var start = (m >= 8) ? y : (y - 1);
-    return start + s + (start + 1);
-  }
-
-  /* frame-safe */
+  var FILE_BUILD = '2026-10-24.2';
+  if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var CFG = window.DE_CONFIG || {}, h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
   var C = DE.Client(CFG, 'de_parent_session');
-  var S = { tab: 'children', tabStack: [], me: null, name: '', d: null, reads: {}, selectedChildId: null };
+  var S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
   var stopIdle = null;
 
   /* الدليل البيداغوجي الرسمي المعتمد (لإظهار استمارات التقييم البيداغوجي للأولياء بدقة تامة) */
@@ -55,12 +46,13 @@
       btnForgot: 'نسيت كلمة المرور؟',
       btnBack: 'رجوع لتسجيل الدخول',
       accountNotice: 'الحسابات تُنشأ من إدارة المركز فقط، أو عبر رمز التسجيل السري المسلَّم من الإدارة.',
-      tabChildren: 'أبنائي',
-      tabPrograms: 'البرامج التربوية',
-      tabReports: 'التقارير والتقييم',
-      tabAppts: 'المواعيد',
-      tabMsgs: 'الرسائل',
+      tabChildren: 'معلومات الطفل',
+      tabEvaluations: 'التقييم',
+      tabReports: 'التقارير',
       tabDocs: 'الوثائق',
+      tabMsgs: 'الرسائل',
+      tabPrograms: 'البرامج والأنشطة',
+      tabAppts: 'المواعيد',
       tabContact: 'التواصل',
       welcome: 'مرحبًا',
       welcomeSuffix: '! أهلًا بك في فضاء الأولياء.',
@@ -102,14 +94,14 @@
       markAsRead: 'تم الاطلاع',
       contactTitle: 'التواصل مع إدارة المركز',
       contactSub: 'نحن في خدمتكم دائمًا عبر الوسائل الرسمية التالية:',
-      contactAddrLabel: 'العنوان:',
+      contactAddrLabel: ' العنوان:',
       contactAddrVal: 'بلدية العطف – ولاية غرداية – الجزائر',
-      contactEmailLabel: 'البريد الإلكتروني:',
-      contactPhoneLabel: 'الهاتف / الفاكس:',
-      contactSocialLabel: 'منصات التواصل:',
+      contactEmailLabel: ' البريد الإلكتروني:',
+      contactPhoneLabel: ' الهاتف / الفاكس:',
+      contactSocialLabel: ' منصات التواصل:',
       contactWa: 'واتساب المركز',
       contactFb: 'صفحة فيسبوك',
-      contactSiteLabel: 'الموقع الرسمي للمركز:',
+      contactSiteLabel: ' الموقع الرسمي للمركز:',
       contactSiteLink: 'الصفحة الرئيسية لدار الإحسان',
       contactNoteTitle: 'إرشاد للأولياء',
       contactNoteTxt: 'لأي استفسار طارئ أو مناقشة بخصوص الملف البيداغوجي لطفلك، يُفضَّل التواصل مع الإدارة المباشرة خلال ساعات العمل الرسمية.',
@@ -118,7 +110,7 @@
       passMismatchErr: 'كلمتا المرور غير متطابقتين.',
       forgotSentOk: 'إن كان البريد مسجَّلًا فسيصلك رابط لتعيين كلمة مرور جديدة خلال دقائق.',
       notActiveParentErr: 'هذا الحساب غير مفعّل أو غير مخصّص للأولياء.',
-      btnLinkCode: 'ربط طفل برمز التسجيل',
+      btnLinkCode: ' ربط طفل برمز التسجيل',
       enterCodePrompt: 'أدخل رمز التسجيل السري المكوّن من 8 محارف (مثال: DI-A1B2C3):',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'تأكيد الربط',
@@ -150,12 +142,13 @@
       btnForgot: 'Mot de passe oublié ?',
       btnBack: 'Retour à la connexion',
       accountNotice: 'Les comptes sont créés par l’administration ou via le code d’inscription sécurisé.',
-      tabChildren: 'Mes Enfants',
-      tabPrograms: 'Programmes',
-      tabReports: 'Rapports & Évaluations',
-      tabAppts: 'Rendez-vous',
-      tabMsgs: 'Messages',
+      tabChildren: 'Profil Enfant',
+      tabEvaluations: 'Évaluations',
+      tabReports: 'Rapports',
       tabDocs: 'Documents',
+      tabMsgs: 'Messages',
+      tabPrograms: 'Programmes',
+      tabAppts: 'Rendez-vous',
       tabContact: 'Contact',
       welcome: 'Bienvenue',
       welcomeSuffix: ' dans votre Espace Parents.',
@@ -197,14 +190,14 @@
       markAsRead: 'Marquer comme lu',
       contactTitle: 'Contacter l’Administration',
       contactSub: 'Nous sommes à votre écoute par le biais des canaux officiels suivants :',
-      contactAddrLabel: 'Adresse :',
+      contactAddrLabel: ' Adresse :',
       contactAddrVal: 'Commune d’El Atteuf – Wilaya de Ghardaïa – Algérie',
-      contactEmailLabel: 'E-mail :',
-      contactPhoneLabel: 'Téléphone / Fax :',
-      contactSocialLabel: 'Réseaux officiels :',
+      contactEmailLabel: ' E-mail :',
+      contactPhoneLabel: ' Téléphone / Fax :',
+      contactSocialLabel: ' Réseaux officiels :',
       contactWa: 'WhatsApp du Centre',
       contactFb: 'Page Facebook',
-      contactSiteLabel: 'Site web officiel :',
+      contactSiteLabel: ' Site web officiel :',
       contactSiteLink: 'Page d’accueil Dar El Ihsan',
       contactNoteTitle: 'Information aux parents',
       contactNoteTxt: 'Pour toute question relative au suivi éducatif ou médical de votre enfant, privilégiez le contact par e-mail ou une visite directe durant les heures de permanence.',
@@ -213,7 +206,7 @@
       passMismatchErr: 'Les mots de passe ne correspondent pas.',
       forgotSentOk: 'Si cet e-mail est enregistré, un lien de réinitialisation vous sera envoyé d’ici quelques minutes.',
       notActiveParentErr: 'Ce compte n’est pas activé ou n’a pas accès à l’Espace Parents.',
-      btnLinkCode: 'Lier un enfant par code',
+      btnLinkCode: ' Lier un enfant par code',
       enterCodePrompt: 'Saisissez le code d’inscription secret (ex: DI-A1B2C3) :',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'Confirmer',
@@ -283,11 +276,7 @@
   function openModal(card) {
     var m = $('#modal'), c = $('#modalCard');
     if (!m || !c) return;
-    var wasHidden = m.hidden;
     c.textContent = ''; c.appendChild(card); m.hidden = false; document.body.style.overflow = 'hidden';
-    if (wasHidden) {
-      try { window.history.pushState({ deParent: true, tab: S.tab, modal: true }, ''); } catch (e) {}
-    }
     var first = c.querySelector('input,select,textarea,button'); if (first) first.focus();
   }
   function closeModal() {
@@ -427,21 +416,10 @@
       show('app');
       applyLang();
       $('#who').textContent = S.name || t('whoDefault');
-      var spName = $('#sideParentName');
-      if (spName) spName.textContent = S.name || t('whoDefault');
-      var spEmail = $('#sideParentEmail');
-      if (spEmail) spEmail.textContent = (me && me.email) ? me.email : 'حساب ولي معتمد';
-      var spAvatar = $('#sideAvatar');
-      if (spAvatar) spAvatar.textContent = (S.name ? S.name.trim().charAt(0) : 'و');
       toast(t('welcome') + (S.name ? ' ' + S.name : '') + t('welcomeSuffix'), 'ok');
 
       stopIdle && stopIdle();
       stopIdle = DE.idle(30 * 60 * 1000, function () { logout(t('logoutPrompt')); });
-      S.tabStack = [];
-      try {
-        window.history.replaceState({ deParentGuard: true, deParent: true, tab: S.tab }, '');
-        window.history.pushState({ deParent: true, tab: S.tab }, '');
-      } catch (e) {}
       render();
 
       var params = new URLSearchParams(window.location.search);
@@ -457,19 +435,187 @@
     showLogin(msg);
   }
 
-  /* ---------- العرض والتنقل ---------- */
+  /* ---------- العرض والتنقل والإشعارات الحديثة ---------- */
   var TABS = [
-    ['children', 'tabChildren', 'i-child'],
-    ['programs', 'tabPrograms', 'i-book'],
-    ['reports',  'tabReports',  'i-report'],
-    ['appts',    'tabAppts',    'i-cal'],
-    ['msgs',     'tabMsgs',     'i-mail'],
-    ['docs',     'tabDocs',     'i-file'],
-    ['contact',  'tabContact',  'i-contact']
+    ['children',    'tabChildren',    'i-child'],
+    ['evaluations', 'tabEvaluations', 'i-eval'],
+    ['reports',     'tabReports',     'i-report'],
+    ['docs',        'tabDocs',        'i-file'],
+    ['msgs',        'tabMsgs',        'i-mail'],
+    ['programs',    'tabPrograms',    'i-book'],
+    ['appts',       'tabAppts',       'i-cal'],
+    ['contact',     'tabContact',     'i-contact']
   ];
 
   function unreadCount() {
     return S.d ? S.d.msgs.filter(function (m) { return !S.reads[m.id]; }).length : 0;
+  }
+
+  function getNewReportsCount() {
+    if (!S.d || !S.d.reports) return 0;
+    var stdReps = S.d.reports.filter(function (r) { return !isEvalReport(r); });
+    return stdReps.filter(function (r) {
+      return localStorage.getItem('de_seen_rep_' + r.id) !== '1';
+    }).length;
+  }
+
+  function getNewEvaluationsCount() {
+    if (!S.d || !S.d.reports) return 0;
+    var evReps = S.d.reports.filter(isEvalReport);
+    return evReps.filter(function (e) {
+      return localStorage.getItem('de_seen_ev_' + e.id) !== '1';
+    }).length;
+  }
+
+  function getTotalNotificationsCount() {
+    return unreadCount() + getNewReportsCount() + getNewEvaluationsCount();
+  }
+
+  function updateNotifBadge() {
+    var b = $('#notifBadge');
+    if (!b) return;
+    var count = getTotalNotificationsCount();
+    if (count > 0) {
+      b.textContent = String(count);
+      b.hidden = false;
+    } else {
+      b.hidden = true;
+    }
+  }
+
+  function openNotificationsModal() {
+    var card = h('div', { class: 'modal-body' },
+      h('div', { class: 'bar-sub' },
+        h('h2', { text: 'الإشعارات والتنبيهات' }),
+        h('button', {
+          type: 'button',
+          class: 'btn small light',
+          text: 'تعليم الكل كمقروء',
+          onclick: function () {
+            if (S.d && S.d.msgs) {
+              S.d.msgs.forEach(function (m) {
+                if (!S.reads[m.id]) {
+                  S.reads[m.id] = true;
+                  C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me }).catch(function () {});
+                }
+              });
+            }
+            if (S.d && S.d.reports) {
+              S.d.reports.forEach(function (r) {
+                if (isEvalReport(r)) localStorage.setItem('de_seen_ev_' + r.id, '1');
+                else localStorage.setItem('de_seen_rep_' + r.id, '1');
+              });
+            }
+            updateNotifBadge();
+            closeModal();
+            render();
+            toast('تم تعليم كل الإشعارات كمقروءة.', 'ok');
+          }
+        })
+      )
+    );
+
+    var list = h('div', { class: 'dynamic-items-container', style: 'max-height: 400px; overflow-y: auto;' });
+    var itemsCount = 0;
+
+    // الرسائل الجديدة
+    if (S.d && S.d.msgs) {
+      var unreadMsgs = S.d.msgs.filter(function (m) { return !S.reads[m.id]; });
+      unreadMsgs.forEach(function (m) {
+        itemsCount++;
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+          h('div', { class: 'pm-lic-right' },
+            h('div', { class: 'pm-lic-icon-box' }, icon('i-mail')),
+            h('div', { class: 'pm-lic-info' },
+              h('strong', { class: 'pm-lic-title', style: 'font-size:0.95rem;', text: 'رسالة جديدة: ' + m.title }),
+              h('span', { class: 'pm-lic-meta', text: fmtDate(m.published_at || m.created_at) })
+            )
+          ),
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-primary',
+            text: 'عرض الرسالة',
+            onclick: function () {
+              closeModal();
+              S.tab = 'msgs';
+              render();
+              window.scrollTo(0, 0);
+            }
+          })
+        );
+        list.appendChild(itemEl);
+      });
+    }
+
+    // استمارات التقييم الجديدة
+    if (S.d && S.d.reports) {
+      var newEvals = S.d.reports.filter(function (r) { return isEvalReport(r) && localStorage.getItem('de_seen_ev_' + r.id) !== '1'; });
+      newEvals.forEach(function (e) {
+        itemsCount++;
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+          h('div', { class: 'pm-lic-right' },
+            h('div', { class: 'pm-lic-icon-box gold' }, icon('i-eval')),
+            h('div', { class: 'pm-lic-info' },
+              h('strong', { class: 'pm-lic-title', style: 'font-size:0.95rem;', text: 'استمارة تقييم جديدة: ' + e.title }),
+              h('span', { class: 'pm-lic-meta', text: 'تاريخ التقييم: ' + fmtDate(e.report_date) })
+            )
+          ),
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-gold',
+            text: 'عرض ورقة التقييم',
+            onclick: function () {
+              localStorage.setItem('de_seen_ev_' + e.id, '1');
+              updateNotifBadge();
+              closeModal();
+              S.tab = 'evaluations';
+              render();
+              window.scrollTo(0, 0);
+            }
+          })
+        );
+        list.appendChild(itemEl);
+      });
+
+      // التقارير الجديدة
+      var newReps = S.d.reports.filter(function (r) { return !isEvalReport(r) && localStorage.getItem('de_seen_rep_' + r.id) !== '1'; });
+      newReps.forEach(function (r) {
+        itemsCount++;
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+          h('div', { class: 'pm-lic-right' },
+            h('div', { class: 'pm-lic-icon-box' }, icon('i-report')),
+            h('div', { class: 'pm-lic-info' },
+              h('strong', { class: 'pm-lic-title', style: 'font-size:0.95rem;', text: 'تقرير دوري جديد: ' + r.title }),
+              h('span', { class: 'pm-lic-meta', text: 'تاريخ التقرير: ' + fmtDate(r.report_date) })
+            )
+          ),
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-primary',
+            text: 'عرض التقرير',
+            onclick: function () {
+              localStorage.setItem('de_seen_rep_' + r.id, '1');
+              updateNotifBadge();
+              closeModal();
+              S.tab = 'reports';
+              render();
+              window.scrollTo(0, 0);
+            }
+          })
+        );
+        list.appendChild(itemEl);
+      });
+    }
+
+    if (itemsCount === 0) {
+      list.appendChild(h('div', { class: 'card empty', text: 'لا توجد إشعارات جديدة حالياً.' }));
+    }
+
+    card.appendChild(list);
+    card.appendChild(h('div', { class: 'modal-actions' },
+      h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
+    ));
+    openModal(card);
   }
 
   function icon(id) {
@@ -481,47 +627,137 @@
     return s;
   }
 
-  function isFarmOnlyParent() {
-    var kids = (S.d && S.d.children) || [];
-    if (!kids.length) return false;
-    return kids.every(function (c) {
-      return c.center === 'farm' || String(c.section || '').indexOf('البستنة') >= 0 || String(c.section || '').indexOf('المزرعة') >= 0;
-    });
+  function renderTabs() {
+    updateNotifBadge();
+
+    // ربط زر الإشعارات في الشريط العلوي إن لم يكن مربوطاً
+    var notifBtn = $('#notifBtn');
+    if (notifBtn && !notifBtn._bound) {
+      notifBtn._bound = true;
+      notifBtn.addEventListener('click', openNotificationsModal);
+    }
+
+    // 1. شريط التنقل العلوي/المكتبي
+    var nav = $('#tabs');
+    if (nav) {
+      nav.textContent = '';
+      TABS.forEach(function (tb) {
+        var unread = 0;
+        if (tb[0] === 'msgs') unread = unreadCount();
+        if (tb[0] === 'reports') unread = getNewReportsCount();
+        if (tb[0] === 'evaluations') unread = getNewEvaluationsCount();
+
+        var b = h('button', {
+          type: 'button',
+          role: 'tab',
+          class: 'pm-tab-btn' + (S.tab === tb[0] ? ' active' : ''),
+          'aria-selected': S.tab === tb[0] ? 'true' : 'false',
+          onclick: function () { S.tab = tb[0]; render(); window.scrollTo(0, 0); }
+        }, icon(tb[2]), h('span', { text: t(tb[1]) }));
+
+        if (unread > 0) {
+          b.appendChild(h('span', { class: 'tab-dot', text: String(unread) }));
+        }
+        nav.appendChild(b);
+      });
+    }
+
+    // 2. شريط التنقل السفلي للهواتف (Mobile Bottom Bar)
+    var mobNav = $('#mobileBottomNav');
+    if (mobNav) {
+      mobNav.textContent = '';
+      var mobileTabs = [
+        ['children', 'tabChildren', 'i-child'],
+        ['evaluations', 'tabEvaluations', 'i-eval'],
+        ['reports', 'tabReports', 'i-report'],
+        ['msgs', 'tabMsgs', 'i-mail'],
+        ['docs', 'tabDocs', 'i-file']
+      ];
+      mobileTabs.forEach(function (tb) {
+        var unread = 0;
+        if (tb[0] === 'msgs') unread = unreadCount();
+        if (tb[0] === 'reports') unread = getNewReportsCount();
+        if (tb[0] === 'evaluations') unread = getNewEvaluationsCount();
+
+        var mb = h('button', {
+          type: 'button',
+          class: 'pm-mob-tab-btn' + (S.tab === tb[0] ? ' active' : ''),
+          onclick: function () { S.tab = tb[0]; render(); window.scrollTo(0, 0); }
+        }, icon(tb[2]), h('span', { text: t(tb[1]) }));
+
+        if (unread > 0) {
+          mb.appendChild(h('span', { class: 'tab-dot', text: String(unread) }));
+        }
+        mobNav.appendChild(mb);
+      });
+    }
   }
 
-  function renderTabs() {
-    var nav = $('#tabs'); nav.textContent = '';
-    var hideReports = isFarmOnlyParent();
-    if (hideReports && S.tab === 'reports') S.tab = 'children';
-    TABS.forEach(function (tb) {
-      if (hideReports && tb[0] === 'reports') return;
-      var isAct = (S.tab === tb[0]);
-      var b = h('button', {
-        type: 'button',
-        role: 'tab',
-        class: isAct ? 'active' : '',
-        'aria-selected': isAct ? 'true' : 'false',
-        'aria-current': isAct ? 'page' : null,
-        onclick: function () {
-          document.body.classList.remove('nav-toggled');
-          var app = $('#app');
-          if (app) app.classList.remove('nav-toggled');
-          if (S.tab !== tb[0]) {
-            S.tabStack.push(S.tab);
-            if (S.tabStack.length > 20) S.tabStack.shift();
-            S.tab = tb[0];
-            try { window.history.pushState({ deParent: true, tab: S.tab }, ''); } catch (e) {}
-          }
-          render();
-          window.scrollTo(0, 0);
-        }
-      }, icon(tb[2]), h('span', { text: t(tb[1]) }));
+  /* بطاقة الترحيب العصرية الشاملة في أعلى واجهة الولي */
+  function renderParentHeroCard() {
+    var c = (S.d && S.d.children && S.d.children[0]) || null;
+    var childNameTxt = c ? c.full_name : 'ولي الأمر الكريم';
+    var centerLabel = c ? (t('center_' + c.center) || c.center) : 'دار الإحسان';
+    var sectionLabel = c && c.section ? c.section : 'القسم التأهيلي';
 
-      if (tb[0] === 'msgs' && unreadCount()) {
-        b.appendChild(h('span', { class: 'dot', text: String(unreadCount()) }));
-      }
-      nav.appendChild(b);
-    });
+    var repsCount = S.d ? S.d.reports.filter(function (r) { return !isEvalReport(r); }).length : 0;
+    var evalsCount = S.d ? S.d.reports.filter(isEvalReport).length : 0;
+    var msgsCount = S.d ? S.d.msgs.length : 0;
+    var docsCount = S.d ? (S.d.docs || []).length : 0;
+
+    var hero = h('div', { class: 'pm-hero-card' },
+      h('div', { class: 'pm-hero-top' },
+        h('div', null,
+          h('span', { class: 'pm-hero-greet', text: 'مرحباً بكم في فضاء الأولياء الرسمي' }),
+          h('h2', { class: 'pm-hero-child-name', text: childNameTxt }),
+          h('div', { class: 'pm-hero-child-meta' },
+            h('span', { class: 'pm-meta-pill gold', text: centerLabel }),
+            c && c.membership_no ? h('span', { class: 'pm-meta-pill', text: 'رقم القيد: N° ' + c.membership_no }) : null,
+            h('span', { class: 'pm-meta-pill', text: sectionLabel })
+          )
+        )
+      ),
+      h('div', { class: 'pm-hero-counters' },
+        h('div', { class: 'pm-counter-item', onclick: function () { S.tab = 'evaluations'; render(); window.scrollTo(0, 0); } },
+          h('span', { class: 'pm-counter-num', text: String(evalsCount) }),
+          h('span', { class: 'pm-counter-label', text: 'استمارات التقييم' })
+        ),
+        h('div', { class: 'pm-counter-item', onclick: function () { S.tab = 'reports'; render(); window.scrollTo(0, 0); } },
+          h('span', { class: 'pm-counter-num', text: String(repsCount) }),
+          h('span', { class: 'pm-counter-label', text: 'التقارير الدورية' })
+        ),
+        h('div', { class: 'pm-counter-item', onclick: function () { S.tab = 'msgs'; render(); window.scrollTo(0, 0); } },
+          h('span', { class: 'pm-counter-num', text: String(msgsCount) }),
+          h('span', { class: 'pm-counter-label', text: 'الرسائل والإعلانات' })
+        ),
+        h('div', { class: 'pm-counter-item', onclick: function () { S.tab = 'docs'; render(); window.scrollTo(0, 0); } },
+          h('span', { class: 'pm-counter-num', text: String(docsCount) }),
+          h('span', { class: 'pm-counter-label', text: 'الوثائق والملفات' })
+        )
+      )
+    );
+
+    // بانر تنبيه في حال وجود إشعارات جديدة غير مقروءة
+    var totalNotifs = getTotalNotificationsCount();
+    var alertBanner = null;
+    if (totalNotifs > 0) {
+      alertBanner = h('div', { class: 'pm-alert-banner' },
+        h('div', { class: 'pm-alert-banner-content' },
+          icon('i-bell'),
+          h('span', { text: 'لديك ' + totalNotifs + ' إشعار جديد في ملف طفلك (رسائل، تقارير أو تقييمات جديدة)!' })
+        ),
+        h('button', {
+          type: 'button',
+          class: 'pm-alert-btn',
+          text: 'اطّلع عليها الآن',
+          onclick: openNotificationsModal
+        })
+      );
+    }
+
+    var host = h('div', null, hero);
+    if (alertBanner) host.appendChild(alertBanner);
+    return host;
   }
 
   function childName(id) {
@@ -610,7 +846,7 @@
           c.section ? ['الفوج / القسم', c.section] : null,
           c.dob ? ['تاريخ الميلاد', fmtDate(c.dob)] : null,
           c.disability ? ['طبيعة الإعاقة', c.disability] : null,
-          ['الموسم الدراسي', c.academic_year ? c.academic_year.replace('-', '–') : currentAcademicYear('–')]
+          c.academic_year ? ['الموسم الدراسي', c.academic_year] : ['الموسم الدراسي', '2026–2027']
         ].filter(Boolean).map(function (it) {
           return h('div', { class: 'cd-item' }, h('span', { text: it[0] }), h('b', { text: it[1] }));
         }))
@@ -752,7 +988,7 @@
       } catch (e) { rawSched = null; }
     }
     var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || currentAcademicYear('/');
+    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
     var domainsList = (Array.isArray(rawSched) && rawSched[0] && Array.isArray(rawSched[0].domains)) ? rawSched[0].domains : [];
     var activeDomains = domainsList.filter(function (dm) { return dm && dm.domain; });
 
@@ -799,16 +1035,16 @@
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 20px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 20px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('الموسم الدراسي: ' + acYear, W - 36, 58);
       ctx.fillText('الفوج / القسم: ' + secName, W - 36, 98);
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#1E293B';
-      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', W / 2, 42);
       ctx.fillText('المركز النفسي البيداغوجي دار الإحسان', W / 2, 68);
-      ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('- العطف - غرداية -', W / 2, 92);
 
       ctx.fillStyle = '#E0F2FE';
@@ -817,7 +1053,7 @@
       ctx.lineWidth = 2.2;
       ctx.strokeRect(W / 2 - 195, 102, 390, 44);
       ctx.fillStyle = '#0C2D55';
-      ctx.font = '900 27px Cairo, Tajawal, sans-serif';
+      ctx.font = '900 27px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('البرنامج الأسبوعي', W / 2, 133);
 
       if (logoImg) {
@@ -840,7 +1076,7 @@
         ctx.strokeRect(W - 28 - rightLblW, y, rightLblW, 38);
         ctx.strokeRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('الأنشطة / المجالات', W - 28 - rightLblW / 2, y + 24);
         ctx.fillText('عدد المهارات', W - 28 - rightLblW / 2, y + 64);
@@ -861,9 +1097,9 @@
           ctx.strokeRect(dx, y + 38, dColW, 42);
 
           ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
+          ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
           ctx.fillText(String(dm.domain || '').slice(0, 30), dx + dColW / 2, y + 24);
-          ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+          ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
           ctx.fillText(skCount + ' مهارة', dx + dColW / 2, y + 64);
         });
 
@@ -875,7 +1111,7 @@
         ctx.strokeRect(28, y, leftTotalW, 38);
         ctx.strokeRect(28, y + 38, leftTotalW, 42);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('المجموع', 28 + leftTotalW / 2, y + 24);
         ctx.fillText(totalSkills + ' مهارة', 28 + leftTotalW / 2, y + 64);
 
@@ -901,7 +1137,7 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, periodHeaderH);
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('إطار الفترات', 28 + sessColW + dayColW / 2, y + 30);
 
@@ -922,22 +1158,22 @@
         ctx.fillRect(mornX, y, mornW, periodHeaderH);
         ctx.strokeRect(mornX, y, mornW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الفترة الصباحية', mornX + mornW / 2, y + 31);
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
 
         ctx.fillStyle = '#D8B4E2';
         ctx.fillRect(brkX, y, brkW, periodHeaderH);
         ctx.strokeRect(brkX, y, brkW, periodHeaderH);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
-        ctx.fillText('⏸' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
+        ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(aftX, y, aftW, periodHeaderH);
         ctx.strokeRect(aftX, y, aftW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الفترة المسائية', aftX + aftW / 2, y + 31);
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
       } else if (numCols >= 2) {
         var halfCols = Math.ceil(numCols / 2);
         var mW = halfCols * colW;
@@ -948,22 +1184,22 @@
         ctx.fillRect(mX, y, mW, periodHeaderH);
         ctx.strokeRect(mX, y, mW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الفترة الصباحية', mX + mW / 2, y + 31);
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(28, y, aW, periodHeaderH);
         ctx.strokeRect(28, y, aW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الفترة المسائية', 28 + aW / 2, y + 31);
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
       } else {
         ctx.fillStyle = '#BAE6FD';
         ctx.fillRect(28, y, sessColW, periodHeaderH);
         ctx.strokeRect(28, y, sessColW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
-        ctx.fillText('الفترة الصباحية   |   الفترة المسائية', 28 + sessColW / 2, y + 31);
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
       }
 
       y += periodHeaderH;
@@ -975,11 +1211,11 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, timeHeaderH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
+      ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
       ctx.fillStyle = '#FDE047';
-      ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
 
       unifiedCols.forEach(function (col, cIdx) {
@@ -991,7 +1227,7 @@
         ctx.strokeRect(cx, y, colW, timeHeaderH);
 
         ctx.fillStyle = col.isBreak ? '#4C1D95' : '#0C2D55';
-        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(col.label.slice(0, 28), cx + colW / 2, y + 22);
 
@@ -1007,8 +1243,8 @@
 
         var timeTxt = formatParentTimeRange(col.start, col.end) || 'التوقيت يدوي';
         ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
-        ctx.font = '900 15px Cairo, Tajawal, sans-serif';
-        ctx.fillText('' + timeTxt, cx + colW / 2, pillY + 21);
+        ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
+        ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
       });
 
       y += timeHeaderH;
@@ -1026,7 +1262,7 @@
         ctx.strokeRect(28 + sessColW, y, dayColW, rh);
 
         ctx.fillStyle = '#0F172A';
-        ctx.font = '900 21px Cairo, Tajawal, sans-serif';
+        ctx.font = '900 21px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(wd.label, 28 + sessColW + dayColW / 2, y + rh / 2 + 7);
 
@@ -1043,7 +1279,7 @@
 
           if (!sess || !isParentSessionActive(sess)) {
             ctx.fillStyle = '#94A3B8';
-            ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('—', sx + colW / 2, y + rh / 2 + 6);
             return;
@@ -1063,7 +1299,7 @@
             ctx.fillStyle = isBrk ? '#D8B4E2' : '#E0F2FE';
             ctx.fillRect(sx + 5, iy, colW - 10, 24);
             ctx.fillStyle = '#0F172A';
-            ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText((sess.title + (customTime ? (' (' + customTime + ')') : '')).slice(0, 34), sx + colW / 2, iy + 17);
             iy += 28;
@@ -1071,7 +1307,7 @@
 
           if (isBrk && (!sess.items || !sess.items.length)) {
             ctx.fillStyle = '#4C1D95';
-            ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(sess.title || col.label || 'فسحة', sx + colW / 2, y + rh / 2 + 7);
           } else {
@@ -1086,15 +1322,15 @@
 
               ctx.textAlign = 'right';
               ctx.fillStyle = '#0C2D55';
-              ctx.font = 'bold 11.5px Cairo, Tajawal, sans-serif';
-              ctx.fillText(('' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
+              ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
+              ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
               ctx.fillStyle = '#0F172A';
-              ctx.font = 'bold 12px Cairo, Tajawal, sans-serif';
-              var skillLines = wrapParentCanvasLines(ctx, '' + (it.skill || ''), colW - 22);
+              ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
+              var skillLines = wrapParentCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
               ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
               if (skillLines[1]) {
-                ctx.font = 'bold 11px Cairo, Tajawal, sans-serif';
+                ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
                 ctx.fillText(skillLines[1].slice(0, 44), sx + colW - 10, iy + 44);
               }
               iy += boxH + 5;
@@ -1106,7 +1342,7 @@
       });
 
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('توقيع المربية', W - 200, y + 48);
       ctx.fillText('المشرف البيداغوجي', W / 2, y + 48);
@@ -1141,12 +1377,12 @@
 
     openModal(h('div', { class: 'modal-body wk-modal-print' },
       h('div', { class: 'bar-sub no-print' },
-        h('h2', { text: 'صورة البرنامج الأسبوعي الكاملة' }),
+        h('h2', { text: ' صورة البرنامج الأسبوعي الكاملة' }),
         h('div', { class: 'row-actions' },
           h('button', {
             type: 'button',
             class: 'btn small light',
-            text: 'تكبير / تصغير الصورة',
+            text: ' تكبير / تصغير الصورة',
             onclick: function () {
               zoomed = !zoomed;
               imgEl.className = zoomed ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
@@ -1161,7 +1397,7 @@
         h('button', {
           class: 'btn gold',
           type: 'button',
-          text: 'تحميل صورة البرنامج (PNG)',
+          text: ' تحميل صورة البرنامج (PNG)',
           onclick: function () {
             if (!currentDataUrl) return;
             var a = document.createElement('a');
@@ -1170,7 +1406,7 @@
             a.click();
           }
         }),
-        h('button', { class: 'btn', type: 'button', text: 'طباعة', onclick: function () { window.print(); } })
+        h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
       )
     ));
   }
@@ -1183,7 +1419,7 @@
       } catch (e) { rawSched = null; }
     }
     var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || currentAcademicYear('/');
+    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
 
     var imgEl = h('img', {
       class: 'wk-program-img',
@@ -1201,14 +1437,14 @@
     var openBtn = h('button', {
       type: 'button',
       class: 'btn small gold',
-      text: 'فتح وتكبير صورة البرنامج كاملة',
+      text: ' فتح وتكبير صورة البرنامج كاملة',
       onclick: function () { openParentProgramImageViewer(p); }
     });
 
     var dlBtn = h('button', {
       type: 'button',
       class: 'btn small light',
-      text: 'حفظ الصورة في الهاتف',
+      text: ' حفظ الصورة في الهاتف',
       onclick: function () {
         if (!currentDataUrl) return;
         var a = document.createElement('a');
@@ -1221,7 +1457,7 @@
     return h('div', { class: 'card wk-parent-card' },
       h('div', { class: 'bar-sub' },
         h('div', null,
-          h('h2', { text: 'البرنامج الأسبوعي — ' + secName }),
+          h('h2', { text: ' البرنامج الأسبوعي — ' + secName }),
           h('span', { class: 'muted small', text: 'الموسم الدراسي: ' + acYear + ' — اضغط على الصورة لتكبيرها ورؤية كل البرنامج بوضوح' })
         ),
         h('div', { class: 'row-actions no-print' }, openBtn, dlBtn)
@@ -1280,14 +1516,14 @@
       id: 'demo-tamhin',
       section_id: secId || '',
       title: 'البرنامج الأسبوعي — ' + (secName || 'التمهين م م ع'),
-      academic_year: currentAcademicYear('/'),
+      academic_year: '2026/2027',
       published_at: new Date().toISOString(),
       schedule: days.map(function (dy) {
         return {
           day: dy.day,
           label: dy.label,
           section_name: secName || 'التمهين م م ع',
-          academic_year: currentAcademicYear('/'),
+          academic_year: '2026/2027',
           notes: notesTxt,
           domains: cleanDomains,
           sessions: dy.sessions
@@ -1315,116 +1551,404 @@
     });
   }
 
-  /* تبويب التقارير التربوية واستمارات التقييم البيداغوجي */
+  /* تبويب استمارات التقييم البيداغوجي والتقارير التربوية — مفصولتان تماماً */
   var EVAL_MARKER = '/*DE_EVAL_V1*/';
 
   function isEvalReport(r) {
-    return r && typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0;
+    if (!r) return false;
+    return (typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0)
+      || (typeof r.title === 'string' && (r.title.indexOf('استمارة تقييم') >= 0 || r.title.indexOf('تقرير اللجنة البيداغوجية') >= 0));
   }
 
-  function buildParentEvalTable(r) {
+  function parseParentEvaluationReport(r) {
     var domainKeys = Object.keys(EMBEDDED_CURRICULUM);
-    var parsedDomains = [];
-    try {
-      var raw = JSON.parse(r.activities.slice(EVAL_MARKER.length));
-      if (raw && Array.isArray(raw.domains)) {
-        parsedDomains = raw.domains.map(function (dm) {
-          var domName = typeof dm.d === 'number' ? (domainKeys[dm.d] || domainKeys[0]) : (dm.domain || domainKeys[0]);
-          var skList = EMBEDDED_CURRICULUM[domName] || [];
-          var rMap = {};
-          (dm.r || []).forEach(function (entry) {
-            rMap[entry[0]] = { score: entry[1] != null ? String(entry[1]) : '', yn: entry[2] || '', note: entry[3] || '' };
-          });
-          return {
-            domain: domName,
-            ratings: skList.map(function (sk, idx) {
-              var sv = rMap[idx] || {};
-              return { num: idx + 1, skill: sk, score: sv.score || '', yn: sv.yn || '', note: sv.note || '' };
-            })
-          };
-        });
-      }
-    } catch (e) {}
+    var res = {
+      id: r ? r.id : null,
+      title: (r && r.title) || 'تقرير اللجنة البيداغوجية والتربوية — استمارة التقييم',
+      report_date: (r && r.report_date) || new Date().toISOString().slice(0, 10),
+      term: 'الثلاثي الأخير',
+      school_year: '2024/2025',
+      degree_of_disability: 'متوسطة',
+      qualification_level: '',
+      supervisors: [
+        { name: 'أمير زكرياء', role: 'مدير المركز' }
+      ],
+      general_report: '',
+      abilities: {
+        current_potentials: '',
+        cognitive_intellectual: '',
+        language_receptive_expressive: '',
+        communication_behavioral: '',
+        academic_preacademic: '',
+        motor_independence: ''
+      },
+      strengths: [''],
+      weaknesses: [''],
+      recommendations: [''],
+      domains: []
+    };
 
-    return h('div', { class: 'eval-parent-wrap' },
-      parsedDomains.map(function (dm) {
-        var isComm = dm.domain.indexOf('التواصل') >= 0;
-        var thead = h('thead', null,
-          h('tr', { class: 'eval-dom-banner-row' },
-            h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: '' + dm.domain })
-          ),
-          h('tr', { class: 'eval-col-hdr-row' },
-            h('th', { class: 'eval-col-num', text: 'الرقم' }),
-            h('th', { class: 'eval-col-skill', text: 'المجال والمهارات' }),
-            isComm ? h('th', { class: 'eval-col-yn', text: 'نعم' }) : null,
-            isComm ? h('th', { class: 'eval-col-yn', text: 'لا' }) : null,
-            h('th', { class: 'eval-col-sc', text: '1' }),
-            h('th', { class: 'eval-col-sc', text: '2' }),
-            h('th', { class: 'eval-col-sc', text: '3' }),
-            h('th', { class: 'eval-col-sc', text: '4' }),
-            h('th', { class: 'eval-col-sc', text: '5' }),
-            h('th', { class: 'eval-col-deg', text: 'الدرجة' }),
-            h('th', { class: 'eval-col-note', text: 'ملاحظات' })
-          )
-        );
-        var tbody = h('tbody');
-        dm.ratings.forEach(function (it) {
-          tbody.appendChild(h('tr', { class: (it.score || it.yn) ? 'eval-row-rated' : '' },
-            h('td', { class: 'eval-col-num', text: String(it.num) }),
-            h('td', { class: 'eval-col-skill', text: it.skill }),
-            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'نعم' ? ' eval-cell-checked' : ''), text: it.yn === 'نعم' ? '' : '' }) : null,
-            isComm ? h('td', { class: 'eval-col-yn' + (it.yn === 'لا' ? ' eval-cell-checked' : ''), text: it.yn === 'لا' ? '' : '' }) : null,
-            ['1', '2', '3', '4', '5'].map(function (g) {
-              var active = String(it.score) === g;
-              return h('td', { class: 'eval-col-sc' + (active ? ' eval-cell-checked' : ''), text: active ? '' : '' });
-            }),
-            h('td', { class: 'eval-col-deg' }, h('strong', { text: it.score ? (it.score + ' / 5') : (it.yn || '—') })),
-            h('td', { class: 'eval-col-note', text: it.note || '—' })
-          ));
-        });
-        return h('div', { class: 'eval-table-wrap' }, h('table', { class: 'eval-official-table' }, thead, tbody));
-      })
+    if (r && typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0) {
+      try {
+        var rawJson = JSON.parse(r.activities.slice(EVAL_MARKER.length));
+        if (rawJson && typeof rawJson === 'object') {
+          if (rawJson.term) res.term = rawJson.term;
+          if (rawJson.school_year) res.school_year = rawJson.school_year;
+          if (rawJson.degree_of_disability) res.degree_of_disability = rawJson.degree_of_disability;
+          if (rawJson.qualification_level) res.qualification_level = rawJson.qualification_level;
+          if (Array.isArray(rawJson.supervisors) && rawJson.supervisors.length) res.supervisors = rawJson.supervisors;
+          if (rawJson.general_report) res.general_report = rawJson.general_report;
+          if (rawJson.abilities) res.abilities = Object.assign({}, res.abilities, rawJson.abilities);
+          if (Array.isArray(rawJson.strengths) && rawJson.strengths.length) res.strengths = rawJson.strengths;
+          if (Array.isArray(rawJson.weaknesses) && rawJson.weaknesses.length) res.weaknesses = rawJson.weaknesses;
+          if (Array.isArray(rawJson.recommendations) && rawJson.recommendations.length) res.recommendations = rawJson.recommendations;
+
+          if (Array.isArray(rawJson.domains)) {
+            res.domains = rawJson.domains.map(function (dm) {
+              var domName = typeof dm.d === 'number' ? (domainKeys[dm.d] || domainKeys[0]) : (dm.domain || domainKeys[0]);
+              var skList = EMBEDDED_CURRICULUM[domName] || [];
+              var ratingsMap = {};
+              if (Array.isArray(dm.r)) {
+                dm.r.forEach(function (entry) {
+                  ratingsMap[entry[0]] = { score: entry[1] != null ? String(entry[1]) : '', yn: entry[2] || '', note: entry[3] || '' };
+                });
+              } else if (dm.ratings && typeof dm.ratings === 'object') {
+                ratingsMap = dm.ratings;
+              }
+              return {
+                domain: domName,
+                ratings: skList.map(function (sk, idx) {
+                  var sv = ratingsMap[idx] || {};
+                  return { num: idx + 1, skill: sk, score: sv.score || '', yn: sv.yn || '', note: sv.note || '' };
+                })
+              };
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!res.general_report && r && r.notes) {
+      res.general_report = r.notes;
+    }
+    return res;
+  }
+
+  /* ورقة كشف التقييم الرسمية في فضاء الأولياء (مطابقة للصورة الرسمية 53020.jpg) */
+  function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd) {
+    var ev = parseParentEvaluationReport(r);
+
+    var ageTxt = '—';
+    if (kd && kd.dob) {
+      try {
+        var birthDate = new Date(kd.dob);
+        var today = new Date();
+        var age = today.getFullYear() - birthDate.getFullYear();
+        var m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+        if (age > 0) ageTxt = age + ' سنة';
+      } catch (e) {}
+    }
+
+    var logoImg = h('img', { class: 'oep-logo-side', alt: 'شعار دار الإحسان' });
+    logoImg.setAttribute('src', 'logo-sq.png');
+
+    var header = h('div', { class: 'oep-header' },
+      h('div', { class: 'oep-title-block' },
+        h('h3', { class: 'oep-org-name', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+        h('h4', { class: 'oep-center-name', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('p', { class: 'oep-location', text: '— العطف - غرداية —' }),
+        h('div', { class: 'oep-fr-title', text: "COMPTE RENDU DE L'EQUIPE PEDAGOGIQUE" }),
+        h('h2', { class: 'oep-report-heading', text: 'تقرير اللجنة البيداغوجية والتربوية' })
+      ),
+      logoImg
+    );
+
+    var termBanner = h('div', { class: 'oep-term-banner', text: 'تقييم ' + (ev.term || 'الثلاثي الأخير') + ' للموسم الدراسي: ' + (ev.school_year || '2024/2025') });
+
+    var infoTable = h('table', { class: 'oep-info-table' },
+      h('tbody', null,
+        h('tr', null,
+          h('td', { class: 'oep-info-label', text: 'اسم ولقب الحالة:' }),
+          h('td', { class: 'oep-info-val' }, h('strong', { text: childFullName || '—' })),
+          h('td', { class: 'oep-info-label', text: 'العمر:' }),
+          h('td', { class: 'oep-info-val', text: ageTxt })
+        ),
+        h('tr', null,
+          h('td', { class: 'oep-info-label', text: 'نوع الاضطراب:' }),
+          h('td', { class: 'oep-info-val', text: (kd && kd.disability) || '—' }),
+          h('td', { class: 'oep-info-label', text: 'تاريخ الميلاد:' }),
+          h('td', { class: 'oep-info-val', text: (kd && kd.dob) ? fmtDate(kd.dob) : '—' })
+        ),
+        h('tr', null,
+          h('td', { class: 'oep-info-label', text: 'درجة الإعاقة / الاضطراب:' }),
+          h('td', { class: 'oep-info-val', text: ev.degree_of_disability || 'متوسطة' }),
+          h('td', { class: 'oep-info-label', text: 'القسم ومستوى التأهيل:' }),
+          h('td', { class: 'oep-info-val', text: ev.qualification_level || secName || '—' })
+        )
+      )
+    );
+
+    var qrCanvas1 = h('canvas', { class: 'oep-qr-canvas' });
+    var qrCanvas2 = h('canvas', { class: 'oep-qr-canvas' });
+    var qrTargetUrl = window.location.href;
+
+    setTimeout(function () {
+      if (window.DE_QR) {
+        try { DE_QR.drawToCanvas(qrCanvas1, qrTargetUrl + '#eval', { size: 65, margin: 2 }); } catch (e) {}
+        try { DE_QR.drawToCanvas(qrCanvas2, qrTargetUrl + '#score', { size: 65, margin: 2 }); } catch (e) {}
+      }
+    }, 60);
+
+    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'أمير زكرياء', role: 'مدير المركز' }]).map(function (sp, sIdx) {
+      var tr = h('tr', null,
+        h('td', null, h('strong', { text: sp.name || '—' })),
+        h('td', { text: sp.role || '—' }),
+        h('td', null, h('span', { class: 'muted small', text: '..................' }))
+      );
+      if (sIdx === 0) {
+        var rowSpan = String(ev.supervisors.length || 1);
+        tr.appendChild(h('td', { rowspan: rowSpan },
+          h('div', { class: 'oep-qr-box' }, qrCanvas1, h('small', { class: 'muted', text: 'استمارة التقييم' }))
+        ));
+        tr.appendChild(h('td', { rowspan: rowSpan },
+          h('div', { class: 'oep-qr-box' }, qrCanvas2, h('small', { class: 'muted', text: 'كشف التقييم' }))
+        ));
+      }
+      return tr;
+    });
+
+    var supervisorsTable = h('table', { class: 'oep-supervisors-table' },
+      h('thead', null,
+        h('tr', null,
+          h('th', { text: 'المشرفون: الإسم واللقب' }),
+          h('th', { text: 'الوظيفة' }),
+          h('th', { text: 'التوقيع' }),
+          h('th', { text: 'استمارة التقييم' }),
+          h('th', { text: 'كشف التقييم' })
+        )
+      ),
+      h('tbody', null, supRows)
+    );
+
+    var perfBanner = h('div', { class: 'oep-section-banner', text: 'الوصف العام لأداء الحالة' });
+
+    var generalReportCol = h('div', { class: 'oep-general-report-box' },
+      h('div', { class: 'oep-gr-header', text: 'التقرير العام' }),
+      h('div', { class: 'oep-gr-body', text: ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.' })
+    );
+
+    var ab = ev.abilities || {};
+    var abilityBoxes = [
+      { title: 'إمكانيات والقدرات الحالية', val: ab.current_potentials, cls: 'oep-ab-hdr-1' },
+      { title: 'المهارات المعرفية والفكرية', val: ab.cognitive_intellectual, cls: 'oep-ab-hdr-2' },
+      { title: 'اللغة (استقبالية تعبيرية)', val: ab.language_receptive_expressive, cls: 'oep-ab-hdr-3' },
+      { title: 'القدرات الإتصالية والسلوكية', val: ab.communication_behavioral, cls: 'oep-ab-hdr-4' },
+      { title: 'المعارف الأكاديمية وما قبل الأكاديمي', val: ab.academic_preacademic, cls: 'oep-ab-hdr-5' },
+      { title: 'القدرات الحركية والاستقلالية', val: ab.motor_independence, cls: 'oep-ab-hdr-6' }
+    ].map(function (item) {
+      return h('div', { class: 'oep-ability-box' },
+        h('div', { class: 'oep-ab-hdr ' + item.cls, text: item.title }),
+        h('div', { class: 'oep-ab-content', text: item.val || '—' })
+      );
+    });
+
+    var abilitiesCol = h('div', { class: 'oep-abilities-stack' }, abilityBoxes);
+    var perfGrid = h('div', { class: 'oep-performance-grid' }, generalReportCol, abilitiesCol);
+
+    var summaryBanner = h('div', { class: 'oep-summary-banner', text: 'الخلاصة والتوصيات' });
+
+    function renderListItems(arr, fallback) {
+      var items = (arr || []).filter(function (x) { return x && x.trim(); });
+      if (!items.length) items = [fallback];
+      var ul = h('ul', { class: 'oep-rec-list' });
+      items.forEach(function (txt) { ul.appendChild(h('li', { text: txt })); });
+      return ul;
+    }
+
+    var recGrid = h('div', { class: 'oep-recommendations-grid' },
+      h('div', { class: 'oep-rec-col' },
+        h('div', { class: 'oep-rec-title', text: '1. نقاط القوة' }),
+        renderListItems(ev.strengths, 'استجابة وتفاعل إيجابي مع الأنشطة الموجهة.')
+      ),
+      h('div', { class: 'oep-rec-col' },
+        h('div', { class: 'oep-rec-title', text: '2. نقاط الضعف' }),
+        renderListItems(ev.weaknesses, 'الحاجة لتعزيز مهارات التركيز والاستقلالية.')
+      ),
+      h('div', { class: 'oep-rec-col' },
+        h('div', { class: 'oep-rec-title', text: '3. التوصيات' }),
+        renderListItems(ev.recommendations, 'مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.')
+      )
+    );
+
+    var ratedCountTotal = 0;
+    ev.domains.forEach(function (dm) {
+      (dm.ratings || []).forEach(function (it) {
+        if (it.score || it.yn) ratedCountTotal++;
+      });
+    });
+
+    var compactSkillsBox = null;
+    if (ratedCountTotal > 0) {
+      var domSummaryPills = ev.domains.map(function (dm) {
+        var rCount = (dm.ratings || []).filter(function (it) { return it.score || it.yn; }).length;
+        return h('span', { class: 'badge gold', text: dm.domain + ' (' + rCount + ' مهارة مقيمة)' });
+      });
+      compactSkillsBox = h('div', { class: 'eval-compact-box' },
+        h('div', { class: 'eval-compact-summary', text: '• مصفوفة المهارات التربوية المقيمة (إجمالي ' + ratedCountTotal + ' مهارة معتمدة):' }),
+        h('div', { class: 'row-actions' }, domSummaryPills)
+      );
+    }
+
+    return h('div', { class: 'official-eval-paper' },
+      header,
+      termBanner,
+      infoTable,
+      supervisorsTable,
+      perfBanner,
+      perfGrid,
+      summaryBanner,
+      recGrid,
+      compactSkillsBox
     );
   }
 
-  function vReports(v) {
-    if (!S.d.reports.length) return v.appendChild(empty(t('emptyReports')));
-    S.d.reports.forEach(function (r) {
-      var isEv = isEvalReport(r);
-      var card = h('div', { class: 'card' },
-        h('div', { class: 'bar-sub' },
-          h('h2', { text: (isEv ? '' : '') + r.title }),
-          h('span', { class: 'badge ' + (isEv ? 'gold' : 'ok'), text: isEv ? 'استمارة تقييم بيداغوجي' : 'تقرير دوري' })
+  /* تبويب استمارات التقييم (Evaluations Tab — مفصول تماماً وبطريقة عرض أنيقة) */
+  function vEvaluations(v) {
+
+    var topRow = h('div', { class: 'bar-sub' },
+      h('h2', { text: 'استمارات التقييم البيداغوجي المعتمدة' })
+    );
+    v.appendChild(topRow);
+
+    var evals = (S.d && S.d.reports || []).filter(isEvalReport);
+
+    if (!evals.length) {
+      return v.appendChild(empty('لا توجد استمارات تقييم معتمدة مسجلة لطفلك حالياً.'));
+    }
+
+    var kid = (S.d && S.d.children && S.d.children[0]) || null;
+    var childFullName = kid ? kid.full_name : 'الطفل';
+    var secName = kid ? (kid.section || '') : '';
+
+    evals.forEach(function (e) {
+      var isNew = localStorage.getItem('de_seen_ev_' + e.id) !== '1';
+
+      var card = h('div', { class: 'pm-list-item-card' },
+        h('div', { class: 'pm-lic-right' },
+          h('div', { class: 'pm-lic-icon-box gold' }, icon('i-eval')),
+          h('div', { class: 'pm-lic-info' },
+            h('h3', { class: 'pm-lic-title', text: e.title }),
+            h('div', { class: 'pm-lic-meta' },
+              h('span', { text: 'تاريخ التقييم: ' + fmtDate(e.report_date) }),
+              h('span', { class: 'badge gold', text: 'معتمدة ورسمية' }),
+              isNew ? h('span', { class: 'badge ok', text: 'جديد' }) : null
+            )
+          )
         ),
-        h('div', { class: 'meta' },
-          h('span', { text: childName(r.child_id) }),
-          h('span', { text: t('datePrefix') + fmtDate(r.report_date) })
+        h('div', { class: 'pm-lic-actions' },
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-primary',
+            text: 'التفاصيل',
+            onclick: function () {
+              localStorage.setItem('de_seen_ev_' + e.id, '1');
+              updateNotifBadge();
+              openModal(h('div', { class: 'modal-body wk-modal-print' },
+                renderParentOfficialEvaluationSheet(e, childFullName, secName, kid),
+                h('div', { class: 'modal-actions no-print' },
+                  h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
+                  h('button', { class: 'btn gold', type: 'button', text: 'طباعة / حفظ PDF', onclick: function () { window.print(); } })
+                )
+              ));
+            }
+          }),
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-gold',
+            text: 'تحميل / طباعة',
+            onclick: function () {
+              localStorage.setItem('de_seen_ev_' + e.id, '1');
+              updateNotifBadge();
+              openModal(h('div', { class: 'modal-body wk-modal-print' },
+                renderParentOfficialEvaluationSheet(e, childFullName, secName, kid),
+                h('div', { class: 'modal-actions no-print' },
+                  h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
+                  h('button', { class: 'btn gold', type: 'button', text: 'طباعة الورقة الرسمية', onclick: function () { window.print(); } })
+                )
+              ));
+              setTimeout(function () { window.print(); }, 200);
+            }
+          })
         )
       );
 
-      if (isEv) {
-        if (r.achievements) {
-          card.appendChild(h('div', { class: 'wk-sheet-notes' },
-            h('strong', { text: 'ملخص المجالات المقيمة: ' }),
-            h('p', { class: 'txt pre', text: r.achievements })
-          ));
-        }
-        card.appendChild(buildParentEvalTable(r));
-        if (r.notes) {
-          card.appendChild(h('div', { class: 'wk-sheet-notes' },
-            h('strong', { text: t('notes') + ': ' }),
-            h('span', { text: r.notes })
-          ));
-        }
-      } else {
-        [[t('achievements'), r.achievements], [t('activities'), r.activities], [t('notes'), r.notes]].forEach(function (p) {
-          if (p[1]) card.appendChild(h('div', null, h('h3', { text: p[0] }), h('p', { class: 'txt', text: p[1] })));
-        });
-      }
+      v.appendChild(card);
+    });
+  }
 
-      if (r.attachment_path) {
-        card.appendChild(h('div', { class: 'row-actions' }, fileBtn(r.attachment_path, t('openAttachment'))));
-      }
+  /* تبويب التقارير التربوية الدورية (Reports Tab — مفصول تماماً مع زر تحميل المرفقات) */
+  function vReports(v) {
+
+    var topRow = h('div', { class: 'bar-sub' },
+      h('h2', { text: 'التقارير التربوية الدورية ومتابعة التطور' })
+    );
+    v.appendChild(topRow);
+
+    var stdReports = (S.d && S.d.reports || []).filter(function (r) { return !isEvalReport(r); });
+
+    if (!stdReports.length) {
+      return v.appendChild(empty('لا توجد تقارير دورية مسجلة لطفلك حالياً.'));
+    }
+
+    stdReports.forEach(function (r) {
+      var isNew = localStorage.getItem('de_seen_rep_' + r.id) !== '1';
+
+      var card = h('div', { class: 'pm-list-item-card' },
+        h('div', { class: 'pm-lic-right' },
+          h('div', { class: 'pm-lic-icon-box' }, icon('i-report')),
+          h('div', { class: 'pm-lic-info' },
+            h('h3', { class: 'pm-lic-title', text: r.title }),
+            h('div', { class: 'pm-lic-meta' },
+              h('span', { text: 'تاريخ التقرير: ' + fmtDate(r.report_date) }),
+              r.attachment_path ? h('span', { class: 'badge ok', text: 'يحتوي على مرفق للتحميل' }) : null,
+              isNew ? h('span', { class: 'badge ok', text: 'جديد' }) : null
+            )
+          )
+        ),
+        h('div', { class: 'pm-lic-actions' },
+          h('button', {
+            type: 'button',
+            class: 'btn-pm-primary',
+            text: 'التفاصيل',
+            onclick: function () {
+              localStorage.setItem('de_seen_rep_' + r.id, '1');
+              updateNotifBadge();
+              var body = h('div', { class: 'modal-body' },
+                h('div', { class: 'bar-sub' },
+                  h('h2', { text: r.title }),
+                  h('span', { class: 'badge ok', text: fmtDate(r.report_date) })
+                )
+              );
+              if (r.achievements) body.appendChild(h('div', { style: 'margin-bottom:12px;' }, h('h3', { text: 'المكتسبات والمهارات المحققة:' }), h('p', { class: 'txt', text: r.achievements })));
+              if (r.activities) body.appendChild(h('div', { style: 'margin-bottom:12px;' }, h('h3', { text: 'الأنشطة والورشات المنجزة:' }), h('p', { class: 'txt', text: r.activities })));
+              if (r.notes) body.appendChild(h('div', { style: 'margin-bottom:12px;' }, h('h3', { text: 'ملاحظات وتوجيهات للأولياء:' }), h('p', { class: 'txt', text: r.notes })));
+              if (r.attachment_path) {
+                body.appendChild(h('div', { style: 'margin-top:16px;' },
+                  h('h3', { text: 'الملف المرفق بالتقرير:' }),
+                  fileBtn(r.attachment_path, 'تحميل / فتح الملف المرفق')
+                ));
+              }
+              body.appendChild(h('div', { class: 'modal-actions' },
+                h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
+              ));
+              openModal(body);
+            }
+          }),
+          r.attachment_path ? fileBtn(r.attachment_path, 'تحميل المرفق') : null
+        )
+      );
+
       v.appendChild(card);
     });
   }
@@ -1496,16 +2020,29 @@
 
   /* تبويب الوثائق الخاصة */
   function vDocs(v) {
-    if (!S.d.docs.length) return v.appendChild(empty(t('emptyDocs')));
-    S.d.docs.forEach(function (d) {
-      var card = h('div', { class: 'card' },
-        h('h2', { text: d.title }),
-        h('div', { class: 'meta' },
-          h('span', { text: childName(d.child_id) }),
-          d.category ? h('span', { text: d.category }) : null,
-          h('span', { text: fmtDate(d.created_at) })
+    var topRow = h('div', { class: 'bar-sub' },
+      h('h2', { text: t('tabDocs') })
+    );
+    v.appendChild(topRow);
+
+    var docsList = (S.d && S.d.docs) || [];
+    if (!docsList.length) return v.appendChild(empty(t('emptyDocs')));
+
+    docsList.forEach(function (d) {
+      var card = h('div', { class: 'pm-list-item-card' },
+        h('div', { class: 'pm-lic-right' },
+          h('div', { class: 'pm-lic-icon-box' }, icon('i-file')),
+          h('div', { class: 'pm-lic-info' },
+            h('h3', { class: 'pm-lic-title', text: d.title }),
+            h('div', { class: 'pm-lic-meta' },
+              d.category ? h('span', { class: 'badge', text: d.category }) : null,
+              h('span', { text: fmtDate(d.created_at) })
+            )
+          )
         ),
-        h('div', { class: 'row-actions' }, fileBtn(d.storage_path, t('openDoc')))
+        h('div', { class: 'pm-lic-actions' },
+          d.storage_path ? fileBtn(d.storage_path, 'تحميل / فتح الوثيقة') : null
+        )
       );
       v.appendChild(card);
     });
@@ -1517,9 +2054,9 @@
     card.appendChild(h('h2', { text: t('contactTitle') }));
     card.appendChild(h('p', { text: t('contactSub') }));
 
-    function cItem(symId, label, valNode) {
+    function cItem(iconText, label, valNode) {
       var row = h('div', { class: 'contact-item' },
-        h('div', { class: 'ci-icon' }, icon(symId)),
+        h('div', { class: 'ci-icon', text: iconText }),
         h('div', { class: 'ci-body' },
           h('div', { class: 'ci-label', text: label }),
           h('div', { class: 'ci-val' }, valNode)
@@ -1528,20 +2065,20 @@
       card.appendChild(row);
     }
 
-    cItem('i-pin', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
-    cItem('i-mail', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
-    cItem('i-phone', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
+    cItem('', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
+    cItem('', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
+    cItem('', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
 
     var socialLinks = h('div', { class: 'contact-btn-wrap' },
-      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: t('contactWa') }),
-      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: t('contactFb') })
+      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactWa') }),
+      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactFb') })
     );
-    cItem('i-globe', t('contactSocialLabel'), socialLinks);
+    cItem('', t('contactSocialLabel'), socialLinks);
 
     var siteA = document.createElement('a');
-    siteA.setAttribute('href', './index.html');
+    siteA.setAttribute('href', './site.html');
     siteA.textContent = t('contactSiteLink');
-    cItem('i-home', t('contactSiteLabel'), siteA);
+    cItem('', t('contactSiteLabel'), siteA);
 
     v.appendChild(card);
 
@@ -1552,50 +2089,135 @@
     v.appendChild(noteCard);
   }
 
+  if (window.DE_NAV) DE_NAV.setup({
+    active: function () { var a = $('#app'); return !!(a && !a.hidden); },
+    modalOpen: function () { var m = $('#modal'); return !!(m && !m.hidden); },
+    closeModal: function () { closeModal(); },
+    apply: function (st) { if (st.tab) S.tab = st.tab; render(); window.scrollTo(0, 0); }
+  });
+
   function render() {
+    if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
     renderTabs();
     var v = $('#view'); v.textContent = '';
-    ({
+    v.appendChild(renderParentHeroCard());
+    var handlers = {
       children: vChildren,
-      programs: vPrograms,
+      evaluations: vEvaluations,
       reports: vReports,
-      appts: vAppts,
-      msgs: vMsgs,
       docs: vDocs,
+      msgs: vMsgs,
+      programs: vPrograms,
+      appts: vAppts,
       contact: vContact
-    })[S.tab](v);
+    };
+    var fn = handlers[S.tab] || vChildren;
+    fn(v);
   }
 
   /* ---------- التشغيل والربط ---------- */
-  async function init() {
+  
+  function enterDemoParent() {
+    S.me = 'demo-parent-id';
+    S.name = 'عائلة خروبي الكريمة';
+    var demoKid = {
+      id: '00000000-0000-4000-8000-000000000187',
+      membership_no: '187',
+      full_name: 'خروبي زكرياء بن عيسى',
+      dob: '2015-04-14',
+      disability: 'اضطراب طيف التوحد TSA',
+      phone: '054228492',
+      section: 'توحد 01',
+      center: 'main',
+      academic_year: '2024/2025'
+    };
+    var demoEval = {
+      id: 'demo-eval-1',
+      child_id: demoKid.id,
+      title: 'تقرير اللجنة البيداغوجية والتربوية — استمارة التقييم',
+      report_date: '2026-10-15',
+      status: 'published',
+      activities: EVAL_MARKER + JSON.stringify({
+        v: 2,
+        term: 'الثلاثي الأخير',
+        school_year: '2024/2025',
+        degree_of_disability: 'متوسطة',
+        qualification_level: 'توحد 01',
+        supervisors: [
+          { name: 'أمير زكرياء', role: 'مدير المركز' },
+          { name: 'تواتي أسماء', role: 'أخصائية نفسانية' },
+          { name: 'خلوفي صفا', role: 'مختصة أرطفونية' },
+          { name: 'قوطارة جميلة', role: 'مربية' }
+        ],
+        general_report: 'تسجيل استجابة ممتازة في الأنشطة الفردية والتفاعل مع المربية، مع تحسن ملحوظ في التواصل البصري والتعبير الحركي والاستقلالية.',
+        abilities: {
+          current_potentials: 'قدرة جيدة على التركيز الفردي والاتباع البصري.',
+          cognitive_intellectual: 'تمييز الألوان الأساسية والأشكال الهندسية.',
+          language_receptive_expressive: 'فهم الأوامر البسيطة والاستجابة للإشارات.',
+          communication_behavioral: 'سلوك هادئ وتفاعل إيجابي مع المربية.',
+          academic_preacademic: 'مطابقة الصور ومسك القلم للرسم العشوائي.',
+          motor_independence: 'الاعتماد على النفس في غسل اليدين وخلع المعطف.'
+        },
+        strengths: ['الهدوء والاستجابة للتعليمات الفردية', 'تطور الاتصال البصري والتركيز'],
+        weaknesses: ['صعوبة التفاعل في المجموعات الكبيرة', 'الحاجة للتشجيع المستمر'],
+        recommendations: ['مواصلة جلسات الأرطفونيا والتأهيل النفسي', 'تعزيز الأنشطة المشتركة مع الأسرة'],
+        domains: []
+      })
+    };
+    var demoRep = {
+      id: 'demo-rep-1',
+      child_id: demoKid.id,
+      title: 'التقرير الدوري لمتابعة التطور والأنشطة',
+      report_date: '2026-10-01',
+      status: 'published',
+      achievements: 'اكتساب مهارات جديدة في العناية الذاتية والترتيب.',
+      activities: 'المشاركة في ورشة الرسم الحسي والأنشطة الحركية.',
+      notes: 'نوصي الأسرة بمواصلة نفس التوجيهات في المنزل.'
+    };
+    var demoMsg = {
+      id: 'demo-msg-1',
+      title: 'إعلان: استلام استمارات التقييم البيداغوجي للثلاثي',
+      body: 'أولياءنا الكرام، يسر إدارة المركز إعلامكم بإمكانية الاطلاع على تقارير التقييم البيداغوجي لأبنائكم وتحميلها مباشرة من فضاء الأولياء.',
+      published_at: new Date().toISOString()
+    };
+    var demoDoc = {
+      id: 'demo-doc-1',
+      child_id: demoKid.id,
+      title: 'شهادة المتابعة البيداغوجية والتأهيلية',
+      category: 'شهادة رسمية',
+      created_at: '2026-09-15'
+    };
+
+    S.d = {
+      children: [demoKid],
+      reports: [demoEval, demoRep],
+      appts: [],
+      msgs: [demoMsg],
+      docs: [demoDoc],
+      programs: [],
+      sections: []
+    };
+    S.reads = {};
+    show('app');
+    applyLang();
+    .textContent = S.name;
+    toast('مرحبًا بك في وضع المعاينة التجريبية لفضاء الأولياء!', 'ok');
+    render();
+  }
+
+async function init() {
     applyLang();
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
 
     $('#loginForm').addEventListener('submit', submitLogin);
+    var pDemo = ;
+    if (pDemo) pDemo.addEventListener('click', enterDemoParent);
+    if (new URLSearchParams(window.location.search).get('demo') === '1') { enterDemoParent(); return; }
+
     $('#forgotBtn').addEventListener('click', function () { setMode('forgot'); });
     $('#backBtn').addEventListener('click', function () { setMode('login'); });
     $('#logoutBtn').addEventListener('click', function () { logout(); });
-    var menuBtn = $('#menuBtn');
-    if (menuBtn) menuBtn.addEventListener('click', function () {
-      var app = $('#app');
-      if (app) app.classList.toggle('nav-toggled');
-      document.body.classList.toggle('nav-toggled');
-    });
-    var sideCloseBtn = $('#sideCloseBtn');
-    if (sideCloseBtn) sideCloseBtn.addEventListener('click', function () {
-      var app = $('#app');
-      if (app) app.classList.remove('nav-toggled');
-      document.body.classList.remove('nav-toggled');
-    });
-    var scrim = $('#scrim');
-    if (scrim) scrim.addEventListener('click', function () {
-      var app = $('#app');
-      if (app) app.classList.remove('nav-toggled');
-      document.body.classList.remove('nav-toggled');
-    });
-    var sideLogoutBtn = $('#sideLogoutBtn');
-    if (sideLogoutBtn) sideLogoutBtn.addEventListener('click', function () { logout(); });
 
     var btnLoginLang = $('#loginLangBtn'); if (btnLoginLang) btnLoginLang.addEventListener('click', toggleLang);
     var btnBarLang = $('#barLangBtn'); if (btnBarLang) btnBarLang.addEventListener('click', toggleLang);
@@ -1606,38 +2228,6 @@
     }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && m && !m.hidden) closeModal();
-    });
-
-    /* دعم زر الرجوع في الهاتف للعودة خطوة للخلف داخل فضاء الأولياء وعدم الخروج منه */
-    window.addEventListener('popstate', function () {
-      if ($('#login') && !$('#login').hidden && mode !== 'login') {
-        setMode('login');
-        try { window.history.pushState({ deParentLogin: true }, ''); } catch (e) {}
-        return;
-      }
-      if (!C.loggedIn() || !S.d || ($('#app') && $('#app').hidden)) return;
-      if (m && !m.hidden) {
-        closeModal();
-        return;
-      }
-      while (S.tabStack && S.tabStack.length > 0) {
-        var prevTab = S.tabStack.pop();
-        if (prevTab && prevTab !== S.tab) {
-          S.tab = prevTab;
-          render();
-          window.scrollTo(0, 0);
-          try { window.history.pushState({ deParent: true, tab: S.tab }, ''); } catch (e) {}
-          return;
-        }
-      }
-      if (S.tab !== 'children') {
-        S.tab = 'children';
-        render();
-        window.scrollTo(0, 0);
-        try { window.history.pushState({ deParent: true, tab: 'children' }, ''); } catch (e) {}
-        return;
-      }
-      try { window.history.pushState({ deParent: true, tab: 'children' }, ''); } catch (e) {}
     });
 
     try {

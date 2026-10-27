@@ -176,7 +176,7 @@ body {
   background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
   color: #FFFFFF;
   border: 2px solid #082D50;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
@@ -203,7 +203,7 @@ body {
 }
 
 .hub-diagram-title-box h1 {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.55rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -262,7 +262,7 @@ body {
 
 .brand-txt strong {
   display: block;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.05rem;
   font-weight: 800;
   color: #FFFFFF;
@@ -302,7 +302,7 @@ body {
   border-radius: 10px;
   background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
   color: #FFFFFF;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-weight: 800;
   font-size: 15px;
   display: flex;
@@ -319,7 +319,7 @@ body {
 
 .spp-info strong {
   display: block;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 13px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -347,7 +347,7 @@ body {
 }
 
 .nav-group-label {
-  font-family: "IBM Plex Sans Arabic", "Readex Pro", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 11px;
   font-weight: 800;
   color: #64748B;
@@ -374,144 +374,49 @@ body {
   margin: 8px 6px;
 }
 
-.side nav button,
-.side #tabs button,
-.side .side-nav button,
-.side-nav button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 11px 14px;
+.side nav button {
+  padding: 11px 13px;
   border-radius: 11px;
   font-size: 13.8px;
   font-weight: 700;
   color: #334155;
   background: transparent;
   border: 1px solid transparent;
-  cursor: pointer;
-  text-align: start;
-  text-decoration: none;
   transition: all 0.2s var(--ease-out);
-  box-sizing: border-box;
 }
 
-.side nav button svg,
-.side nav button .i,
-.side #tabs button svg,
-.side #tabs button .i,
-.side .side-nav button svg,
-.side .side-nav button .i,
-.side-nav button svg,
-.side-nav button .i {
-  width: 20px;
-  height: 20px;
+.side nav button svg {
   color: #64748B;
-  stroke-width: 2;
-  flex-shrink: 0;
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.side nav button:hover,
-.side #tabs button:hover,
-.side .side-nav button:hover,
-.side-nav button:hover {
+.side nav button:hover {
   background: var(--blue-soft);
   color: var(--blue-dark);
   transform: translateX(-3px);
 }
 
-html[lang="fr"] .side nav button:hover,
-html[lang="fr"] .side #tabs button:hover,
-html[lang="fr"] .side .side-nav button:hover,
-html[lang="fr"] .side-nav button:hover {
-  transform: translateX(3px);
-}
-
-.side nav button:hover svg,
-.side nav button:hover .i,
-.side #tabs button:hover svg,
-.side #tabs button:hover .i,
-.side .side-nav button:hover svg,
-.side .side-nav button:hover .i,
-.side-nav button:hover svg,
-.side-nav button:hover .i {
+.side nav button:hover svg {
   color: var(--blue);
 }
 
 .side nav button.active,
-.side nav button[aria-current="page"],
-.side nav button[aria-selected="true"],
-.side #tabs button.active,
-.side #tabs button[aria-selected="true"],
-.side .side-nav button.active,
-.side .side-nav button[aria-selected="true"],
-.side-nav button.active,
-.side-nav button[aria-selected="true"] {
-  background: linear-gradient(135deg, #123E73 0%, #082D50 100%) !important;
-  color: #FFFFFF !important;
-  font-weight: 800 !important;
-  border-color: transparent !important;
-  box-shadow: 0 5px 14px rgba(18, 62, 115, 0.28) !important;
+.side nav button[aria-current="page"] {
+  background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  border-color: transparent;
+  box-shadow: 0 5px 14px rgba(18, 62, 115, 0.28);
 }
 
 .side nav button.active::before,
-.side nav button[aria-current="page"]::before,
-.side nav button[aria-selected="true"]::before,
-.side #tabs button[aria-selected="true"]::before,
-.side-nav button[aria-selected="true"]::before {
-  display: none !important;
+.side nav button[aria-current="page"]::before {
+  display: none;
 }
 
 .side nav button.active svg,
-.side nav button[aria-current="page"] svg,
-.side nav button[aria-selected="true"] svg,
-.side nav button[aria-selected="true"] .i,
-.side #tabs button.active svg,
-.side #tabs button.active .i,
-.side #tabs button[aria-selected="true"] svg,
-.side #tabs button[aria-selected="true"] .i,
-.side .side-nav button.active svg,
-.side .side-nav button.active .i,
-.side .side-nav button[aria-selected="true"] svg,
-.side .side-nav button[aria-selected="true"] .i,
-.side-nav button.active svg,
-.side-nav button.active .i,
-.side-nav button[aria-selected="true"] svg,
-.side-nav button[aria-selected="true"] .i {
-  color: #FDE047 !important;
-}
-
-.side nav button .dot,
-.side #tabs button .dot,
-.side .side-nav button .dot,
-.side-nav button .dot {
-  margin-inline-start: auto;
-  font-size: 11px;
-  background: var(--brand-gold);
-  color: #082D50;
-  font-weight: 800;
-  padding: 1px 7px;
-  border-radius: 10px;
-}
-
-.bar-lang-btn {
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1.5px solid var(--blue-border);
-  background: var(--blue-soft);
-  color: var(--blue);
-  font-weight: 800;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.bar-lang-btn:hover {
-  background: var(--blue);
-  color: #FFFFFF;
-  border-color: var(--blue);
+.side nav button[aria-current="page"] svg {
+  color: #FDE047;
 }
 
 .side-foot {
@@ -530,7 +435,7 @@ html[lang="fr"] .side-nav button:hover {
   border: 1px solid #FEE2E2;
   background: #FEF2F2;
   color: #DC2626;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
@@ -582,7 +487,7 @@ html[lang="fr"] .side-nav button:hover {
   background: var(--blue-soft);
   color: var(--blue-dark);
   border: 1.5px solid var(--blue-border);
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.8px;
   font-weight: 800;
   cursor: pointer;
@@ -662,7 +567,7 @@ html[lang="fr"] .side-nav button:hover {
 }
 
 .dash-hero-title {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: clamp(1.3rem, 2.2vw, 1.7rem);
   font-weight: 800;
   color: #FFFFFF;
@@ -684,7 +589,7 @@ html[lang="fr"] .side-nav button:hover {
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   padding: 9px 16px;
   border-radius: 11px;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -725,7 +630,7 @@ html[lang="fr"] .side-nav button:hover {
 
 .dash-hero-stat b {
   display: block;
-  font-family: "Readex Pro", "Plus Jakarta Sans", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: clamp(1.5rem, 2.3vw, 2rem);
   font-weight: 800;
   color: #FFFFFF;
@@ -749,7 +654,7 @@ html[lang="fr"] .side-nav button:hover {
 }
 
 .qa-section-title {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.12rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -810,7 +715,7 @@ html[lang="fr"] .side-nav button:hover {
 }
 
 .qa-title {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 15px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -894,7 +799,7 @@ html[lang="fr"] .side-nav button:hover {
 }
 
 .chc-title {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--blue-dark);
@@ -946,7 +851,7 @@ html[lang="fr"] .side-nav button:hover {
 }
 
 .csp-head strong {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 14.5px;
   font-weight: 800;
   color: var(--blue-dark);
@@ -964,7 +869,7 @@ html[lang="fr"] .side-nav button:hover {
   border: 1px solid #CBD5E1;
   background: #F8FAFC;
   color: #334155;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.8px;
   font-weight: 700;
   cursor: pointer;
@@ -1224,7 +1129,7 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   background: var(--blue-soft);
   color: var(--blue-dark);
   border: 1.5px solid var(--blue-border);
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
@@ -1255,7 +1160,7 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   min-height: 210px;
   padding: 36px 24px;
   gap: 16px;
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
 }
 
 .center-hub-clean-box .chc-icon {
@@ -1274,178 +1179,589 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
 }
 
 
-/* ─── 11. الخط الاحترافي الجديد (IBM Plex Sans Arabic & Readex Pro) والأيقونات الهندسية (SVG) ─── */
-body, button, input, select, textarea {
-  font-family: "IBM Plex Sans Arabic", "Readex Pro", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  letter-spacing: 0;
-}
+/* ══════════════════════════════════════════════════════════════════════════════
+   DAR EL IHSAN — OFFICIAL EVALUATION SHEET & ADMIN STYLES (53020.jpg)
+   ══════════════════════════════════════════════════════════════════════════════ */
 
-h1, h2, h3, h4, .chc-title, .dash-hero-title, .bar .ttl strong {
-  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
-  letter-spacing: -0.01em;
-}
-
-svg.i {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
-
-.btn {
+/* زر واتساب المباشر لأرقام هواتف الأولياء */
+.btn-wa-link {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-family: "IBM Plex Sans Arabic", "Readex Pro", sans-serif;
+  gap: 6px;
+  background: #25D366;
+  color: #FFFFFF !important;
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
   font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-.btn svg.i {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2.1;
+.btn-wa-link:hover {
+  background: #20BA5A;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.35);
 }
 
-/* تصميم بطاقات المراكز الثلاثة بأيقونات SVG هندسية فاخرة (بدل الإيموجي البدائي) */
-.center-hub-clean-box {
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 235px;
-  padding: 36px 26px;
-  gap: 18px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
-  border: 1.5px solid #D8E4F2;
-  box-shadow: 0 10px 28px rgba(8, 45, 80, 0.06);
+.wa-badge {
+  background: rgba(0,0,0,0.18);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.72rem;
 }
 
-.center-hub-clean-box .chc-icon {
-  width: 78px;
-  height: 78px;
-  border-radius: 22px;
+/* ورقة كشف التقييم الرسمية (مطابقة للصورة 53020.jpg) */
+.official-eval-paper {
+  background: #FFFFFF;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 20px;
   margin: 0 auto;
+  max-width: 900px;
+  font-family: 'Cairo', 'Tajawal', 'IBM Plex Sans Arabic', sans-serif;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+.oep-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #EBF3FC 0%, #DBEAFE 100%);
+  border-bottom: 2px solid #000000;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.oep-title-block {
+  text-align: center;
+  flex: 1;
+}
+
+.oep-org-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.oep-center-name {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 2px 0;
+}
+
+.oep-location {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.oep-fr-title {
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #123E73;
-  border: 1.5px solid #BDD6F2;
-  box-shadow: 0 8px 20px rgba(18, 62, 115, 0.12);
-  transition: all 0.28s var(--ease-out);
+  margin: 4px 0 2px;
+  letter-spacing: 0.5px;
 }
 
-.center-hub-clean-box .chc-icon.chc-icon-work {
-  background: linear-gradient(135deg, #FDF8ED 0%, #FDE68A 45%, #FEF3C7 100%);
-  color: #8A6420;
-  border-color: #E8D2A6;
-  box-shadow: 0 8px 20px rgba(180, 135, 58, 0.15);
+.oep-report-heading {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #123E73;
+  margin: 4px 0 0;
 }
 
-.center-hub-clean-box .chc-icon.chc-icon-farm {
-  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
-  color: #047857;
-  border-color: #A7F3D0;
-  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.14);
+.oep-logo-side {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
 }
 
-.center-hub-clean-box .chc-icon svg.i {
-  width: 36px;
-  height: 36px;
-  stroke-width: 1.85;
+/* البانر الأصفر/الذهبي للثلاثي والموسم */
+.oep-term-banner {
+  background-color: #EAB308;
+  color: #000000;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 6px 12px;
+  border: 1px solid #000000;
+  margin-bottom: 10px;
 }
 
-.center-hub-clean-box:hover .chc-icon {
-  transform: translateY(-4px) scale(1.05);
-  background: linear-gradient(135deg, #123E73 0%, #082D50 100%);
-  color: #FFFFFF;
-  border-color: #082D50;
+/* شبكة معلومات الحالة */
+.oep-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
 }
 
-.center-hub-clean-box:hover .chc-icon.chc-icon-work {
-  background: linear-gradient(135deg, #B4873A 0%, #8A6420 100%);
-  color: #FFFFFF;
-  border-color: #8A6420;
+.oep-info-table td {
+  border: 1px solid #000000;
+  padding: 5px 8px;
+  font-size: 0.88rem;
 }
 
-.center-hub-clean-box:hover .chc-icon.chc-icon-farm {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  color: #FFFFFF;
-  border-color: #047857;
+.oep-info-label {
+  font-weight: 700;
+  background: #F8FAFC;
+  width: 18%;
 }
 
-.center-hub-clean-box .chc-body {
+.oep-info-val {
+  font-weight: 600;
+  width: 32%;
+}
+
+/* جدول المشرفين ورموز الاستجابة السريعة (QR) */
+.oep-supervisors-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.oep-supervisors-table th,
+.oep-supervisors-table td {
+  border: 1px solid #000000;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.oep-supervisors-table th {
+  background-color: #F1F5F9;
+  font-weight: 800;
+}
+
+.oep-qr-box {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.oep-qr-canvas {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto;
+}
+
+/* البانر الأزرق للوصف العام لأداء الحالة */
+.oep-section-banner {
+  background-color: #7DD3FC;
+  color: #0C4A6E;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 6px;
+  border: 1px solid #000000;
+  margin-bottom: 10px;
+}
+
+/* العمودين: التقرير العام على اليمين/اليسار والخانات الـ 6 */
+.oep-performance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 650px) {
+  .oep-performance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.oep-general-report-box {
+  border: 1.5px solid #1E293B;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.oep-gr-header {
+  background-color: #93C5FD;
+  color: #1E3A8A;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 6px;
+  border-bottom: 1px solid #1E293B;
+}
+
+.oep-gr-body {
+  padding: 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  flex: 1;
+}
+
+/* الخانات الـ 6 المكدسة بألوانها المطابقة للصورة */
+.oep-abilities-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.oep-ability-box {
+  border: 1px solid #000000;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.oep-ab-hdr {
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  color: #000000;
+}
+
+.oep-ab-hdr-1 { background-color: #0F172A; color: #FFFFFF; } /* إمكانيات والقدرات الحالية */
+.oep-ab-hdr-2 { background-color: #F472B6; color: #831843; } /* المهارات المعرفية والفكرية */
+.oep-ab-hdr-3 { background-color: #60A5FA; color: #1E3A8A; } /* اللغة (استقبالية تعبيرية) */
+.oep-ab-hdr-4 { background-color: #FDBA74; color: #7C2D12; } /* القدرات الإتصالية والسلوكية */
+.oep-ab-hdr-5 { background-color: #86EFAC; color: #14532D; } /* المعارف الأكاديمية وما قبل الأكاديمي */
+.oep-ab-hdr-6 { background-color: #A7F3D0; color: #064E3B; } /* القدرات الحركية والاستقلالية */
+
+.oep-ab-content {
+  padding: 6px 8px;
+  font-size: 0.84rem;
+  min-height: 32px;
+  background-color: #FFFFFF;
+}
+
+/* البانر والخانة السفلية: الخلاصة والتوصيات */
+.oep-summary-banner {
+  background-color: #86EFAC;
+  color: #064E3B;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 6px;
+  border: 1px solid #000000;
+  margin-bottom: 8px;
+}
+
+.oep-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  border: 1px solid #000000;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 650px) {
+  .oep-recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.oep-rec-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.oep-rec-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #94A3B8;
+}
+
+.oep-rec-list {
+  margin: 0;
+  padding-right: 18px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.oep-rec-list li {
+  margin-bottom: 4px;
+}
+
+/* نمط استمارة الباني في لوحة الإدارة */
+.eval-builder-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .eval-builder-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dynamic-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dynamic-item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dynamic-item-row input,
+.dynamic-item-row select {
+  flex: 1;
+}
+
+/* تصغير وتنسيق جدول تقييم المهارات */
+.eval-compact-score-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid #CBD5E1;
+  background: #F8FAFC;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.eval-compact-score-btn.is-selected {
+  background: var(--blue-dark);
+  color: #FFFFFF;
+  border-color: var(--blue-dark);
+}
+
+/* قسم التفاصيل المدمج في قائمة الأطفال */
+.child-details-pane {
+  background: #F8FAFC;
+  border: 1px solid var(--de-border, #E2E8F0);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0;
+}
+
+.child-details-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  margin: 12px 0;
+  border-top: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.child-sub-section {
+  margin-top: 14px;
+}
+
+.child-sub-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #123E73;
+  margin-bottom: 8px;
+  display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.center-hub-clean-box .chc-title {
-  margin: 0;
-  font-size: 1.32rem;
-  font-weight: 700;
-  color: var(--blue-dark);
-}
-
-.center-hub-clean-box .chc-badge-sub {
-  display: inline-block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #5A6B7C;
-  background: #F1F5F9;
-  padding: 4px 12px;
-  border-radius: 999px;
+.child-sub-item-card {
+  background: #FFFFFF;
   border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-/* أزرار تحميل وتثبيت موقع الإدارة على الكمبيوتر */
-.install-desktop-btn {
-  margin-top: 10px;
-  border: 1.5px solid var(--blue-border) !important;
-  background: var(--blue-soft) !important;
-  color: var(--blue-dark) !important;
-  font-weight: 700 !important;
+/* قواعد الطباعة الرسمية للوحة الإدارة */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .official-eval-paper,
+  .official-eval-paper * {
+    visibility: visible;
+  }
+  .official-eval-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: 2px solid #000000 !important;
+    padding: 10mm !important;
+    box-shadow: none !important;
+  }
+  .no-print,
+  .modal-actions,
+  .bar,
+  .side {
+    display: none !important;
+  }
 }
 
-.install-desktop-btn:hover {
-  background: var(--blue) !important;
-  color: #FFFFFF !important;
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   DAR EL IHSAN — ARCHIVE & BACKUPS SYSTEM STYLES (نظام الأرشفة الشاملة)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.arch-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
-.hub-install-pc-btn,
-.install-top-pill {
-  display: inline-flex;
+@media (max-width: 768px) {
+  .arch-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.arch-stat-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-soft, #E2E8F0);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(18, 62, 115, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.arch-stat-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--blue-dark, #123E73);
+  line-height: 1.1;
+}
+
+.arch-stat-label {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+.arch-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-soft, #E2E8F0);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(18, 62, 115, 0.06);
+}
+
+.arch-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--blue-dark, #123E73);
+  margin-top: 0;
+  margin-bottom: 14px;
+  display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
 }
 
-
-/* بطاقة انخراط التلميذ الرسمية */
-.card-modal {
-  text-align: center;
-  max-width: 680px;
-  margin: 0 auto;
+.arch-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.card-preview {
-  display: block;
-  width: 100%;
-  max-width: 580px;
-  height: auto;
-  margin: 16px auto;
+@media (max-width: 768px) {
+  .arch-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arch-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.arch-progress-wrap {
+  margin: 18px 0;
+  padding: 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
   border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
-  border: 1px solid #c9d3e0;
-  transition: transform 0.2s ease;
 }
 
-.card-preview:hover {
-  transform: scale(1.01);
+.arch-progress-bar-bg {
+  width: 100%;
+  height: 14px;
+  background: #E2E8F0;
+  border-radius: 7px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.arch-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #123E73 0%, #B4873A 100%);
+  width: 0%;
+  transition: width 0.25s ease;
+  border-radius: 7px;
+}
+
+.arch-progress-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.arch-auto-banner {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1px solid #FDE68A;
+  border-right: 4px solid #B4873A;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.arch-auto-title {
+  font-weight: 700;
+  color: #92400E;
+  font-size: 0.95rem;
+  margin-bottom: 3px;
+}
+
+.arch-auto-sub {
+  font-size: 0.82rem;
+  color: #B45309;
+}
+
+.arch-tool-box {
+  background: #F1F5F9;
+  border: 1px dashed #94A3B8;
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 20px;
+}
+
+.arch-code-snippet {
+  direction: ltr;
+  text-align: left;
+  background: #0F172A;
+  color: #38BDF8;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  margin: 8px 0;
+  overflow-x: auto;
 }
