@@ -93,14 +93,14 @@
       markAsRead: 'تم الاطلاع',
       contactTitle: 'التواصل مع إدارة المركز',
       contactSub: 'نحن في خدمتكم دائمًا عبر الوسائل الرسمية التالية:',
-      contactAddrLabel: '📍 العنوان:',
+      contactAddrLabel: ' العنوان:',
       contactAddrVal: 'بلدية العطف – ولاية غرداية – الجزائر',
-      contactEmailLabel: '✉️ البريد الإلكتروني:',
-      contactPhoneLabel: '📞 الهاتف / الفاكس:',
-      contactSocialLabel: '🌐 منصات التواصل:',
+      contactEmailLabel: ' البريد الإلكتروني:',
+      contactPhoneLabel: ' الهاتف / الفاكس:',
+      contactSocialLabel: ' منصات التواصل:',
       contactWa: 'واتساب المركز',
       contactFb: 'صفحة فيسبوك',
-      contactSiteLabel: '🏠 الموقع الرسمي للمركز:',
+      contactSiteLabel: ' الموقع الرسمي للمركز:',
       contactSiteLink: 'الصفحة الرئيسية لدار الإحسان',
       contactNoteTitle: 'إرشاد للأولياء',
       contactNoteTxt: 'لأي استفسار طارئ أو مناقشة بخصوص الملف البيداغوجي لطفلك، يُفضَّل التواصل مع الإدارة المباشرة خلال ساعات العمل الرسمية.',
@@ -109,7 +109,7 @@
       passMismatchErr: 'كلمتا المرور غير متطابقتين.',
       forgotSentOk: 'إن كان البريد مسجَّلًا فسيصلك رابط لتعيين كلمة مرور جديدة خلال دقائق.',
       notActiveParentErr: 'هذا الحساب غير مفعّل أو غير مخصّص للأولياء.',
-      btnLinkCode: '🔗 ربط طفل برمز التسجيل',
+      btnLinkCode: ' ربط طفل برمز التسجيل',
       enterCodePrompt: 'أدخل رمز التسجيل السري المكوّن من 8 محارف (مثال: DI-A1B2C3):',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'تأكيد الربط',
@@ -188,14 +188,14 @@
       markAsRead: 'Marquer comme lu',
       contactTitle: 'Contacter l’Administration',
       contactSub: 'Nous sommes à votre écoute par le biais des canaux officiels suivants :',
-      contactAddrLabel: '📍 Adresse :',
+      contactAddrLabel: ' Adresse :',
       contactAddrVal: 'Commune d’El Atteuf – Wilaya de Ghardaïa – Algérie',
-      contactEmailLabel: '✉️ E-mail :',
-      contactPhoneLabel: '📞 Téléphone / Fax :',
-      contactSocialLabel: '🌐 Réseaux officiels :',
+      contactEmailLabel: ' E-mail :',
+      contactPhoneLabel: ' Téléphone / Fax :',
+      contactSocialLabel: ' Réseaux officiels :',
       contactWa: 'WhatsApp du Centre',
       contactFb: 'Page Facebook',
-      contactSiteLabel: '🏠 Site web officiel :',
+      contactSiteLabel: ' Site web officiel :',
       contactSiteLink: 'Page d’accueil Dar El Ihsan',
       contactNoteTitle: 'Information aux parents',
       contactNoteTxt: 'Pour toute question relative au suivi éducatif ou médical de votre enfant, privilégiez le contact par e-mail ou une visite directe durant les heures de permanence.',
@@ -204,7 +204,7 @@
       passMismatchErr: 'Les mots de passe ne correspondent pas.',
       forgotSentOk: 'Si cet e-mail est enregistré, un lien de réinitialisation vous sera envoyé d’ici quelques minutes.',
       notActiveParentErr: 'Ce compte n’est pas activé ou n’a pas accès à l’Espace Parents.',
-      btnLinkCode: '🔗 Lier un enfant par code',
+      btnLinkCode: ' Lier un enfant par code',
       enterCodePrompt: 'Saisissez le code d’inscription secret (ex: DI-A1B2C3) :',
       codePlaceholder: 'DI-XXXXXX',
       btnConfirmLink: 'Confirmer',
@@ -873,21 +873,21 @@
         ctx.strokeRect(mornX, y, mornW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
         ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('☀️ الفترة الصباحية', mornX + mornW / 2, y + 31);
+        ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
 
         ctx.fillStyle = '#D8B4E2';
         ctx.fillRect(brkX, y, brkW, periodHeaderH);
         ctx.strokeRect(brkX, y, brkW, periodHeaderH);
         ctx.fillStyle = '#3B0764';
         ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('⏸️ ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
+        ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(aftX, y, aftW, periodHeaderH);
         ctx.strokeRect(aftX, y, aftW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
         ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('🌤️ الفترة المسائية', aftX + aftW / 2, y + 31);
+        ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
       } else if (numCols >= 2) {
         var halfCols = Math.ceil(numCols / 2);
         var mW = halfCols * colW;
@@ -899,21 +899,21 @@
         ctx.strokeRect(mX, y, mW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
         ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('☀️ الفترة الصباحية', mX + mW / 2, y + 31);
+        ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(28, y, aW, periodHeaderH);
         ctx.strokeRect(28, y, aW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
         ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('🌤️ الفترة المسائية', 28 + aW / 2, y + 31);
+        ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
       } else {
         ctx.fillStyle = '#BAE6FD';
         ctx.fillRect(28, y, sessColW, periodHeaderH);
         ctx.strokeRect(28, y, sessColW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
         ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('☀️ الفترة الصباحية   |   🌤️ الفترة المسائية', 28 + sessColW / 2, y + 31);
+        ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
       }
 
       y += periodHeaderH;
@@ -927,7 +927,7 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
+      ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
       ctx.fillStyle = '#FDE047';
       ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
@@ -958,7 +958,7 @@
         var timeTxt = formatParentTimeRange(col.start, col.end) || 'التوقيت يدوي';
         ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
         ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('🕒 ' + timeTxt, cx + colW / 2, pillY + 21);
+        ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
       });
 
       y += timeHeaderH;
@@ -1037,11 +1037,11 @@
               ctx.textAlign = 'right';
               ctx.fillStyle = '#0C2D55';
               ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
-              ctx.fillText(('📘 ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
+              ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
               ctx.fillStyle = '#0F172A';
               ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
-              var skillLines = wrapParentCanvasLines(ctx, '🎯 ' + (it.skill || ''), colW - 22);
+              var skillLines = wrapParentCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
               ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
               if (skillLines[1]) {
                 ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
@@ -1091,12 +1091,12 @@
 
     openModal(h('div', { class: 'modal-body wk-modal-print' },
       h('div', { class: 'bar-sub no-print' },
-        h('h2', { text: '🖼️ صورة البرنامج الأسبوعي الكاملة' }),
+        h('h2', { text: ' صورة البرنامج الأسبوعي الكاملة' }),
         h('div', { class: 'row-actions' },
           h('button', {
             type: 'button',
             class: 'btn small light',
-            text: '🔍 تكبير / تصغير الصورة',
+            text: ' تكبير / تصغير الصورة',
             onclick: function () {
               zoomed = !zoomed;
               imgEl.className = zoomed ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
@@ -1111,7 +1111,7 @@
         h('button', {
           class: 'btn gold',
           type: 'button',
-          text: '📥 تحميل صورة البرنامج (PNG)',
+          text: ' تحميل صورة البرنامج (PNG)',
           onclick: function () {
             if (!currentDataUrl) return;
             var a = document.createElement('a');
@@ -1120,7 +1120,7 @@
             a.click();
           }
         }),
-        h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة', onclick: function () { window.print(); } })
+        h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
       )
     ));
   }
@@ -1151,14 +1151,14 @@
     var openBtn = h('button', {
       type: 'button',
       class: 'btn small gold',
-      text: '🔍 فتح وتكبير صورة البرنامج كاملة',
+      text: ' فتح وتكبير صورة البرنامج كاملة',
       onclick: function () { openParentProgramImageViewer(p); }
     });
 
     var dlBtn = h('button', {
       type: 'button',
       class: 'btn small light',
-      text: '📥 حفظ الصورة في الهاتف',
+      text: ' حفظ الصورة في الهاتف',
       onclick: function () {
         if (!currentDataUrl) return;
         var a = document.createElement('a');
@@ -1171,7 +1171,7 @@
     return h('div', { class: 'card wk-parent-card' },
       h('div', { class: 'bar-sub' },
         h('div', null,
-          h('h2', { text: '📅 البرنامج الأسبوعي — ' + secName }),
+          h('h2', { text: ' البرنامج الأسبوعي — ' + secName }),
           h('span', { class: 'muted small', text: 'الموسم الدراسي: ' + acYear + ' — اضغط على الصورة لتكبيرها ورؤية كل البرنامج بوضوح' })
         ),
         h('div', { class: 'row-actions no-print' }, openBtn, dlBtn)
@@ -1301,7 +1301,7 @@
         var isComm = dm.domain.indexOf('التواصل') >= 0;
         var thead = h('thead', null,
           h('tr', { class: 'eval-dom-banner-row' },
-            h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: '📘 ' + dm.domain })
+            h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: ' ' + dm.domain })
           ),
           h('tr', { class: 'eval-col-hdr-row' },
             h('th', { class: 'eval-col-num', text: 'الرقم' }),
@@ -1343,7 +1343,7 @@
       var isEv = isEvalReport(r);
       var card = h('div', { class: 'card' },
         h('div', { class: 'bar-sub' },
-          h('h2', { text: (isEv ? '📋 ' : '📝 ') + r.title }),
+          h('h2', { text: (isEv ? ' ' : ' ') + r.title }),
           h('span', { class: 'badge ' + (isEv ? 'gold' : 'ok'), text: isEv ? 'استمارة تقييم بيداغوجي' : 'تقرير دوري' })
         ),
         h('div', { class: 'meta' },
@@ -1478,20 +1478,20 @@
       card.appendChild(row);
     }
 
-    cItem('📍', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
-    cItem('✉️', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
-    cItem('📞', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
+    cItem('', t('contactAddrLabel'), document.createTextNode(t('contactAddrVal')));
+    cItem('', t('contactEmailLabel'), h('a', { href: 'https://mail.google.com/mail/?view=cm&to=cppdarelihcen@gmail.com', target: '_blank', rel: 'noopener noreferrer', text: 'cppdarelihcen@gmail.com' }));
+    cItem('', t('contactPhoneLabel'), document.createTextNode('044 44 48 34 / 0664 42 14 44 / 0540 81 77 75 / 0668 03 41 47'));
 
     var socialLinks = h('div', { class: 'contact-btn-wrap' },
-      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: '💬 ' + t('contactWa') }),
-      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: '📘 ' + t('contactFb') })
+      h('a', { class: 'contact-btn', href: 'https://wa.me/213668034147', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactWa') }),
+      h('a', { class: 'contact-btn', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer', text: ' ' + t('contactFb') })
     );
-    cItem('🌐', t('contactSocialLabel'), socialLinks);
+    cItem('', t('contactSocialLabel'), socialLinks);
 
     var siteA = document.createElement('a');
     siteA.setAttribute('href', './site.html');
     siteA.textContent = t('contactSiteLink');
-    cItem('🏠', t('contactSiteLabel'), siteA);
+    cItem('', t('contactSiteLabel'), siteA);
 
     v.appendChild(card);
 

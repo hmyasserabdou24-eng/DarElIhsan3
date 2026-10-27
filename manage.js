@@ -44,7 +44,7 @@
       name: 'المركز الرئيسي دار الإحسان',
       shortName: 'المركز الرئيسي',
       badge: 'المركز النفسي البيداغوجي',
-      icon: '🏛️',
+      icon: '',
       avatar: 'د',
       desc: 'الدخول إلى اللوحة الحالية الخاصة بالمركز الرئيسي دار الإحسان (الأطفال والطلبة، الأقسام التربوية، المربيات، البرامج الأسبوعية، التقارير والتقييم، المواعيد، الرسائل، والوثائق).'
     },
@@ -53,7 +53,7 @@
       name: 'مركز المساعدة على العمل',
       shortName: 'مركز المساعدة على العمل',
       badge: 'ورشات التأهيل والتمهين',
-      icon: '🛠️',
+      icon: '',
       avatar: 'ع',
       desc: 'الدخول إلى لوحة مركز المساعدة على العمل والاطلاع على طلابها وأقسامها (قسم التمهين م م ع والأقسام المهنية) وبرامجها وتقاريرها.'
     },
@@ -62,17 +62,17 @@
       name: 'المزرعة البيداغوجية',
       shortName: 'المزرعة البيداغوجية (البستنة)',
       badge: 'البستنة والأنشطة الفلاحية',
-      icon: '🌿',
+      icon: '',
       avatar: 'م',
       desc: 'الدخول إلى لوحة المزرعة البيداغوجية والاطلاع على طلاب البستنة (قسم المزرعة البستنة) ومتابعة برامجهم وتقييمهم.'
     }
   };
 
   var CENTER_ACCESS_OPTS = [
-    ['all', '🌐 جميع المراكز (المركز الرئيسي + المساعدة على العمل + المزرعة البيداغوجية)'],
+    ['all', ' جميع المراكز (المركز الرئيسي + المساعدة على العمل + المزرعة البيداغوجية)'],
     ['main', 'المركز الرئيسي دار الإحسان فقط'],
-    ['work', '🛠️ مركز المساعدة على العمل فقط'],
-    ['farm', '🌿 المزرعة البيداغوجية (البستنة) فقط'],
+    ['work', ' مركز المساعدة على العمل فقط'],
+    ['farm', ' المزرعة البيداغوجية (البستنة) فقط'],
     ['main,work', 'المركز الرئيسي + مركز المساعدة على العمل'],
     ['main,farm', 'المركز الرئيسي + المزرعة البيداغوجية'],
     ['work,farm', 'مركز المساعدة على العمل + المزرعة البيداغوجية']
@@ -140,16 +140,16 @@
 
   function formatCenterAccessLabel(accessStr) {
     var raw = String(accessStr || 'all').trim().toLowerCase();
-    if (!raw || raw === 'all') return '🌐 جميع المراكز (المركز وملحقاته)';
+    if (!raw || raw === 'all') return ' جميع المراكز (المركز وملحقاته)';
     var map = {
       'main': 'المركز الرئيسي فقط',
-      'work': '🛠️ مركز المساعدة على العمل فقط',
-      'farm': '🌿 المزرعة البيداغوجية فقط',
+      'work': ' مركز المساعدة على العمل فقط',
+      'farm': ' المزرعة البيداغوجية فقط',
       'main,work': 'المركز الرئيسي + المساعدة على العمل',
       'main,farm': 'المركز الرئيسي + المزرعة البيداغوجية',
       'work,farm': 'المساعدة على العمل + المزرعة البيداغوجية'
     };
-    return map[raw] || ('🔐 ' + raw);
+    return map[raw] || (' ' + raw);
   }
 
   function branchCenterKey(b) {
@@ -430,7 +430,7 @@
 
     if (S.isEducator) {
       if (nameEl) nameEl.textContent = S.eduSectionName || 'فوجي التربوي';
-      if (roleEl) roleEl.textContent = '👩‍🏫 فضاء المربية';
+      if (roleEl) roleEl.textContent = ' فضاء المربية';
       if (avEl) avEl.textContent = 'م';
       if (swBtn) swBtn.hidden = true;
       return;
@@ -442,12 +442,12 @@
       if (nameEl) nameEl.textContent = 'لوحة الإدارة (المراكز الثلاثة)';
       if (roleEl) roleEl.textContent = S.isOwner ? 'المدير الرئيسي (المالك)' : formatCenterAccessLabel(S.centerAccess);
       if (avEl) avEl.textContent = 'د';
-      if (swTxt) swTxt.textContent = '🔙 العودة إلى لوحة الإدارة';
+      if (swTxt) swTxt.textContent = ' العودة إلى لوحة الإدارة';
     } else {
       if (nameEl) nameEl.textContent = cm.name;
-      if (roleEl) roleEl.textContent = '🔙 اضغط للعودة إلى لوحة الإدارة';
+      if (roleEl) roleEl.textContent = ' اضغط للعودة إلى لوحة الإدارة';
       if (avEl) avEl.textContent = cm.avatar;
-      if (swTxt) swTxt.textContent = '🔙 لوحة الإدارة (' + cm.shortName + ')';
+      if (swTxt) swTxt.textContent = ' لوحة الإدارة (' + cm.shortName + ')';
     }
   }
 
@@ -629,7 +629,7 @@
       input.value = val == null ? '' : val; getv = function () { return input.value; };
       var searchIn = null;
       if (f.searchable) {
-        searchIn = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 بحث سريع في القائمة...', autocomplete: 'off' });
+        searchIn = h('input', { type: 'search', class: 'fld-search', placeholder: ' بحث سريع في القائمة...', autocomplete: 'off' });
         searchIn.addEventListener('input', function () {
           var q = normAr(searchIn.value.trim());
           var curVal = input.value;
@@ -766,7 +766,7 @@
     var searchVal = '', curFilters = {}, sortIdx = -1, sortDir = 1, openRows = {}, visible = [];
     var bar = h('div', { class: 'bar-sub' }, h('h2', { text: o.title }));
     var barBtns = h('div', { class: 'row-actions' });
-    if (o.exportXlsx) barBtns.appendChild(h('button', { class: 'btn small light', type: 'button', text: '📊 تصدير Excel (XLSX)', onclick: exportNow }));
+    if (o.exportXlsx) barBtns.appendChild(h('button', { class: 'btn small light', type: 'button', text: ' تصدير Excel (XLSX)', onclick: exportNow }));
     (o.extra || []).forEach(function (x) { barBtns.appendChild(h('button', { class: 'btn ' + (x.kind || 'light'), type: 'button', text: x.label, onclick: x.onclick })); });
     if (o.addLabel && o.onAdd) barBtns.appendChild(h('button', { class: 'btn', type: 'button', text: o.addLabel, onclick: o.onAdd }));
     bar.appendChild(barBtns);
@@ -861,7 +861,7 @@
             var open = !!openRows[r.id];
             acts.push(h('button', {
               class: 'btn small ' + (open ? 'gold' : 'light'), type: 'button',
-              text: open ? '🙈 إخفاء التفاصيل' : '👁 عرض التفاصيل',
+              text: open ? ' إخفاء التفاصيل' : ' عرض التفاصيل',
               'aria-expanded': open ? 'true' : 'false',
               onclick: function () { openRows[r.id] = !open; render(); }
             }));
@@ -936,7 +936,7 @@
     var targetBranch = (branches || []).filter(function (b) { return branchCenterKey(b) === centerKey; })[0] || branches[0];
     var cm = getCenterMeta(centerKey);
     return openForm({
-      title: '➕ إضافة قسم / فوج جديد في: ' + cm.name,
+      title: ' إضافة قسم / فوج جديد في: ' + cm.name,
       fields: [
         { k: 'name', label: 'اسم القسم / الفوج التربوي', req: true, min: 2, max: 80, hint: centerKey === 'work' ? 'مثال: التمهين م م ع، ورشة النجارة، ورشة الخياطة' : centerKey === 'farm' ? 'مثال: المزرعة البستنة، الزراعة المائية' : 'مثال: توحد 04، الاستثارة 02' },
         { k: 'description', label: 'وصف القسم وأهدافه (اختياري)', type: 'textarea', max: 500 }
@@ -1056,7 +1056,7 @@
         h('button', {
           type: 'button',
           class: 'dash-hero-btn',
-          text: '🔄 المركز وملحقاته (تبديل المركز)',
+          text: ' المركز وملحقاته (تبديل المركز)',
           onclick: function () { go('hub'); }
         })
       ),
@@ -1231,9 +1231,9 @@
     function openStudentCard(child) {
       var status = h('p', { class: 'muted small', text: 'جارٍ إنشاء البطاقة…' });
       var preview = h('img', { class: 'card-preview', alt: 'معاينة بطاقة انخراط التلميذ ' + (child.full_name || ''), hidden: true });
-      var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: '🖼️ تنزيل JPG', disabled: true });
-      var printBtn = h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة البطاقة', disabled: true });
-      var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: '🔗 فتح صفحة التلميذ' });
+      var jpgBtn = h('button', { class: 'btn gold', type: 'button', text: ' تنزيل JPG', disabled: true });
+      var printBtn = h('button', { class: 'btn', type: 'button', text: ' طباعة البطاقة', disabled: true });
+      var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: ' فتح صفحة التلميذ' });
       var warn = !child.membership_no ? h('p', { class: 'err small', text: 'تنبيه: لا يوجد رقم قيد رسمي لهذا الطفل؛ أكمله في ملف الطفل قبل طباعة البطاقة.' }) : null;
 
       openModal(h('div', { class: 'modal-body card-modal' },
@@ -1300,7 +1300,7 @@
 
     if (S.isEducator) {
       v.appendChild(h('div', { class: 'card edu-banner-card' },
-        h('strong', { text: '👩‍🏫 فضاء المربية: ' + (S.eduProfile && S.eduProfile.full_name || S.me && S.me.email || '') + ' — القسم المسند: ' + (S.eduSectionName || 'غير محدد') }),
+        h('strong', { text: ' فضاء المربية: ' + (S.eduProfile && S.eduProfile.full_name || S.me && S.me.email || '') + ' — القسم المسند: ' + (S.eduSectionName || 'غير محدد') }),
         h('p', { class: 'muted small', text: 'يظهر لكِ هنا طلاب قسمكِ فقط. يمكنكِ الاطلاع على ملفاتهم وإضافة التقارير واستمارات التقييم البيداغوجي الخاصة بهم.' })
       ));
     } else {
@@ -1316,18 +1316,18 @@
             (S.activeCenter === 'work' || S.activeCenter === 'farm') ? h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: S.activeCenter === 'work' ? '🛡️ الحسابات الخاصة بمركز المساعدة على العمل' : '🛡️ الحسابات الخاصة بالمزرعة البيداغوجية',
+              text: S.activeCenter === 'work' ? ' الحسابات الخاصة بمركز المساعدة على العمل' : ' الحسابات الخاصة بالمزرعة البيداغوجية',
               onclick: function () { go('accounts'); }
             }) : h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: '📊 لوحة تحكم المركز الرئيسي',
+              text: ' لوحة تحكم المركز الرئيسي',
               onclick: function () { go('dash'); }
             }),
             h('button', {
               type: 'button',
               class: 'dash-hero-btn',
-              text: '🔙 العودة إلى لوحة الإدارة',
+              text: ' العودة إلى لوحة الإدارة',
               onclick: function () { go('hub'); }
             })
           )
@@ -1390,13 +1390,13 @@
       }, makeSvgIcon('s-menu'), toggleSecLabel);
 
       secPanelEl.appendChild(h('div', { class: 'csp-head' },
-        h('strong', { text: '🏫 أقسام ' + cm.name + ' (اضغط على القسم لعرض طلابه):' }),
+        h('strong', { text: ' أقسام ' + cm.name + ' (اضغط على القسم لعرض طلابه):' }),
         h('div', { class: 'csp-head-actions' },
           toggleSecBtn,
           h('button', {
             type: 'button',
             class: 'btn small light',
-            text: '➕ إضافة قسم في هذا المركز',
+            text: ' إضافة قسم في هذا المركز',
             onclick: function () { openAddSectionForCenterModal(S.activeCenter, branches, function () { go('children'); }); }
           })
         )
@@ -1415,11 +1415,11 @@
 
     listView(v, {
       title: listTitle,
-      addLabel: S.isEducator ? '' : '➕ إضافة طالب جديد',
+      addLabel: S.isEducator ? '' : ' إضافة طالب جديد',
       onAdd: S.isEducator ? null : function () { editChild(null); },
       extra: S.isEducator ? [] : [
         {
-          label: '🔄 مزامنة واستيراد القائمة الرسمية (103 طالب)',
+          label: ' مزامنة واستيراد القائمة الرسمية (103 طالب)',
           kind: 'gold',
           onclick: async function () {
             try {
@@ -1498,12 +1498,12 @@
       actions: function (r) {
         if (S.isEducator) {
           return [
-            rbtn('📋 إضافة استمارة تقييم', function () {
+            rbtn(' إضافة استمارة تقييم', function () {
               S.preselectChildId = r.id;
               S.openEvalDirect = true;
               go('reports');
             }, 'gold'),
-            rbtn('📝 كتابة تقرير', function () {
+            rbtn(' كتابة تقرير', function () {
               S.preselectChildId = r.id;
               S.openReportDirect = true;
               go('reports');
@@ -1511,8 +1511,8 @@
           ];
         }
         return [
-          rbtn('🪪 البطاقة', function () { openStudentCard(r); }, 'gold'),
-          rbtn('🔑 رمز الولي', function () { return manageChildCode(r); }),
+          rbtn(' البطاقة', function () { openStudentCard(r); }, 'gold'),
+          rbtn(' رمز الولي', function () { return manageChildCode(r); }),
           rbtn('تعديل', function () { editChild(r); }),
           rbtn(r.active ? 'أرشفة' : 'استعادة', async function () {
             await C.rest('PATCH', '/children?id=eq.' + uid(r.id), { active: !r.active });
@@ -1545,7 +1545,7 @@
       var is404 = (e.status === 404) || (e.message && (e.message.indexOf('404') >= 0 || e.message.indexOf('Not Found') >= 0 || e.message.indexOf('relation') >= 0));
       if (is404) {
         v.appendChild(h('div', { class: 'card' },
-          h('h2', { text: '⚠️ يجب تنفيذ ترقية قاعدة البيانات أولاً' }),
+          h('h2', { text: ' يجب تنفيذ ترقية قاعدة البيانات أولاً' }),
           h('p', { text: 'جداول الفروع والأقسام غير موجودة في قاعدة البيانات بعد.' }),
           h('p', { class: 'muted', text: 'لإصلاح هذا: في Supabase Dashboard → SQL Editor، شغّل محتوى ملف 05-branches-sections-import.sql الموجود في مجلد المشروع.' }),
           h('p', { class: 'muted small', text: 'بعد تنفيذ السكريبت، أعد تشغيل PostgREST عبر إرسال الأمر: notify pgrst, \'reload schema\';' })
@@ -1600,7 +1600,7 @@
 
     v.appendChild(h('div', { class: 'bar-sub' },
       h('h2', { text: 'الأقسام والأفواج التربوية (11 فوج رسمي)' }),
-      h('button', { class: 'btn', type: 'button', text: '➕ إضافة قسم جديد', onclick: addSection })
+      h('button', { class: 'btn', type: 'button', text: ' إضافة قسم جديد', onclick: addSection })
     ));
 
     listView(v, {
@@ -1684,7 +1684,7 @@
       + 'كلمة السر: ' + pw;
 
     openModal(h('div', { class: 'modal-body' },
-      h('h2', { text: '✅ تم إنشاء حساب المربية وحفظ كلمة السر بنجاح' }),
+      h('h2', { text: ' تم إنشاء حساب المربية وحفظ كلمة السر بنجاح' }),
       h('div', { class: 'child-details' },
         h('div', { class: 'cd-item' }, h('span', { text: 'اسم المربية' }), h('b', { text: edu.full_name })),
         h('div', { class: 'cd-item' }, h('span', { text: 'القسم الخاص بها' }), h('b', { text: secName })),
@@ -1697,7 +1697,7 @@
         h('button', {
           class: 'btn gold',
           type: 'button',
-          text: '📋 نسخ بيانات دخول المربية',
+          text: ' نسخ بيانات دخول المربية',
           onclick: function () {
             try {
               navigator.clipboard.writeText(credsSummary);
@@ -1727,7 +1727,7 @@
     var initialPw = '';
 
     return openForm({
-      title: '👩‍🏫 إنشاء حساب للمربية وتعيين كلمة السر',
+      title: ' إنشاء حساب للمربية وتعيين كلمة السر',
       values: {
         educator_id: targetEdu ? targetEdu.id : '',
         section_display: targetSecName,
@@ -1735,7 +1735,7 @@
         edu_pw: initialPw
       },
       submits: [
-        { key: 'create', label: '✅ إنشاء حساب المربية وحفظ كلمة السر', gold: true }
+        { key: 'create', label: ' إنشاء حساب المربية وحفظ كلمة السر', gold: true }
       ],
       fields: [
         {
@@ -1822,10 +1822,10 @@
       };
 
       return openForm({
-        title: edu ? '✏️ تعديل ملف المربية' : '➕ إضافة مربية جديدة',
+        title: edu ? ' تعديل ملف المربية' : ' إضافة مربية جديدة',
         values: vals,
         submits: [
-          { key: 'save', label: '💾 حفظ ملف المربية', gold: true }
+          { key: 'save', label: ' حفظ ملف المربية', gold: true }
         ],
         fields: [
           { k: 'full_name', label: 'اسم ولقب المربية', req: true, max: 120 },
@@ -1889,11 +1889,11 @@
 
     listView(v, {
       title: 'قسم المربيات وإسناد الأقسام التربوية',
-      addLabel: '➕ إضافة مربية جديدة',
+      addLabel: ' إضافة مربية جديدة',
       onAdd: function () { editEducator(null); },
       extra: [
         {
-          label: '👩‍🏫 إنشاء حساب للمربية وتعيين كلمة سر',
+          label: ' إنشاء حساب للمربية وتعيين كلمة سر',
           kind: 'gold',
           onclick: function () { openCreateEducatorAccountModal(null, sections, meta, 'educators'); }
         }
@@ -1901,7 +1901,7 @@
       rows: educators,
       sheet: true,
       searchPlaceholder: 'بحث باسم المربية، القسم، أو رقم الهاتف…',
-      empty: 'لا توجد مربيات مسجلات بعد. اضغط «➕ إضافة مربية جديدة» لإضافة المربيات وربط كل مربية بقسمها.',
+      empty: 'لا توجد مربيات مسجلات بعد. اضغط « إضافة مربية جديدة» لإضافة المربيات وربط كل مربية بقسمها.',
       search: function (e) {
         return [e.full_name, nameOf(sections, e.section_id, 'name'), e.section_name, e.phone, e.email].filter(Boolean).join(' ');
       },
@@ -1934,9 +1934,9 @@
       ],
       actions: function (e) {
         return [
-          rbtn('✏️ تعديل الملف', function () { editEducator(e); }, 'gold'),
-          rbtn('🔑 إنشاء حساب / كلمة سر', function () { openCreateEducatorAccountModal(e, sections, meta, 'educators'); }),
-          rbtn('🗑️ حذف', async function () {
+          rbtn(' تعديل الملف', function () { editEducator(e); }, 'gold'),
+          rbtn(' إنشاء حساب / كلمة سر', function () { openCreateEducatorAccountModal(e, sections, meta, 'educators'); }),
+          rbtn(' حذف', async function () {
             if (!(await ask({ title: 'حذف ملف المربية؟', msg: 'سيتم حذف ملف المربية «' + e.full_name + '» من القائمة.', ok: 'حذف', danger: true }))) return;
             var curMeta = await loadPortalMeta();
             curMeta.educators = (curMeta.educators || []).filter(function (x) { return x.id !== e.id; });
@@ -2652,21 +2652,21 @@
           ctx.strokeRect(mornX, y, mornW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
           ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('☀️ الفترة الصباحية', mornX + mornW / 2, y + 31);
+          ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
 
           ctx.fillStyle = '#D8B4E2';
           ctx.fillRect(brkX, y, brkW, periodHeaderH);
           ctx.strokeRect(brkX, y, brkW, periodHeaderH);
           ctx.fillStyle = '#3B0764';
           ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('⏸️ ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
+          ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
           ctx.fillStyle = '#DDD6FE';
           ctx.fillRect(aftX, y, aftW, periodHeaderH);
           ctx.strokeRect(aftX, y, aftW, periodHeaderH);
           ctx.fillStyle = '#1E1B4B';
           ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('🌤️ الفترة المسائية', aftX + aftW / 2, y + 31);
+          ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
         } else if (numCols >= 2) {
           var halfCols = Math.ceil(numCols / 2);
           var mW = halfCols * colW;
@@ -2678,21 +2678,21 @@
           ctx.strokeRect(mX, y, mW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
           ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('☀️ الفترة الصباحية', mX + mW / 2, y + 31);
+          ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
 
           ctx.fillStyle = '#DDD6FE';
           ctx.fillRect(28, y, aW, periodHeaderH);
           ctx.strokeRect(28, y, aW, periodHeaderH);
           ctx.fillStyle = '#1E1B4B';
           ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('🌤️ الفترة المسائية', 28 + aW / 2, y + 31);
+          ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
         } else {
           ctx.fillStyle = '#BAE6FD';
           ctx.fillRect(28, y, sessColW, periodHeaderH);
           ctx.strokeRect(28, y, sessColW, periodHeaderH);
           ctx.fillStyle = '#0C2D55';
           ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('☀️ الفترة الصباحية   |   🌤️ الفترة المسائية', 28 + sessColW / 2, y + 31);
+          ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
         }
 
         y += periodHeaderH;
@@ -2706,7 +2706,7 @@
         ctx.fillStyle = '#FFFFFF';
         ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
+        ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
         ctx.fillStyle = '#FDE047';
         ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
@@ -2739,7 +2739,7 @@
           var timeTxt = formatTimeRange(col.start, col.end) || 'التوقيت يدوي';
           ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
           ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText('🕒 ' + timeTxt, cx + colW / 2, pillY + 21);
+          ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
         });
 
         y += timeHeaderH;
@@ -2819,11 +2819,11 @@
                 ctx.textAlign = 'right';
                 ctx.fillStyle = '#0C2D55';
                 ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
-                ctx.fillText(('📘 ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
+                ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
                 ctx.fillStyle = '#0F172A';
                 ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
-                var skillLines = wrapCanvasLines(ctx, '🎯 ' + (it.skill || ''), colW - 22);
+                var skillLines = wrapCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
                 ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
                 if (skillLines[1]) {
                   ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
@@ -2874,12 +2874,12 @@
 
       openModal(h('div', { class: 'modal-body wk-modal-print' },
         h('div', { class: 'bar-sub no-print' },
-          h('h2', { text: '🖼️ صورة البرنامج الأسبوعي — ' + (secName || '') }),
+          h('h2', { text: ' صورة البرنامج الأسبوعي — ' + (secName || '') }),
           h('div', { class: 'row-actions' },
             h('button', {
               class: 'btn small light',
               type: 'button',
-              text: '➕ تكبير الصورة',
+              text: ' تكبير الصورة',
               onclick: function () {
                 scale = Math.min(2.5, scale + 0.25);
                 imgEl.className = scale > 1 ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
@@ -2888,7 +2888,7 @@
             h('button', {
               class: 'btn small light',
               type: 'button',
-              text: '➖ تصغير',
+              text: ' تصغير',
               onclick: function () {
                 scale = 1;
                 imgEl.className = 'wk-zoom-img';
@@ -2899,8 +2899,8 @@
         zoomWrap,
         h('div', { class: 'modal-actions no-print' },
           h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-          h('button', { class: 'btn gold', type: 'button', text: '📥 تحميل صورة البرنامج (PNG)', onclick: function () { downloadScheduleImage(st, secName); } }),
-          h('button', { class: 'btn', type: 'button', text: '🖨️ طباعة', onclick: function () { window.print(); } })
+          h('button', { class: 'btn gold', type: 'button', text: ' تحميل صورة البرنامج (PNG)', onclick: function () { downloadScheduleImage(st, secName); } }),
+          h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
         )
       ));
     }
@@ -2919,11 +2919,11 @@
 
       return h('div', { class: 'wk-img-card-wrap' },
         h('div', { class: 'wk-img-hint-bar no-print' },
-          h('span', { class: 'muted small', text: '🖼️ صورة البرنامج الأسبوعي (التوقيت واضح تحت إطار الفترات وموحد من وقت البداية إلى وقت النهاية لجميع أيام الأسبوع):' }),
+          h('span', { class: 'muted small', text: ' صورة البرنامج الأسبوعي (التوقيت واضح تحت إطار الفترات وموحد من وقت البداية إلى وقت النهاية لجميع أيام الأسبوع):' }),
           h('button', {
             type: 'button',
             class: 'btn small gold',
-            text: '🔍 فتح وتكبير صورة البرنامج كاملة',
+            text: ' فتح وتكبير صورة البرنامج كاملة',
             onclick: function () { openFullProgramImageModal(st, secName, statusText); }
           })
         ),
@@ -2944,9 +2944,9 @@
       v.textContent = '';
 
       var topBar = h('div', { class: 'bar-sub' },
-        h('h2', { text: p ? '✏️ تعديل البرنامج الأسبوعي للقسم' : '➕ إعداد برنامج أسبوعي جديد للقسم' }),
+        h('h2', { text: p ? ' تعديل البرنامج الأسبوعي للقسم' : ' إعداد برنامج أسبوعي جديد للقسم' }),
         h('div', { class: 'row-actions' },
-          h('button', { class: 'btn light', type: 'button', text: '🔙 رجوع لقائمة البرامج', onclick: function () { go('programs'); } })
+          h('button', { class: 'btn light', type: 'button', text: ' رجوع لقائمة البرامج', onclick: function () { go('programs'); } })
         )
       );
       v.appendChild(topBar);
@@ -3041,11 +3041,11 @@
 
           slotsGrid.appendChild(h('div', { class: 'prog-unified-slot-box' + (col.isBreak ? ' is-break' : '') },
             h('div', { class: 'prog-unified-slot-hdr' },
-              badge(col.isBreak ? ('⏸️ ' + col.label) : ('📖 ' + col.label), col.isBreak ? 'warn' : 'gold')
+              badge(col.isBreak ? (' ' + col.label) : (' ' + col.label), col.isBreak ? 'warn' : 'gold')
             ),
             h('div', { class: 'prog-sess-times' },
-              h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ من (البداية):' }), sIn),
-              h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ إلى (النهاية):' }), eIn)
+              h('label', { class: 'sess-time-lbl' }, h('span', { text: ' من (البداية):' }), sIn),
+              h('label', { class: 'sess-time-lbl' }, h('span', { text: ' إلى (النهاية):' }), eIn)
             )
           ));
         });
@@ -3053,7 +3053,7 @@
         var addUnifiedSlotBtn = h('button', {
           type: 'button',
           class: 'btn small gold',
-          text: '➕ إضافة عمود حصة جديد لجميع الأيام',
+          text: ' إضافة عمود حصة جديد لجميع الأيام',
           onclick: function () {
             var targetLen = cols.length + 1;
             st.days.forEach(function (dy) {
@@ -3070,7 +3070,7 @@
         var addUnifiedBreakBtn = h('button', {
           type: 'button',
           class: 'btn small light',
-          text: '⏸️ + حصة بينية (فسحة) لجميع الأيام',
+          text: ' + حصة بينية (فسحة) لجميع الأيام',
           onclick: function () {
             var targetLen = cols.length;
             st.days.forEach(function (dy) {
@@ -3088,7 +3088,7 @@
         unifiedTimesHost.appendChild(h('div', { class: 'prog-unified-times-card' },
           h('div', { class: 'bar-sub' },
             h('div', null,
-              h('strong', { text: '⏰ شريط التوقيت الموحد للحصص (يظهر مباشرة تحت إطار الفترات ويسري على جميع الأيام: الأحد – الخميس)' }),
+              h('strong', { text: ' شريط التوقيت الموحد للحصص (يظهر مباشرة تحت إطار الفترات ويسري على جميع الأيام: الأحد – الخميس)' }),
               h('p', { class: 'muted small', text: 'حدد وقت البداية والنهاية لكل حصة مرة واحدة هنا (أو من داخل أي يوم) وسيُعمَّم تلقائياً على جميع أيام الأسبوع.' })
             ),
             h('div', { class: 'row-actions' }, addUnifiedSlotBtn, addUnifiedBreakBtn)
@@ -3121,7 +3121,7 @@
       });
 
       var basicCard = h('div', { class: 'card prog-step-card' },
-        h('h3', { class: 'prog-step-title', text: '1️⃣ بيانات الفوج / القسم والموسم الدراسي' }),
+        h('h3', { class: 'prog-step-title', text: '1⃣ بيانات الفوج / القسم والموسم الدراسي' }),
         h('div', { class: 'prog-grid-2' },
           h('label', { class: 'fld' }, h('span', { text: 'الفوج / القسم التربوي المستهدف *' }), secSelect),
           h('label', { class: 'fld' }, h('span', { text: 'الموسم الدراسي *' }), yearInput)
@@ -3137,7 +3137,7 @@
           dm.domain = curDomain;
           var domainSkills = CURR[curDomain] || [];
 
-          var domSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن المجال التربوي...', autocomplete: 'off' });
+          var domSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن المجال التربوي...', autocomplete: 'off' });
           var domSel = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
           domSel.value = curDomain;
 
@@ -3168,7 +3168,7 @@
             refreshPreview();
           });
 
-          var sklSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث في مهارات هذا المجال (' + domainSkills.length + ' مهارة)...', autocomplete: 'off' });
+          var sklSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث في مهارات هذا المجال (' + domainSkills.length + ' مهارة)...', autocomplete: 'off' });
           var sklListBox = h('div', { class: 'prog-skills-checklist' });
           var selectedTagsBox = h('div', { class: 'prog-selected-tags' });
 
@@ -3229,13 +3229,13 @@
 
           var blockCard = h('div', { class: 'prog-domain-card ' + domainColorClass(curDomain) },
             h('div', { class: 'prog-domain-card-hdr' },
-              h('strong', { text: '📘 المجال التربوي رقم (' + (dIdx + 1) + ')' }),
+              h('strong', { text: ' المجال التربوي رقم (' + (dIdx + 1) + ')' }),
               h('div', { class: 'row-actions' },
                 h('span', { class: 'badge gold', text: dm.skills.length + ' مهارة محددة' }),
                 h('button', {
                   type: 'button',
                   class: 'btn small light',
-                  text: '⚡ تحديد أول 5 مهارات',
+                  text: ' تحديد أول 5 مهارات',
                   onclick: function () {
                     domainSkills.slice(0, 5).forEach(function (sk) {
                       if (dm.skills.indexOf(sk) < 0) dm.skills.push(sk);
@@ -3259,7 +3259,7 @@
                 st.domains.length > 1 ? h('button', {
                   type: 'button',
                   class: 'btn small danger',
-                  text: '🗑️ حذف هذا المجال',
+                  text: ' حذف هذا المجال',
                   onclick: function () {
                     st.domains.splice(dIdx, 1);
                     renderDomains();
@@ -3298,7 +3298,7 @@
         toast('تمت إضافة خانة مجال جديد — اختر المجال ومهاراته.', 'ok');
       }
 
-      /* ⚡ قوالب جاهزة وتوزيع تلقائي ذكي لتسهيل ملء البرنامج الأسبوعي بضغطة واحدة */
+      /*  قوالب جاهزة وتوزيع تلقائي ذكي لتسهيل ملء البرنامج الأسبوعي بضغطة واحدة */
       function applyStandardStructureTemplate(kind) {
         var slots = kind === 'compact' ? [
           { kind: 'session', title: 'الحصة الصباحية 1', start: '08:30', end: '10:00' },
@@ -3384,7 +3384,7 @@
         renderUnifiedTimesBar();
         renderDays();
         refreshPreview();
-        toast('✨ تم توزيع المهارات المختارة تلقائياً على جميع حصص الأسبوع (الأحد – الخميس)! يمكنك تعديل أي خانة بحرية.', 'ok');
+        toast(' تم توزيع المهارات المختارة تلقائياً على جميع حصص الأسبوع (الأحد – الخميس)! يمكنك تعديل أي خانة بحرية.', 'ok');
       }
 
       function copyDayToAllWeek(sourceDayObj) {
@@ -3403,22 +3403,22 @@
         renderUnifiedTimesBar();
         renderDays();
         refreshPreview();
-        toast('📋 تم نسخ برنامج يوم ' + sourceDayObj.label + ' وتعميمه على جميع أيام الأسبوع بنجاح!', 'ok');
+        toast(' تم نسخ برنامج يوم ' + sourceDayObj.label + ' وتعميمه على جميع أيام الأسبوع بنجاح!', 'ok');
       }
 
       var domainsStepCard = h('div', { class: 'card prog-step-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('h3', { class: 'prog-step-title', text: '2️⃣ المجالات التربوية والمهارات المستهدفة (إمكانية إضافة أكثر من مجال)' }),
+            h('h3', { class: 'prog-step-title', text: '2⃣ المجالات التربوية والمهارات المستهدفة (إمكانية إضافة أكثر من مجال)' }),
             h('p', { class: 'muted small', text: 'يمكنك إضافة أكثر من مجال تربوي، وعند اختيار كل مجال تظهر مهاراته الخاصة لتختار منها مهارة أو أكثر.' })
           ),
           h('div', { class: 'row-actions' },
-            h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال تربوي آخر', onclick: addAnotherDomain })
+            h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر', onclick: addAnotherDomain })
           )
         ),
         domainsHost,
         h('div', { class: 'prog-add-domain-bar' },
-          h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال تربوي آخر ومهاراته', onclick: addAnotherDomain })
+          h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر ومهاراته', onclick: addAnotherDomain })
         )
       );
       v.appendChild(domainsStepCard);
@@ -3465,13 +3465,13 @@
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '➕ إدراج حصة تربوية هنا',
+              text: ' إدراج حصة تربوية هنا',
               onclick: function () { insertSessionAt(dayObj, insertIdx, 'session', ''); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small gold',
-              text: '⏸️ إدراج حصة ما بين الحصص وعنوانها هنا',
+              text: ' إدراج حصة ما بين الحصص وعنوانها هنا',
               onclick: function () { insertSessionAt(dayObj, insertIdx, 'break', ''); }
             })
           )
@@ -3486,7 +3486,7 @@
         var toggleDaysBtn = h('button', {
           type: 'button',
           class: 'btn ' + (showDaysList ? 'light' : 'gold') + ' prog-show-days-btn',
-          text: showDaysList ? '🙈 إخفاء قائمة أيام الأسبوع' : '📅 اضغط هنا لإظهار أيام الأسبوع (الأحد – الخميس) وتعبئة البرنامج',
+          text: showDaysList ? ' إخفاء قائمة أيام الأسبوع' : ' اضغط هنا لإظهار أيام الأسبوع (الأحد – الخميس) وتعبئة البرنامج',
           onclick: function () {
             showDaysList = !showDaysList;
             renderDays();
@@ -3519,7 +3519,7 @@
             }
           },
             h('div', { class: 'prog-day-title' },
-              h('strong', { text: '📅 يوم ' + dayObj.label }),
+              h('strong', { text: ' يوم ' + dayObj.label }),
               h('span', { class: 'badge ' + (filledCount ? 'ok' : 'gray'), text: filledCount ? ('تم ملء ' + filledCount + ' حصة') : 'اضغط لملء برنامج اليوم' })
             ),
             h('div', { class: 'row-actions' },
@@ -3527,7 +3527,7 @@
                 ? h('button', {
                     type: 'button',
                     class: 'btn small light',
-                    text: '🙈 إخفاء تفاصيل يوم ' + dayObj.label,
+                    text: ' إخفاء تفاصيل يوم ' + dayObj.label,
                     onclick: function (e) {
                       e.stopPropagation();
                       openDays[dayObj.day] = false;
@@ -3537,7 +3537,7 @@
                 : h('button', {
                     type: 'button',
                     class: 'btn small gold',
-                    text: '✏️ فتح وملء برنامج يوم ' + dayObj.label,
+                    text: ' فتح وملء برنامج يوم ' + dayObj.label,
                     onclick: function (e) {
                       e.stopPropagation();
                       openDays[dayObj.day] = true;
@@ -3560,19 +3560,19 @@
               h('button', {
                 type: 'button',
                 class: 'btn small light',
-                text: '📋 نسخ برنامج يوم ' + dayObj.label + ' إلى كل أيام الأسبوع',
+                text: ' نسخ برنامج يوم ' + dayObj.label + ' إلى كل أيام الأسبوع',
                 onclick: function () { copyDayToAllWeek(dayObj); }
               }),
               h('button', {
                 type: 'button',
                 class: 'btn small gold',
-                text: '➕ إضافة حصة في يوم ' + dayObj.label,
+                text: ' إضافة حصة في يوم ' + dayObj.label,
                 onclick: function () { insertSessionAt(dayObj, dayObj.sessions.length, 'session', ''); }
               }),
               h('button', {
                 type: 'button',
                 class: 'btn small light',
-                text: '⏸️ + حصة ما بين الحصص وعنوانها',
+                text: ' + حصة ما بين الحصص وعنوانها',
                 onclick: function () { insertSessionAt(dayObj, dayObj.sessions.length, 'break', ''); }
               })
             )
@@ -3655,7 +3655,7 @@
                 h('button', {
                   type: 'button',
                   class: 'btn small',
-                  text: '📌 تعميم هذه الحصة البينية على كل أيام الأسبوع',
+                  text: ' تعميم هذه الحصة البينية على كل أيام الأسبوع',
                   onclick: function () { copyBreakToAllDays(sess, sIdx); }
                 })
               );
@@ -3674,11 +3674,11 @@
                 itemsBox.appendChild(h('div', { class: 'wk-cell-item editable ' + domainColorClass(it.domain) },
                   h('div', { class: 'wk-cell-content' },
                     h('div', { class: 'wk-cell-domain' },
-                      h('span', { class: 'wk-lbl', text: '📘 المجال:' }),
+                      h('span', { class: 'wk-lbl', text: ' المجال:' }),
                       h('strong', { text: ' ' + it.domain })
                     ),
                     h('div', { class: 'wk-cell-skill' },
-                      h('span', { class: 'wk-lbl', text: '🎯 المهارة:' }),
+                      h('span', { class: 'wk-lbl', text: ' المهارة:' }),
                       h('span', { text: ' ' + it.skill })
                     )
                   ),
@@ -3703,7 +3703,7 @@
                 return h('button', {
                   type: 'button',
                   class: 'btn small ' + (alreadyIn ? 'gold' : 'light'),
-                  text: (alreadyIn ? '✓ ' : '➕ ') + pair.domain + ' — ' + pair.skill,
+                  text: (alreadyIn ? '✓ ' : ' ') + pair.domain + ' — ' + pair.skill,
                   onclick: function () {
                     if (alreadyIn) {
                       sess.items = sess.items.filter(function (x) { return !(x.domain === pair.domain && x.skill === pair.skill); });
@@ -3716,17 +3716,17 @@
                 });
               });
               quickBar = h('div', { class: 'prog-sess-quick' },
-                h('small', { class: 'prog-quick-lbl', text: '⚡ اختيار سريع من المجالات والمهارات المحددة أعلاه (اضغط للإدراج أو الإزالة في نفس الخانة):' }),
+                h('small', { class: 'prog-quick-lbl', text: ' اختيار سريع من المجالات والمهارات المحددة أعلاه (اضغط للإدراج أو الإزالة في نفس الخانة):' }),
                 h('div', { class: 'prog-quick-btns' }, quickBtns)
               );
             }
 
             var pickerDom = sess._pickerDomain || (st.domains[0] && st.domains[0].domain) || domainKeys[0] || '';
-            var pDomSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن مجال لإضافته للحصة...', autocomplete: 'off' });
+            var pDomSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن مجال لإضافته للحصة...', autocomplete: 'off' });
             var pDomSelect = h('select', null, domainKeys.map(function (dk) { return h('option', { value: dk, text: dk }); }));
             pDomSelect.value = pickerDom;
 
-            var pSkillSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث عن مهارة أو أكثر لإدراجها في هذه الحصة...', autocomplete: 'off' });
+            var pSkillSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث عن مهارة أو أكثر لإدراجها في هذه الحصة...', autocomplete: 'off' });
             var pSkillChecklist = h('div', { class: 'prog-sess-skill-list' });
 
             function renderSessionSkillChoices() {
@@ -3785,7 +3785,7 @@
             renderSessionSkillChoices();
 
             var directPickerDetails = h('details', { class: 'prog-sess-details' },
-              h('summary', { text: '➕ اختيار وإدراج مجال ومهارة أو أكثر مباشرة في هذه الحصة (من جميع المجالات)' }),
+              h('summary', { text: ' اختيار وإدراج مجال ومهارة أو أكثر مباشرة في هذه الحصة (من جميع المجالات)' }),
               h('div', { class: 'prog-sess-picker-body' },
                 h('div', { class: 'prog-grid-2' },
                   h('label', { class: 'fld' }, h('span', { text: '1. اختر المجال التربوي:' }), pDomSearch, pDomSelect),
@@ -3798,7 +3798,7 @@
             var moveUpBtn = sIdx > 0 ? h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '⬆️ تقديم',
+              text: ' تقديم',
               onclick: function () {
                 var tmp = dayObj.sessions[sIdx - 1];
                 dayObj.sessions[sIdx - 1] = dayObj.sessions[sIdx];
@@ -3811,7 +3811,7 @@
             var moveDownBtn = sIdx < dayObj.sessions.length - 1 ? h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '⬇️ تأخير',
+              text: '⬇ تأخير',
               onclick: function () {
                 var tmp = dayObj.sessions[sIdx + 1];
                 dayObj.sessions[sIdx + 1] = dayObj.sessions[sIdx];
@@ -3824,7 +3824,7 @@
             var toggleKindBtn = h('button', {
               type: 'button',
               class: 'btn small light',
-              text: isBreak ? '🔄 تحويل لحصة عادية' : '⏸️ تحويل لحصة بينية (فاصل)',
+              text: isBreak ? ' تحويل لحصة عادية' : ' تحويل لحصة بينية (فاصل)',
               onclick: function () {
                 sess.kind = isBreak ? 'session' : 'break';
                 renderDays();
@@ -3836,11 +3836,11 @@
               h('div', { class: 'prog-sess-hdr' },
                 h('span', {
                   class: 'badge ' + (isBreak ? 'warn' : 'gold'),
-                  text: isBreak ? ('⏸️ حصة ما بين الحصص — يوم ' + dayObj.label) : ('📖 الحصة ' + normalCounter + ' — يوم ' + dayObj.label)
+                  text: isBreak ? (' حصة ما بين الحصص — يوم ' + dayObj.label) : (' الحصة ' + normalCounter + ' — يوم ' + dayObj.label)
                 }),
                 h('div', { class: 'prog-sess-times' },
-                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ من (البداية لكل الأيام):' }), startIn),
-                  h('label', { class: 'sess-time-lbl' }, h('span', { text: '⏰ إلى (النهاية لكل الأيام):' }), endIn)
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: ' من (البداية لكل الأيام):' }), startIn),
+                  h('label', { class: 'sess-time-lbl' }, h('span', { text: ' إلى (النهاية لكل الأيام):' }), endIn)
                 ),
                 h('div', { class: 'row-actions' },
                   moveUpBtn,
@@ -3849,7 +3849,7 @@
                   h('button', {
                     type: 'button',
                     class: 'btn small danger',
-                    text: '🗑️ حذف',
+                    text: ' حذف',
                     onclick: function () {
                       dayObj.sessions.splice(sIdx, 1);
                       renderDays();
@@ -3883,7 +3883,7 @@
             h('button', {
               type: 'button',
               class: 'btn gold',
-              text: '✅ انتهيت من ملء برنامج يوم ' + dayObj.label + ' — إخفاء التفاصيل 🙈',
+              text: ' انتهيت من ملء برنامج يوم ' + dayObj.label + ' — إخفاء التفاصيل ',
               onclick: function () {
                 openDays[dayObj.day] = false;
                 renderDays();
@@ -3900,26 +3900,26 @@
       var easyWizardBar = h('div', { class: 'prog-unified-times-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('strong', { text: '🪄 المساعد السريع لملء البرنامج الأسبوعي بضغطة واحدة (اختياري)' }),
+            h('strong', { text: ' المساعد السريع لملء البرنامج الأسبوعي بضغطة واحدة (اختياري)' }),
             h('p', { class: 'muted small', text: 'بدل إدخال كل يوم وحصة يدوياً، يمكنك إنشاء هيكل الحصص القياسي وتوزيع المهارات المختارة على الأسبوع كاملاً بضغطة زر ثم تعديل ما تشاء.' })
           ),
           h('div', { class: 'row-actions' },
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '📐 قالب اليوم الكامل (صباحي + فسحة + مسائي)',
+              text: ' قالب اليوم الكامل (صباحي + فسحة + مسائي)',
               onclick: function () { applyStandardStructureTemplate('full'); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '☀️ قالب الفترة الصباحية فقط (حصتان + فسحة)',
+              text: ' قالب الفترة الصباحية فقط (حصتان + فسحة)',
               onclick: function () { applyStandardStructureTemplate('compact'); }
             }),
             h('button', {
               type: 'button',
               class: 'btn small gold',
-              text: '✨ توزيع المهارات المختارة تلقائياً على كل الأسبوع',
+              text: ' توزيع المهارات المختارة تلقائياً على كل الأسبوع',
               onclick: autoDistributeSkillsAcrossWeek
             })
           )
@@ -3929,7 +3929,7 @@
       var scheduleStepCard = h('div', { class: 'card prog-step-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('h3', { class: 'prog-step-title', text: '3️⃣ جدول البرنامج الأسبوعي والتوقيت الموحد تحت إطار الفترات' }),
+            h('h3', { class: 'prog-step-title', text: '3⃣ جدول البرنامج الأسبوعي والتوقيت الموحد تحت إطار الفترات' }),
             h('p', { class: 'muted small', text: 'التوقيت يظهر بوضوح تحت إطار الفترات (الفترة الصباحية / المسائية) ويبدأ من وقت وينتهي في جميع الأيام للحصة. استخدم المساعد السريع أعلاه أو املأ الحصص أدناه.' })
           )
         ),
@@ -4042,33 +4042,33 @@
         go('programs');
       }
 
-      var exportBtn = h('button', { type: 'button', class: 'btn gold', text: '📤 تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
-      var draftBtn = h('button', { type: 'button', class: 'btn light', text: '💾 حفظ كمسودة' });
+      var exportBtn = h('button', { type: 'button', class: 'btn gold', text: ' تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtn = h('button', { type: 'button', class: 'btn light', text: ' حفظ كمسودة' });
       var imgPreviewBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        text: '🖼️ تحميل صورة الجدول (PNG)',
+        text: ' تحميل صورة الجدول (PNG)',
         onclick: function () { downloadScheduleImage(st, getSecName()); }
       });
       var printPreviewBtn = h('button', {
         type: 'button',
         class: 'btn',
-        text: '🖨️ تكبير وطباعة الجدول',
+        text: ' تكبير وطباعة الجدول',
         onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
       });
 
-      var exportBtnBottom = h('button', { type: 'button', class: 'btn gold', text: '📤 تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
-      var draftBtnBottom = h('button', { type: 'button', class: 'btn light', text: '💾 حفظ كمسودة' });
+      var exportBtnBottom = h('button', { type: 'button', class: 'btn gold', text: ' تصدير البرنامج الأسبوعي إلى الأولياء (اعتماد ونشر الجدول)' });
+      var draftBtnBottom = h('button', { type: 'button', class: 'btn light', text: ' حفظ كمسودة' });
       var imgBtnBottom = h('button', {
         type: 'button',
         class: 'btn light',
-        text: '🖼️ تحميل صورة الجدول (PNG)',
+        text: ' تحميل صورة الجدول (PNG)',
         onclick: function () { downloadScheduleImage(st, getSecName()); }
       });
       var printBtnBottom = h('button', {
         type: 'button',
         class: 'btn',
-        text: '🖨️ تكبير وطباعة الجدول',
+        text: ' تكبير وطباعة الجدول',
         onclick: function () { printWeeklySheet(st, getSecName(), 'البرنامج الأسبوعي'); }
       });
 
@@ -4080,7 +4080,7 @@
       var previewCard = h('div', { class: 'card prog-step-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('h3', { class: 'prog-step-title', text: '4️⃣ معاينة صورة البرنامج الأسبوعي المصدَّر للأولياء' }),
+            h('h3', { class: 'prog-step-title', text: '4⃣ معاينة صورة البرنامج الأسبوعي المصدَّر للأولياء' }),
             h('p', { class: 'muted small', text: 'يظهر البرنامج للأولياء على شكل صورة أفقية متكاملة بنفس تصميم وألوان المركز دون الحاجة للتمرير الطويل.' })
           ),
           h('div', { class: 'row-actions' }, imgPreviewBtn, printPreviewBtn, draftBtn, exportBtn)
@@ -4105,10 +4105,10 @@
 
     listView(v, {
       title: 'البرامج التربوية والجداول الأسبوعية للأقسام',
-      addLabel: '➕ إعداد برنامج أسبوعي جديد',
+      addLabel: ' إعداد برنامج أسبوعي جديد',
       onAdd: function () { openProgramBuilder(null); },
       rows: rows,
-      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط «➕ إعداد برنامج أسبوعي جديد» للبدء.',
+      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط « إعداد برنامج أسبوعي جديد» للبدء.',
       search: function (p) { return (p.title || '') + ' ' + (p.goals || '') + ' ' + nameOf(sections, p.section_id, 'name'); },
       details: function (p) {
         var st = parseProgState(p);
@@ -4131,14 +4131,14 @@
         var st = parseProgState(p);
         var sName = nameOf(sections, p.section_id, 'name');
         return [
-          rbtn('🖼️ صورة البرنامج والطباعة', function () { printWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة'); }, 'gold'),
-          rbtn('✏️ تعديل', function () { openProgramBuilder(p); }),
+          rbtn(' صورة البرنامج والطباعة', function () { printWeeklySheet(st, sName, p.status === 'published' ? 'مصدَّر للأولياء' : 'مسودة'); }, 'gold'),
+          rbtn(' تعديل', function () { openProgramBuilder(p); }),
           p.status === 'published'
             ? rbtn('إلغاء التصدير', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'draft', published_at: null });
               bust(); toast('تم إلغاء التصدير وتحويل البرنامج لمسودة.', 'ok'); go('programs');
             }, 'light')
-            : rbtn('📤 تصدير للأولياء', async function () {
+            : rbtn(' تصدير للأولياء', async function () {
               await C.rest('PATCH', '/educational_programs?id=eq.' + uid(p.id), { status: 'published', published_at: new Date().toISOString() });
               bust(); toast('تم تصدير ونشر البرنامج الأسبوعي لأولياء القسم بنجاح.', 'ok'); go('programs');
             }, 'gold'),
@@ -4292,7 +4292,7 @@
       var isComm = dm.domain.indexOf('التواصل') >= 0;
       var thead = h('thead', null,
         h('tr', { class: 'eval-dom-banner-row' },
-          h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: '📘 ' + dm.domain })
+          h('th', { colspan: isComm ? '10' : '8', class: 'eval-dom-banner-th', text: ' ' + dm.domain })
         ),
         h('tr', { class: 'eval-col-hdr-row' },
           h('th', { class: 'eval-col-num', text: 'الرقم' }),
@@ -4376,9 +4376,9 @@
       v.textContent = '';
 
       var topBar = h('div', { class: 'bar-sub' },
-        h('h2', { text: existingRep ? '✏️ تعديل استمارة التقييم البيداغوجي' : '📋 إضافة استمارة تقييم بيداغوجي جديدة' }),
+        h('h2', { text: existingRep ? ' تعديل استمارة التقييم البيداغوجي' : ' إضافة استمارة تقييم بيداغوجي جديدة' }),
         h('div', { class: 'row-actions' },
-          h('button', { class: 'btn light', type: 'button', text: '🔙 رجوع لقائمة التقارير والتقييم', onclick: function () { go('reports'); } })
+          h('button', { class: 'btn light', type: 'button', text: ' رجوع لقائمة التقارير والتقييم', onclick: function () { go('reports'); } })
         )
       );
       v.appendChild(topBar);
@@ -4394,7 +4394,7 @@
       );
       secFilterSelect.value = curSecId || '';
 
-      var kidSearch = h('input', { type: 'search', class: 'fld-search', placeholder: '🔍 ابحث باسم الطفل أو رقم القيد...', autocomplete: 'off' });
+      var kidSearch = h('input', { type: 'search', class: 'fld-search', placeholder: ' ابحث باسم الطفل أو رقم القيد...', autocomplete: 'off' });
       var kidSelect = h('select', null);
 
       function populateKidsSelect() {
@@ -4441,7 +4441,7 @@
       });
 
       var step1Card = h('div', { class: 'card prog-step-card' },
-        h('h3', { class: 'prog-step-title', text: '1️⃣ بيانات الطفل واستمارة التقييم' }),
+        h('h3', { class: 'prog-step-title', text: '1⃣ بيانات الطفل واستمارة التقييم' }),
         h('div', { class: 'prog-grid-2' },
           h('label', { class: 'fld' }, h('span', { text: 'الفوج / القسم التربوي' }), secFilterSelect),
           h('label', { class: 'fld' }, h('span', { text: 'اختيار الطفل *' }), kidSearch, kidSelect)
@@ -4495,7 +4495,7 @@
           });
 
           var quickFillBar = h('div', { class: 'eval-quick-fill-bar' },
-            h('small', { class: 'muted', text: '⚡ تقييم سريع لجميع مهارات هذا المجال بالدرجة:' }),
+            h('small', { class: 'muted', text: ' تقييم سريع لجميع مهارات هذا المجال بالدرجة:' }),
             ['1', '2', '3', '4', '5'].map(function (g) {
               return h('button', {
                 type: 'button',
@@ -4594,13 +4594,13 @@
 
           var domCard = h('div', { class: 'prog-domain-card eval-domain-block' },
             h('div', { class: 'prog-domain-card-hdr' },
-              h('strong', { text: '📋 المجال التربوي رقم (' + (dIdx + 1) + '): ' + curDom }),
+              h('strong', { text: ' المجال التربوي رقم (' + (dIdx + 1) + '): ' + curDom }),
               h('div', { class: 'row-actions' },
                 h('span', { class: 'badge ' + (ratedCount ? 'ok' : 'gold'), text: 'تم تقييم ' + ratedCount + ' من ' + dm.ratings.length + ' مهارة' }),
                 ev.domains.length > 1 ? h('button', {
                   type: 'button',
                   class: 'btn small danger',
-                  text: '🗑️ حذف هذا المجال',
+                  text: ' حذف هذا المجال',
                   onclick: function () {
                     ev.domains.splice(dIdx, 1);
                     renderEvalDomains();
@@ -4636,16 +4636,16 @@
       var step2Card = h('div', { class: 'card prog-step-card' },
         h('div', { class: 'bar-sub' },
           h('div', null,
-            h('h3', { class: 'prog-step-title', text: '2️⃣ جدول تقييم المجالات والمهارات (مطابق للاستمارة الرسمية 1 – 5)' }),
+            h('h3', { class: 'prog-step-title', text: '2⃣ جدول تقييم المجالات والمهارات (مطابق للاستمارة الرسمية 1 – 5)' }),
             h('p', { class: 'muted small', text: 'اختر المجال التربوي لتخرج لك كل مهاراته في الجدول، ثم ضع التقييم (1 إلى 5 أو نعم/لا) والملاحظات لكل مهارة، ويمكنك إضافة أكثر من مجال.' })
           ),
           h('div', { class: 'row-actions' },
-            h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال آخر للاستمارة', onclick: addAnotherEvalDomain })
+            h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال آخر للاستمارة', onclick: addAnotherEvalDomain })
           )
         ),
         domainsHost,
         h('div', { class: 'prog-add-domain-bar' },
-          h('button', { type: 'button', class: 'btn gold', text: '➕ إضافة مجال تربوي آخر للاستمارة', onclick: addAnotherEvalDomain })
+          h('button', { type: 'button', class: 'btn gold', text: ' إضافة مجال تربوي آخر للاستمارة', onclick: addAnotherEvalDomain })
         )
       );
       v.appendChild(step2Card);
@@ -4714,8 +4714,8 @@
         go('reports');
       }
 
-      var btnSaveDraft = h('button', { type: 'button', class: 'btn light', text: '💾 حفظ الاستمارة كمسودة' });
-      var btnPublish = h('button', { type: 'button', class: 'btn gold', text: '📤 اعتماد وإرسال استمارة التقييم للولي' });
+      var btnSaveDraft = h('button', { type: 'button', class: 'btn light', text: ' حفظ الاستمارة كمسودة' });
+      var btnPublish = h('button', { type: 'button', class: 'btn gold', text: ' اعتماد وإرسال استمارة التقييم للولي' });
       btnSaveDraft.addEventListener('click', function () { act(btnSaveDraft, function () { return saveEvaluationForm(false); }); });
       btnPublish.addEventListener('click', function () { act(btnPublish, function () { return saveEvaluationForm(true); }); });
 
@@ -4838,11 +4838,11 @@
 
     listView(v, {
       title: S.isEducator ? ('التقارير واستمارات التقييم — قسم ' + (S.eduSectionName || 'فوجي')) : 'التقارير التربوية واستمارات التقييم البيداغوجي',
-      addLabel: '📝 كتابة تقرير',
+      addLabel: ' كتابة تقرير',
       onAdd: function () { if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad'); edit(null); },
       extra: [
         {
-          label: '📋 إضافة استمارة تقييم',
+          label: ' إضافة استمارة تقييم',
           kind: 'gold',
           onclick: function () {
             if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad');
@@ -4851,7 +4851,7 @@
         }
       ],
       rows: rows,
-      empty: 'لا توجد تقارير أو استمارات تقييم بعد. اضغط «📋 إضافة استمارة تقييم» أو «📝 كتابة تقرير» للبدء.',
+      empty: 'لا توجد تقارير أو استمارات تقييم بعد. اضغط « إضافة استمارة تقييم» أو « كتابة تقرير» للبدء.',
       search: function (r) { return r.title + ' ' + nameOf(kids, r.child_id); },
       details: function (r) {
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
@@ -4867,7 +4867,7 @@
       },
       filters: [
         { label: 'الطفل', opts: kidOpts, test: function (r, x) { return r.child_id === x; } },
-        { label: 'النوع', opts: [['eval', '📋 استمارة تقييم بيداغوجي'], ['rep', '📝 تقرير تربوي']], test: function (r, x) { return (isEvaluationReport(r) ? 'eval' : 'rep') === x; } },
+        { label: 'النوع', opts: [['eval', ' استمارة تقييم بيداغوجي'], ['rep', ' تقرير تربوي']], test: function (r, x) { return (isEvaluationReport(r) ? 'eval' : 'rep') === x; } },
         { label: 'الحالة', opts: [['published', 'منشور للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return r.status === x; } }
       ],
       cols: [
@@ -4876,7 +4876,7 @@
           get: function (r) {
             var isEv = isEvaluationReport(r);
             return h('div', { class: 'row-actions' },
-              badge(isEv ? '📋 استمارة تقييم' : '📝 تقرير', isEv ? 'gold' : 'ok'),
+              badge(isEv ? ' استمارة تقييم' : ' تقرير', isEv ? 'gold' : 'ok'),
               h('strong', { text: r.title })
             );
           },
@@ -4890,22 +4890,22 @@
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
         var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
         return [
-          isEvaluationReport(r) ? rbtn('📋 الاستمارة والطباعة', function () {
+          isEvaluationReport(r) ? rbtn(' الاستمارة والطباعة', function () {
             openModal(h('div', { class: 'modal-body wk-modal-print' },
               renderEvaluationSheetView(r, kd ? kd.full_name : '—', sName),
               h('div', { class: 'modal-actions no-print' },
                 h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-                h('button', { class: 'btn gold', type: 'button', text: '🖨️ طباعة استمارة التقييم', onclick: function () { window.print(); } })
+                h('button', { class: 'btn gold', type: 'button', text: ' طباعة استمارة التقييم', onclick: function () { window.print(); } })
               )
             ));
           }, 'gold') : null,
-          rbtn('✏️ تعديل', function () { return edit(r); }),
+          rbtn(' تعديل', function () { return edit(r); }),
           r.status === 'published'
             ? rbtn('إلغاء النشر', async function () {
               await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'draft' });
               bust(); toast('تحوّل إلى مسودة.', 'ok'); go('reports');
             }, 'light')
-            : rbtn('📤 نشر للولي', async function () {
+            : rbtn(' نشر للولي', async function () {
               await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'published' });
               bust(); toast('تم النشر للولي.', 'ok'); go('reports');
             }, 'gold'),
@@ -5153,12 +5153,12 @@
     centerSections.forEach(function (s) { centerSecIds[s.id] = true; });
 
     var headingTitle = isAllCentersView
-      ? '🛡️ الحسابات الخاصة بجميع المراكز وإمكانية إضافة حساب'
+      ? ' الحسابات الخاصة بجميع المراكز وإمكانية إضافة حساب'
       : targetCenter === 'work'
-        ? '🛠️ الحسابات الخاصة بمركز المساعدة على العمل'
+        ? ' الحسابات الخاصة بمركز المساعدة على العمل'
         : targetCenter === 'farm'
-          ? '🌿 الحسابات الخاصة بالمزرعة البيداغوجية'
-          : '🏛️ حسابات المركز الرئيسي دار الإحسان';
+          ? ' الحسابات الخاصة بالمزرعة البيداغوجية'
+          : ' حسابات المركز الرئيسي دار الإحسان';
 
     var ownerNote = canManage ? '' : (canDelete ? ' (إضافة الحسابات وتعديلها للمالك الرئيسي فقط؛ الحذف متاح لك.)' : ' (إضافة الحسابات وحذفها متاحان للمالك الرئيسي فقط.)');
     var headingDesc = isAllCentersView
@@ -5175,12 +5175,12 @@
           isAllCentersView ? h('button', {
             type: 'button',
             class: 'btn gold',
-            text: '🔙 العودة إلى لوحة الإدارة (المراكز الثلاثة)',
+            text: ' العودة إلى لوحة الإدارة (المراكز الثلاثة)',
             onclick: function () { go('hub'); }
           }) : h('button', {
             type: 'button',
             class: 'btn light',
-            text: '👥 العودة إلى الطلبة (' + cm.shortName + ')',
+            text: ' العودة إلى الطلبة (' + cm.shortName + ')',
             onclick: function () { go('children'); }
           })
         )
@@ -5204,11 +5204,11 @@
       var emailKey = (accRow.email || '').toLowerCase();
       var currentMeta = (meta.account_meta && meta.account_meta[emailKey]) || {};
       return openForm({
-        title: '🔐 تحديد إذن الدخول للمركز: ' + (accRow.display_name || accRow.email),
+        title: ' تحديد إذن الدخول للمركز: ' + (accRow.display_name || accRow.email),
         values: {
           center_access: currentMeta.center_access || accRow.center_access || 'all'
         },
-        submits: [{ key: 'save', label: '💾 حفظ واعتماد إذن الدخول للمركز', gold: true }],
+        submits: [{ key: 'save', label: ' حفظ واعتماد إذن الدخول للمركز', gold: true }],
         fields: [
           {
             k: 'center_access',
@@ -5235,13 +5235,13 @@
     function invite() {
       var defaultCenterAccess = isAllCentersView ? 'all' : targetCenter;
       return openForm({
-        title: isAllCentersView ? '➕ إضافة حساب جديد (مع تحديد المركز المسموح له)' : ('➕ إضافة حساب خاص بـ ' + cm.name),
+        title: isAllCentersView ? ' إضافة حساب جديد (مع تحديد المركز المسموح له)' : (' إضافة حساب خاص بـ ' + cm.name),
         values: { role: 'admin', center_access: defaultCenterAccess },
-        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: '✅ إنشاء الحساب بكلمة المرور وإذن المركز', gold: true }],
+        submits: [{ key: 'go', label: 'إرسال الدعوة بالبريد' }, { key: 'pw', label: ' إنشاء الحساب بكلمة المرور وإذن المركز', gold: true }],
         fields: [
           { k: 'email', label: 'البريد الإلكتروني للحساب', type: 'email', req: true, kind: 'email', max: 254 },
           { k: 'full_name', label: 'اسم المدير / مسؤول المركز (اختياري)', type: 'text', max: 120 },
-          { k: 'center_access', label: '🔐 إذن الدخول للمركز (حدد المركز المسموح له بالدخول إليه)', type: 'select', req: true, opts: CENTER_ACCESS_OPTS,
+          { k: 'center_access', label: ' إذن الدخول للمركز (حدد المركز المسموح له بالدخول إليه)', type: 'select', req: true, opts: CENTER_ACCESS_OPTS,
             hint: 'يمكنك تخصيص الحساب لدخول مركز واحد وحده (المركز الرئيسي فقط، أو مركز المساعدة على العمل فقط، أو المزرعة البيداغوجية فقط) أو جميع المراكز.' },
           { k: 'role', label: 'الدور الإداري', type: 'select', req: true, opts: [['admin', 'مدير / مشرف مركز (إدارة الطلبة والأقسام والتقارير)'], ['editor', 'محرّر (إدارة محتوى الموقع والوسائط فقط)']] },
           { k: 'pw_input', label: 'كلمة المرور (تُحفظ وتظهر في جدول حسابات الإدارة)', type: 'text', max: 72, gen: genAdminCode,
@@ -5304,11 +5304,11 @@
       var emailKey = (accRow.email || '').toLowerCase();
       var currentMeta = (meta.account_meta && meta.account_meta[emailKey]) || {};
       return openForm({
-        title: '🔑 تعيين / تحديث كلمة المرور للحساب: ' + (accRow.display_name || accRow.email),
+        title: ' تعيين / تحديث كلمة المرور للحساب: ' + (accRow.display_name || accRow.email),
         values: {
           new_pw: genAdminCode()
         },
-        submits: [{ key: 'save', label: '💾 حفظ واعتماد كلمة المرور', gold: true }],
+        submits: [{ key: 'save', label: ' حفظ واعتماد كلمة المرور', gold: true }],
         fields: [
           {
             k: 'new_pw',
@@ -5352,7 +5352,7 @@
       return {
         id: a.id,
         email: a.email,
-        display_name: isEdu ? ('👩‍🏫 المربية: ' + (am.full_name || a.email)) : (am.full_name ? (am.full_name + ' (' + a.email + ')') : a.email),
+        display_name: isEdu ? (' المربية: ' + (am.full_name || a.email)) : (am.full_name ? (am.full_name + ' (' + a.email + ')') : a.email),
         role: isEdu ? 'educator' : a.role,
         center_access: a.is_owner ? 'all' : (am.center_access || 'all'),
         section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name')) : 'جميع الأقسام',
@@ -5375,7 +5375,7 @@
         unifiedAccounts.push({
           id: am.educator_id || emKey,
           email: emKey,
-          display_name: isEdu ? ('👩‍🏫 المربية: ' + (am.full_name || emKey)) : (am.full_name ? (am.full_name + ' (' + emKey + ')') : emKey),
+          display_name: isEdu ? (' المربية: ' + (am.full_name || emKey)) : (am.full_name ? (am.full_name + ' (' + emKey + ')') : emKey),
           role: isEdu ? 'educator' : (am.role || 'admin'),
           center_access: am.center_access || 'all',
           section_name: isEdu ? (am.section_name || nameOf(sections, am.section_id, 'name') || '—') : 'جميع الأقسام',
@@ -5408,11 +5408,11 @@
     listView(v, {
       title: isAllCentersView ? 'قائمة الحسابات الخاصة بجميع المراكز' : ('قائمة ' + headingTitle.replace(/^[^\s]+\s/, '')),
       desc: headingDesc + ownerNote,
-      addLabel: canManage ? (isAllCentersView ? '➕ إضافة حساب جديد (لأي مركز)' : ('➕ إضافة حساب في ' + cm.shortName)) : '',
+      addLabel: canManage ? (isAllCentersView ? ' إضافة حساب جديد (لأي مركز)' : (' إضافة حساب في ' + cm.shortName)) : '',
       onAdd: canManage ? invite : null,
       extra: canManage ? [
         {
-          label: '👩‍🏫 إنشاء حساب للمربية',
+          label: ' إنشاء حساب للمربية',
           kind: 'gold',
           onclick: createEducatorAccountFromAccounts
         }
@@ -5429,7 +5429,7 @@
             if (a.role === 'educator') {
               return h('div', null,
                 h('strong', { text: a.display_name }),
-                h('div', { class: 'muted small', dir: 'ltr', text: a.phone !== '—' ? ('📞 ' + a.phone + ' | ' + a.email) : a.email })
+                h('div', { class: 'muted small', dir: 'ltr', text: a.phone !== '—' ? (' ' + a.phone + ' | ' + a.email) : a.email })
               );
             }
             return h('div', null,
@@ -5444,16 +5444,16 @@
           get: function (a) {
             if (a.role === 'educator') {
               return h('div', { class: 'row-actions' },
-                badge('👩‍🏫 مربية قسم', 'gold'),
+                badge(' مربية قسم', 'gold'),
                 badge(a.section_name || 'قسم مخصص', 'ok')
               );
             }
-            var roleBdg = a.is_owner ? badge('👑 المالك الرئيسي', 'gold') : a.role === 'editor' ? badge('محرّر موقع', 'gray') : badge('🛡️ مدير / مسؤول مركز', 'ok');
+            var roleBdg = a.is_owner ? badge(' المالك الرئيسي', 'gold') : a.role === 'editor' ? badge('محرّر موقع', 'gray') : badge(' مدير / مسؤول مركز', 'ok');
             var centerBdg = badge(formatCenterAccessLabel(a.is_owner ? 'all' : a.center_access), (!a.center_access || a.center_access === 'all' || a.is_owner) ? 'ok' : 'gold');
             var editAccessBtn = (canManage && !a.is_owner) ? h('button', {
               type: 'button',
               class: 'btn small light',
-              text: '🔐 تغيير إذن المركز',
+              text: ' تغيير إذن المركز',
               onclick: function () { openSetCenterAccessModal(a); }
             }) : null;
             return h('div', { class: 'row-actions' }, roleBdg, centerBdg, editAccessBtn);
@@ -5467,7 +5467,7 @@
               canManage ? h('button', {
                 type: 'button',
                 class: 'btn small light',
-                text: '🔑 تعيين كلمة مرور جديدة',
+                text: ' تعيين كلمة مرور جديدة',
                 onclick: function () { openSetAccountPasswordModal(a); }
               }) : null
             );
@@ -5484,22 +5484,22 @@
         } else if (a.role === 'educator') {
           var eduObj = (meta.educators || []).filter(function (e) { return e.id === a.educator_id || (e.email && e.email.toLowerCase() === (a.email || '').toLowerCase()); })[0];
           if (eduObj) {
-            actList.push(rbtn('🔑 تعديل حساب وكلمة سر المربية', function () { return openCreateEducatorAccountModal(eduObj, sections, meta, returnSec); }, 'gold'));
+            actList.push(rbtn(' تعديل حساب وكلمة سر المربية', function () { return openCreateEducatorAccountModal(eduObj, sections, meta, returnSec); }, 'gold'));
           }
         } else if (!a.is_owner) {
-          actList.push(rbtn('🔐 إذن الدخول للمركز', function () { return openSetCenterAccessModal(a); }, 'gold'));
+          actList.push(rbtn(' إذن الدخول للمركز', function () { return openSetCenterAccessModal(a); }, 'gold'));
         }
         if (a.is_owner || a.is_me) return actList;
 
         if (canManage && !a.last_sign_in_at && a.role !== 'educator') {
-          actList.push(rbtn('📩 إرسال رابط التفعيل', async function () {
+          actList.push(rbtn(' إرسال رابط التفعيل', async function () {
             var redirectUrl = location.origin + location.pathname;
             await C.recover(a.email, redirectUrl);
             toast('تم إرسال رابط تفعيل الحساب وإنشاء كلمة المرور إلى ' + a.email, 'ok');
           }, 'gold'));
         }
         if (a.virtual_edu) {
-          actList.push(rbtn('🗑️ حذف الحساب', async function () {
+          actList.push(rbtn(' حذف الحساب', async function () {
             if (!(await ask({ title: 'حذف الحساب؟', msg: 'سيتم حذف الحساب (' + a.display_name + ').', ok: 'حذف', danger: true }))) return;
             var curMeta = await loadPortalMeta();
             delete curMeta.account_meta[(a.email || '').toLowerCase()];
@@ -5519,7 +5519,7 @@
             }
             bust(); toast('تم تعديل حالة الحساب.', 'ok'); go(returnSec);
           }, a.disabled ? 'gold' : 'light'),
-          rbtn('🗑️ حذف الحساب', async function () {
+          rbtn(' حذف الحساب', async function () {
             if (!(await ask({
               title: 'حذف الحساب نهائيًا؟',
               msg: 'سيتم حذف الحساب (' + (a.display_name || a.email) + ') وسحب جميع صلاحياته فورًا. هذه العملية لا يمكن التراجع عنها!',
@@ -5565,7 +5565,7 @@
         h('button', {
           class: 'btn small light',
           type: 'button',
-          text: '🗑️ حذف السجلات الأقدم من 30 يومًا',
+          text: ' حذف السجلات الأقدم من 30 يومًا',
           onclick: async function () {
             if (!(await ask({
               title: 'تصفية سجلات التدقيق القديمة؟',
@@ -5586,7 +5586,7 @@
         h('button', {
           class: 'btn small danger',
           type: 'button',
-          text: '⚠️ تصفية كل سجلات التدقيق',
+          text: ' تصفية كل سجلات التدقيق',
           onclick: async function () {
             if (!(await ask({
               title: 'تصفية شاملة لسجلات العمليات؟',
@@ -5822,7 +5822,7 @@
       show('app');
       if (S.isEducator) {
         var eduName = (S.eduProfile && S.eduProfile.full_name) || myEmail;
-        $('#who').textContent = '👩‍🏫 ' + eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : '');
+        $('#who').textContent = ' ' + eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : '');
       } else {
         $('#who').textContent = (S.me && S.me.email) || 'مدير';
       }
