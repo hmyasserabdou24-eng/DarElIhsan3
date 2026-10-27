@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 :root {
   --nav-bg: rgba(255, 255, 255, 0.95);
@@ -35,7 +35,7 @@ body {
 }
 
 html[lang="ar"] body {
-  font-family: "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
 }
 
 html[lang="fr"] body {
@@ -275,7 +275,7 @@ select {
 .welcome-title {
   margin: 0;
   color: #123d68;
-  font-family: "Cairo", "Tajawal", "Segoe UI", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
   font-size: clamp(1.25rem, 2.4vw, 2.3rem);
   line-height: 1.5;
   font-weight: 800;

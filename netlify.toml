@@ -50,15 +50,6 @@
     Cache-Control = "no-store, no-cache, must-revalidate"
     Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self';"
 
-[[headers]]
-  for = "/admin.html"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    Referrer-Policy = "no-referrer"
-    X-Robots-Tag = "noindex, nofollow, noarchive"
-    Cache-Control = "no-store, no-cache, must-revalidate"
-    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; media-src 'self' blob: https://qgjddtylriqdwvpihvmi.supabase.co https://*.supabase.co; connect-src 'self' https://qgjddtylriqdwvpihvmi.supabase.co; frame-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none';"
-
 # Cache assets statiques
 [[headers]]
   for = "/assets/*"

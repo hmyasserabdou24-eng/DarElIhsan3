@@ -14,7 +14,7 @@
   padding: 32px 16px;
   background: radial-gradient(circle at 50% 0%, #123E73 0%, #0C2D55 50%, #081B33 100%);
   color: #FFFFFF;
-  font-family: "Cairo", "Tajawal", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .qr-box {
@@ -148,7 +148,7 @@
 }
 
 .qr-num {
-  font-family: "Inter", monospace;
+  font-family: "IBM Plex Sans Arabic", monospace;
   color: #E5C47F;
   letter-spacing: 1px;
 }

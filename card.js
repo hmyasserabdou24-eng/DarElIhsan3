@@ -10,7 +10,7 @@
 
   var W = 1011, H = 638;                       // 85.6 × 54 مم عند 300 dpi
   var NAVY = '#0c2d55', GOLD = '#b4873a', INK = '#14263d', MUTED = '#55657a', LINE = '#c9d3e0', PALE = '#f4f7fb';
-  var FONT = 'Cairo, Tajawal, "Segoe UI", Tahoma, sans-serif';
+  var FONT = 'IBM Plex Sans Arabic, "Segoe UI", Tahoma, sans-serif';
 
   function dateLabel(iso) {                    // YYYY-MM-DD → DD/MM/YYYY (أرقام لاتينية)
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
@@ -73,7 +73,7 @@
 
   function fontsReady() {
     if (!(document.fonts && document.fonts.load)) return Promise.resolve();
-    return Promise.all([document.fonts.load('800 40px Cairo'), document.fonts.load('700 28px Cairo'), document.fonts.load('400 26px Cairo')])
+    return Promise.all([document.fonts.load('800 40px IBM Plex Sans Arabic'), document.fonts.load('700 28px IBM Plex Sans Arabic'), document.fonts.load('400 26px IBM Plex Sans Arabic')])
       .catch(function () { /* الخط الاحتياطي يكفي */ });
   }
 

@@ -330,7 +330,7 @@ def main():
         failed = []
         pg.on('response', lambda r: failed.append(r.url) if r.url.startswith(base) and r.status >= 400 else None)
         pg.on('requestfailed', lambda r: failed.append('FAILED ' + r.url) if r.url.startswith(base) else None)
-        pg.goto(base + 'index.html'); pg.wait_for_load_state('networkidle'); time.sleep(0.6)
+        pg.goto(base + 'site.html'); pg.wait_for_load_state('networkidle'); time.sleep(0.6)
         check(pg.evaluate("document.documentElement.dir") == 'rtl' and pg.evaluate("document.documentElement.lang") == 'ar', 'العربية: RTL')
         pg.click('#lang'); time.sleep(0.4)
         check(pg.evaluate("document.documentElement.dir") == 'ltr' and pg.evaluate("document.documentElement.lang") == 'fr', 'الفرنسية: LTR')

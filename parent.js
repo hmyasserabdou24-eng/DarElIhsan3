@@ -457,20 +457,9 @@
     return s;
   }
 
-  function isFarmOnlyParent() {
-    var kids = (S.d && S.d.children) || [];
-    if (!kids.length) return false;
-    return kids.every(function (c) {
-      return c.center === 'farm' || String(c.section || '').indexOf('البستنة') >= 0 || String(c.section || '').indexOf('المزرعة') >= 0;
-    });
-  }
-
   function renderTabs() {
     var nav = $('#tabs'); nav.textContent = '';
-    var hideReports = isFarmOnlyParent();
-    if (hideReports && S.tab === 'reports') S.tab = 'children';
     TABS.forEach(function (tb) {
-      if (hideReports && tb[0] === 'reports') return;
       var b = h('button', {
         type: 'button',
         role: 'tab',
@@ -760,16 +749,16 @@
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 20px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 20px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('الموسم الدراسي: ' + acYear, W - 36, 58);
       ctx.fillText('الفوج / القسم: ' + secName, W - 36, 98);
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#1E293B';
-      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', W / 2, 42);
       ctx.fillText('المركز النفسي البيداغوجي دار الإحسان', W / 2, 68);
-      ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('- العطف - غرداية -', W / 2, 92);
 
       ctx.fillStyle = '#E0F2FE';
@@ -778,7 +767,7 @@
       ctx.lineWidth = 2.2;
       ctx.strokeRect(W / 2 - 195, 102, 390, 44);
       ctx.fillStyle = '#0C2D55';
-      ctx.font = '900 27px Cairo, Tajawal, sans-serif';
+      ctx.font = '900 27px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('البرنامج الأسبوعي', W / 2, 133);
 
       if (logoImg) {
@@ -801,7 +790,7 @@
         ctx.strokeRect(W - 28 - rightLblW, y, rightLblW, 38);
         ctx.strokeRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
         ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('الأنشطة / المجالات', W - 28 - rightLblW / 2, y + 24);
         ctx.fillText('عدد المهارات', W - 28 - rightLblW / 2, y + 64);
@@ -822,9 +811,9 @@
           ctx.strokeRect(dx, y + 38, dColW, 42);
 
           ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
+          ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
           ctx.fillText(String(dm.domain || '').slice(0, 30), dx + dColW / 2, y + 24);
-          ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+          ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
           ctx.fillText(skCount + ' مهارة', dx + dColW / 2, y + 64);
         });
 
@@ -836,7 +825,7 @@
         ctx.strokeRect(28, y, leftTotalW, 38);
         ctx.strokeRect(28, y + 38, leftTotalW, 42);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('المجموع', 28 + leftTotalW / 2, y + 24);
         ctx.fillText(totalSkills + ' مهارة', 28 + leftTotalW / 2, y + 64);
 
@@ -862,7 +851,7 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, periodHeaderH);
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('إطار الفترات', 28 + sessColW + dayColW / 2, y + 30);
 
@@ -883,21 +872,21 @@
         ctx.fillRect(mornX, y, mornW, periodHeaderH);
         ctx.strokeRect(mornX, y, mornW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('☀️ الفترة الصباحية', mornX + mornW / 2, y + 31);
 
         ctx.fillStyle = '#D8B4E2';
         ctx.fillRect(brkX, y, brkW, periodHeaderH);
         ctx.strokeRect(brkX, y, brkW, periodHeaderH);
         ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('⏸️ ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(aftX, y, aftW, periodHeaderH);
         ctx.strokeRect(aftX, y, aftW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('🌤️ الفترة المسائية', aftX + aftW / 2, y + 31);
       } else if (numCols >= 2) {
         var halfCols = Math.ceil(numCols / 2);
@@ -909,21 +898,21 @@
         ctx.fillRect(mX, y, mW, periodHeaderH);
         ctx.strokeRect(mX, y, mW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('☀️ الفترة الصباحية', mX + mW / 2, y + 31);
 
         ctx.fillStyle = '#DDD6FE';
         ctx.fillRect(28, y, aW, periodHeaderH);
         ctx.strokeRect(28, y, aW, periodHeaderH);
         ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('🌤️ الفترة المسائية', 28 + aW / 2, y + 31);
       } else {
         ctx.fillStyle = '#BAE6FD';
         ctx.fillRect(28, y, sessColW, periodHeaderH);
         ctx.strokeRect(28, y, sessColW, periodHeaderH);
         ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('☀️ الفترة الصباحية   |   🌤️ الفترة المسائية', 28 + sessColW / 2, y + 31);
       }
 
@@ -936,11 +925,11 @@
       ctx.lineWidth = 1.6;
       ctx.strokeRect(28 + sessColW, y, dayColW, timeHeaderH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 15px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('⏰ التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
       ctx.fillStyle = '#FDE047';
-      ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
       ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
 
       unifiedCols.forEach(function (col, cIdx) {
@@ -952,7 +941,7 @@
         ctx.strokeRect(cx, y, colW, timeHeaderH);
 
         ctx.fillStyle = col.isBreak ? '#4C1D95' : '#0C2D55';
-        ctx.font = 'bold 14px Cairo, Tajawal, sans-serif';
+        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(col.label.slice(0, 28), cx + colW / 2, y + 22);
 
@@ -968,7 +957,7 @@
 
         var timeTxt = formatParentTimeRange(col.start, col.end) || 'التوقيت يدوي';
         ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
-        ctx.font = '900 15px Cairo, Tajawal, sans-serif';
+        ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
         ctx.fillText('🕒 ' + timeTxt, cx + colW / 2, pillY + 21);
       });
 
@@ -987,7 +976,7 @@
         ctx.strokeRect(28 + sessColW, y, dayColW, rh);
 
         ctx.fillStyle = '#0F172A';
-        ctx.font = '900 21px Cairo, Tajawal, sans-serif';
+        ctx.font = '900 21px IBM Plex Sans Arabic, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(wd.label, 28 + sessColW + dayColW / 2, y + rh / 2 + 7);
 
@@ -1004,7 +993,7 @@
 
           if (!sess || !isParentSessionActive(sess)) {
             ctx.fillStyle = '#94A3B8';
-            ctx.font = 'bold 16px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('—', sx + colW / 2, y + rh / 2 + 6);
             return;
@@ -1024,7 +1013,7 @@
             ctx.fillStyle = isBrk ? '#D8B4E2' : '#E0F2FE';
             ctx.fillRect(sx + 5, iy, colW - 10, 24);
             ctx.fillStyle = '#0F172A';
-            ctx.font = 'bold 12.5px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText((sess.title + (customTime ? (' (' + customTime + ')') : '')).slice(0, 34), sx + colW / 2, iy + 17);
             iy += 28;
@@ -1032,7 +1021,7 @@
 
           if (isBrk && (!sess.items || !sess.items.length)) {
             ctx.fillStyle = '#4C1D95';
-            ctx.font = 'bold 17px Cairo, Tajawal, sans-serif';
+            ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(sess.title || col.label || 'فسحة', sx + colW / 2, y + rh / 2 + 7);
           } else {
@@ -1047,15 +1036,15 @@
 
               ctx.textAlign = 'right';
               ctx.fillStyle = '#0C2D55';
-              ctx.font = 'bold 11.5px Cairo, Tajawal, sans-serif';
+              ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
               ctx.fillText(('📘 ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
 
               ctx.fillStyle = '#0F172A';
-              ctx.font = 'bold 12px Cairo, Tajawal, sans-serif';
+              ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
               var skillLines = wrapParentCanvasLines(ctx, '🎯 ' + (it.skill || ''), colW - 22);
               ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
               if (skillLines[1]) {
-                ctx.font = 'bold 11px Cairo, Tajawal, sans-serif';
+                ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
                 ctx.fillText(skillLines[1].slice(0, 44), sx + colW - 10, iy + 44);
               }
               iy += boxH + 5;
@@ -1067,7 +1056,7 @@
       });
 
       ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 19px Cairo, Tajawal, sans-serif';
+      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('توقيع المربية', W - 200, y + 48);
       ctx.fillText('المشرف البيداغوجي', W / 2, y + 48);
@@ -1500,7 +1489,7 @@
     cItem('🌐', t('contactSocialLabel'), socialLinks);
 
     var siteA = document.createElement('a');
-    siteA.setAttribute('href', './index.html');
+    siteA.setAttribute('href', './site.html');
     siteA.textContent = t('contactSiteLink');
     cItem('🏠', t('contactSiteLabel'), siteA);
 
@@ -1513,7 +1502,15 @@
     v.appendChild(noteCard);
   }
 
+  if (window.DE_NAV) DE_NAV.setup({
+    active: function () { var a = $('#app'); return !!(a && !a.hidden); },
+    modalOpen: function () { var m = $('#modal'); return !!(m && !m.hidden); },
+    closeModal: function () { closeModal(); },
+    apply: function (st) { if (st.tab) S.tab = st.tab; render(); window.scrollTo(0, 0); }
+  });
+
   function render() {
+    if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
     renderTabs();
     var v = $('#view'); v.textContent = '';
     ({
