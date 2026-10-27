@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>بوابة التحميل اليدوي للأرشيف – دار الإحسان</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="portal.css?v=28">
+<style>
+body {
+  background: #F8FAFC;
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  color: #0F172A;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+.arch-page-header {
+  background: #123E73;
+  color: #FFFFFF;
+  padding: 20px 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.arch-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.arch-header-brand img {
+  height: 48px;
+  width: auto;
+  border-radius: 6px;
+  background: #FFFFFF;
+  padding: 2px;
+}
+.arch-header-brand h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.arch-header-brand p {
+  margin: 2px 0 0 0;
+  font-size: 0.85rem;
+  color: #E2E8F0;
+}
+.arch-nav-btn {
+  background: rgba(255,255,255,0.15);
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.arch-nav-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+.arch-main-container {
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 20px;
+}
+.arch-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.arch-card-hero {
+  background: linear-gradient(135deg, #0C2D55 0%, #123E73 100%);
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 4px 15px rgba(12, 45, 85, 0.15);
+}
+.arch-card-hero h2 {
+  margin: 0 0 8px;
+  color: #FFFFFF;
+  font-size: 1.35rem;
+}
+.arch-card-hero p {
+  margin: 0 0 20px;
+  color: #E2E8F0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.btn-gold-big {
+  background: #B4873A;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 3px 8px rgba(180, 135, 58, 0.35);
+  transition: all 0.2s;
+}
+.btn-gold-big:hover {
+  background: #C4974A;
+  transform: translateY(-2px);
+}
+.btn-gold-big:disabled {
+  background: #94A3B8;
+  cursor: not-allowed;
+  transform: none;
+}
+.arch-grid-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.arch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arch-field label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+.arch-field select, .arch-field input {
+  padding: 10px 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  background: #FFFFFF;
+}
+.arch-progress-wrap {
+  background: #F1F5F9;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 20px;
+}
+.arch-progress-bar-bg {
+  background: #E2E8F0;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.arch-progress-fill {
+  background: #B4873A;
+  height: 100%;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+.arch-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: #64748B;
+  font-weight: 600;
+}
+.toast-msg {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0F172A;
+  color: #FFFFFF;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 9999;
+}
+</style>
+</head>
+<body>
+
+<header class="arch-page-header">
+  <div class="arch-header-brand">
+    <img src="logo-sq.png" alt="دار الإحسان">
+    <div>
+      <h1>المركز النفسي البيداغوجي دار الإحسان – العطف</h1>
+      <p>بوابة التحميل اليدوي المباشر للأرشيف والنسخ الاحتياطية</p>
+    </div>
+  </div>
+  <div>
+    <a href="manage.html" class="arch-nav-btn">← العودة إلى لوحة الإدارة</a>
+  </div>
+</header>
+
+<main class="arch-main-container">
+
+  <!-- بطاقة التحميل اليدوي الشامل بنقرة واحدة -->
+  <div class="arch-card arch-card-hero">
+    <h2>التحميل اليدوي الشامل لكامل الأرشيف (ZIP)</h2>
+    <p>
+      تنزيل كامل ملفات الموقع ووثائق الطلبة وتقارير التقييم البيداغوجي المنظمة حسب السنة، الشهر، الفرع، القسم، وكل طفل بصيغة ZIP فوراً ودون الحاجة لأي إعدادات معقدة.
+    </p>
+    <button id="directFullDownloadBtn" class="btn-gold-big" type="button">
+      📥 تحميل كامل الأرشيف يدوياً الآن (ZIP)
+    </button>
+  </div>
+
+  <!-- خيارات التنزيل اليدوي المخصص -->
+  <div class="arch-card">
+    <h3 style="margin-top:0;color:#0C2D55;">تخصيص الأرشيف اليدوي</h3>
+    <p class="small text-muted" style="color:#64748B;margin-bottom:18px;">
+      يمكنك تخصيص الأرشيف لتنزيل فرع محدد، قسم معين، طفل واحد، أو استخراج التقارير فقط.
+    </p>
+
+    <div class="arch-grid-form">
+      <div class="arch-field">
+        <label>نطاق الأرشفة:</label>
+        <select id="scopeSel">
+          <option value="all">الأرشيف الشامل (جميع الأطفال والملفات)</option>
+          <option value="reports_only">التقارير واستمارات التقييم فقط</option>
+          <option value="docs_only">الوثائق والمستندات المرفوعة فقط</option>
+        </select>
+      </div>
+
+      <div class="arch-field">
+        <label>السنة:</label>
+        <input type="number" id="yearInp" value="2026" min="2020" max="2100">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <button id="customDownloadBtn" class="btn-gold-big" style="font-size:0.95rem;padding:10px 20px;" type="button">
+        تنزيل الأرشيف المخصص
+      </button>
+      <button id="exportExcelBtn" type="button" style="background:#0F172A;color:#FFFFFF;border:none;border-radius:10px;padding:10px 18px;font-family:inherit;font-weight:600;cursor:pointer;">
+        تصدير قاعدة البيانات (Excel)
+      </button>
+    </div>
+
+    <!-- شريط التقدم -->
+    <div id="progressWrap" class="arch-progress-wrap" hidden>
+      <div class="arch-stat-row">
+        <span id="progressStatus">جارٍ إعداد الأرشيف...</span>
+        <span id="progressCounter">0 / 0</span>
+      </div>
+      <div class="arch-progress-bar-bg">
+        <div id="progressFill" class="arch-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast" class="toast-msg" hidden></div>
+
+<script src="cms-config.js?v=28"></script>
+<script src="centers.js?v=28"></script>
+<script src="de-core.js?v=28"></script>
+<script src="xlsx-writer.js?v=28"></script>
+<script src="zip-builder.js?v=28"></script>
+<script>
+(function() {
+  var CFG = window.DE_CONFIG || {
+    supabaseUrl: 'https://qgjddtylriqdwvpihvmi.supabase.co',
+    supabaseKey: 'sb_publishable_8mgO37k9jB9_Dg4OQTfynw_NBC0gLjK'
+  };
+
+  var toastEl = document.getElementById('toast');
+  function toast(m) {
+    toastEl.textContent = m;
+    toastEl.hidden = false;
+    clearTimeout(toastEl.t);
+    toastEl.t = setTimeout(function() { toastEl.hidden = true; }, 4000);
+  }
+
+  var fullBtn = document.getElementById('directFullDownloadBtn');
+  var customBtn = document.getElementById('customDownloadBtn');
+  var excelBtn = document.getElementById('exportExcelBtn');
+  var pWrap = document.getElementById('progressWrap');
+  var pFill = document.getElementById('progressFill');
+  var pStat = document.getElementById('progressStatus');
+  var pCount = document.getElementById('progressCounter');
+
+  async function runArchive(scope) {
+    if (!window.DE_ZIP) return toast('مكتبة ZIP لم تُحمَّل.');
+    pWrap.hidden = false;
+    pFill.style.width = '10%';
+    pStat.textContent = 'جارٍ الاتصال بقاعدة البيانات واسترجاع السجلات...';
+    fullBtn.disabled = true;
+    customBtn.disabled = true;
+
+    try {
+      var d = await Promise.all([
+        C.rest('GET', '/children?select=*&order=full_name.asc').catch(function() { return []; }),
+        C.rest('GET', '/branches?select=*').catch(function() { return []; }),
+        C.rest('GET', '/sections?select=*').catch(function() { return []; }),
+        C.rest('GET', '/educational_reports?select=*&order=report_date.desc').catch(function() { return []; }),
+        C.rest('GET', '/child_documents?select=*&order=created_at.desc').catch(function() { return []; })
+      ]);
+
+      var kids = d[0] || [], branches = d[1] || [], sections = d[2] || [];
+      var reports = d[3] || [], docs = d[4] || [];
+
+      var brMap = {}, secMap = {}, chMap = {};
+      branches.forEach(function(b) { brMap[b.id] = b; });
+      sections.forEach(function(s) { secMap[s.id] = s; });
+      kids.forEach(function(k) { chMap[k.id] = k; });
+
+      var targetReports = (scope === 'docs_only') ? [] : reports;
+      var targetDocs = (scope === 'reports_only') ? [] : docs;
+      var total = targetReports.length + targetDocs.length;
+      var processed = 0, success = 0, failed = 0;
+
+      var filesToZip = [];
+      var rootPath = 'Dar_El_Ihsan_Archive/2026/الأرشيف_الشامل';
+
+      // 1. التقارير
+      for (var i = 0; i < targetReports.length; i++) {
+        var rep = targetReports[i];
+        var ch = chMap[rep.child_id] || { full_name: 'طفل_غير_معرف', membership_no: '' };
+        var chFolder = (ch.membership_no ? '[' + ch.membership_no + '] ' : '') + (ch.full_name || 'بدون_اسم');
+        var secName = secMap[ch.section_id] ? secMap[ch.section_id].name : 'قسم_غير_مصنف';
+        var brName = brMap[ch.branch_id] ? brMap[ch.branch_id].name : 'المركز_الرئيسي';
+        var rPath = rootPath + '/' + brName + '/' + secName + '/' + chFolder + '/التقارير';
+
+        var content = 'تقرير: ' + (rep.title || 'تقرير') + '\nالتاريخ: ' + (rep.report_date || '') + '\nالطفل: ' + ch.full_name + '\nالمكتسبات: ' + (rep.achievements || '') + '\nالأنشطة: ' + (rep.activities || '') + '\nملاحظات: ' + (rep.notes || '');
+        filesToZip.push({ name: rPath + '/' + (rep.report_date || '2026') + ' - ' + (rep.title || 'تقرير') + '.txt', data: content });
+        processed++; success++;
+
+        pFill.style.width = Math.min(85, Math.round((processed / (total || 1)) * 80) + 10) + '%';
+        pStat.textContent = 'معالجة: ' + (rep.title || 'تقرير');
+        pCount.textContent = processed + ' / ' + total;
+      }
+
+      // 2. الوثائق
+      for (var j = 0; j < targetDocs.length; j++) {
+        var doc = targetDocs[j];
+        var dch = chMap[doc.child_id] || { full_name: 'طفل_غير_معرف', membership_no: '' };
+        var dchFolder = (dch.membership_no ? '[' + dch.membership_no + '] ' : '') + (dch.full_name || 'بدون_اسم');
+        var dsecName = secMap[dch.section_id] ? secMap[dch.section_id].name : 'قسم_غير_مصنف';
+        var dbrName = brMap[dch.branch_id] ? brMap[dch.branch_id].name : 'المركز_الرئيسي';
+        var dPath = rootPath + '/' + dbrName + '/' + dsecName + '/' + dchFolder + '/الوثائق';
+
+        if (doc.storage_path) {
+          try {
+            var signedUrl = await C.signedUrl('private-docs', doc.storage_path, 120);
+            var resp = await fetch(signedUrl);
+            if (resp.ok) {
+              var buf = await resp.arrayBuffer();
+              var ext = doc.storage_path.split('.').pop() || 'pdf';
+              filesToZip.push({ name: dPath + '/' + (doc.title || 'وثيقة') + '.' + ext, data: buf });
+              success++;
+            } else { failed++; }
+          } catch(e) { failed++; }
+        }
+        processed++;
+        pFill.style.width = Math.min(85, Math.round((processed / (total || 1)) * 80) + 10) + '%';
+        pStat.textContent = 'معالجة: ' + (doc.title || 'وثيقة');
+        pCount.textContent = processed + ' / ' + total;
+      }
+
+      // فهرس CSV
+      var csv = '\uFEFF"اسم الطفل","رقم القيد","الفرع","القسم","نوع السجل","العنوان"\r\n';
+      targetReports.forEach(function(r) {
+        var c = chMap[r.child_id] || {};
+        csv += '"' + (c.full_name||'') + '","' + (c.membership_no||'') + '","","","تقرير","' + (r.title||'') + '"\r\n';
+      });
+      filesToZip.push({ name: rootPath + '/فهرس_الأرشيف.csv', data: csv });
+
+      pFill.style.width = '92%';
+      pStat.textContent = 'جارٍ ضغط وتنزيل ملف ZIP...';
+
+      var blob = DE_ZIP.build(filesToZip);
+      var fileName = 'Dar_El_Ihsan_Manual_Archive_' + (new Date().toISOString().slice(0, 10)) + '.zip';
+      DE_ZIP.download(blob, fileName);
+
+      pFill.style.width = '100%';
+      pStat.textContent = 'تم تنزيل الأرشيف بنجاح! (' + (blob.size / (1024*1024)).toFixed(2) + ' MB)';
+      toast('تم تنزيل الأرشيف اليدوي الشامل بنجاح!');
+    } catch(err) {
+      toast('حدث خطأ أثناء تنزيل الأرشيف: ' + err.message);
+      pStat.textContent = 'فشل: ' + err.message;
+    } finally {
+      fullBtn.disabled = false;
+      customBtn.disabled = false;
+    }
+  }
+
+  fullBtn.addEventListener('click', function() { runArchive('all'); });
+  customBtn.addEventListener('click', function() { runArchive(document.getElementById('scopeSel').value); });
+
+  excelBtn.addEventListener('click', async function() {
+    toast('جارٍ تحضير ملف Excel...');
+    try {
+      var kids = await C.rest('GET', '/children?select=*&order=full_name.asc');
+      var cols = ['الرقم', 'رقم القيد', 'الاسم واللقب', 'تاريخ الميلاد', 'الإعاقة', 'الفرع', 'القسم', 'الهاتف'];
+      var rows = (kids || []).map(function(k, idx) {
+        return [idx + 1, k.membership_no || '', k.full_name || '', k.dob || '', k.disability || '', k.branch_id || '', k.section || '', k.phone || ''];
+      });
+      DE_XLSX.download('قاعدة_بيانات_أطفال_دار_الإحسان.xlsx', 'الأطفال', cols, rows, [6, 12, 28, 14, 20, 16, 18, 16]);
+      toast('تم تنزيل ملف Excel بنجاح!');
+    } catch(e) {
+      toast('تعذر تنزيل Excel: ' + e.message);
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -574,7 +574,9 @@
     }
 
     try {
-      var rows = await C.rest('GET', '/site_content?id=eq.draft&select=id,data');
+      var fetchP = C.rest('GET', '/site_content?id=eq.draft&select=id,data');
+      var timeP = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 3000); });
+      var rows = await Promise.race([fetchP, timeP]);
       var list = Array.isArray(rows) ? rows : (rows ? [rows] : []);
       var draftRow = list[0];
       var remoteMeta = (draftRow && draftRow.data && draftRow.data._portal_meta) ? normalizePortalMeta(draftRow.data._portal_meta) : null;
@@ -1416,22 +1418,12 @@
       h('span', { text: 'الحسابات الخاصة بجميع المراكز' })
     ) : null;
 
-    var desktopInstallBtn = h('button', {
-      type: 'button',
-      class: 'btn light hub-install-pc-btn',
-      'data-install': ''
-    },
-      makeSvgIcon('s-desktop'),
-      h('span', { text: 'تحميل تطبيق الإدارة للكمبيوتر' })
-    );
-
     var diagramTopbar = h('div', { class: 'hub-diagram-topbar' },
       allAccountsBtn,
       h('div', { class: 'hub-diagram-title-box' },
         h('h1', { text: 'لوحة الإدارة' }),
         h('p', { text: 'اختر المركز للدخول إلى لوحة الإدارة الخاصة به' })
-      ),
-      desktopInstallBtn
+      )
     );
     hubWrap.appendChild(diagramTopbar);
 
@@ -1471,6 +1463,29 @@
     });
 
     hubWrap.appendChild(hubGrid);
+
+    // إضافة بطاقة التحميل اليدوي السريع للأرشيف الشامل داخل لوحة الإدارة
+    if (canAccessGeneralAdmin()) {
+      var quickArchCard = h('div', { class: 'hub-quick-archive-box', style: 'margin-top:24px;background:#ffffff;border:1px solid #E2E8F0;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;' },
+        h('div', { style: 'display:flex;align-items:center;gap:12px;' },
+          h('div', { style: 'width:42px;height:42px;border-radius:8px;background:rgba(180,135,58,0.12);color:#B4873A;display:flex;align-items:center;justify-content:center;' }, makeSvgIcon('s-archive')),
+          h('div', null,
+            h('h3', { style: 'margin:0;font-size:1rem;color:#0C2D55;', text: 'الأرشيف الشامل والنسخ الاحتياطية' }),
+            h('p', { class: 'muted small', style: 'margin:2px 0 0;', text: 'تنزيل فوري لجميع التقارير والوثائق وبيانات الأطفال في ملف ZIP منظم.' })
+          )
+        ),
+        h('div', { style: 'display:flex;gap:8px;' },
+          h('button', {
+            type: 'button',
+            class: 'btn gold',
+            style: 'font-weight:600;',
+            onclick: function () { go('archive'); }
+          }, makeSvgIcon('s-download'), h('span', { text: 'تحميل الأرشيف يدوياً (ZIP)' }))
+        )
+      );
+      hubWrap.appendChild(quickArchCard);
+    }
+
     v.appendChild(hubWrap);
   }
 
@@ -7025,6 +7040,47 @@
       )
     ));
 
+    // بطاقة التحميل اليدوي المباشر الشامل (نزولاً عند طلب الإدارة للتحميل اليدوي المباشر)
+    var manualDirectCard = h('div', { class: 'arch-manual-direct-card' },
+      h('div', null,
+        h('h3', null, makeSvgIcon('s-download'), h('span', { text: 'التحميل اليدوي المباشر للأرشيف الشامل (ZIP)' })),
+        h('p', { text: 'يمكنك تنزيل أرشيف ZIP شامل لكافة ملفات المركز، التقارير التربوية، استمارات التقييم، الوثائق المرفوعة، وبيانات الأطفال فوراً بضغطة زر واحدة دون الحاجة إلى فلاتر إضافية.' })
+      ),
+      h('div', { class: 'arch-manual-btns-wrap' },
+        h('button', {
+          type: 'button',
+          class: 'arch-manual-btn-main',
+          onclick: function () {
+            startArchiveJob({
+              scope: 'all',
+              year: now.getFullYear(),
+              month: null,
+              scopeLabel: 'التحميل اليدوي المباشر لكامل أرشيف دار الإحسان'
+            });
+          }
+        }, makeSvgIcon('s-archive'), h('span', { text: 'تحميل كامل الأرشيف يدوياً الآن (ZIP)' })),
+        h('button', {
+          type: 'button',
+          class: 'arch-manual-btn-sub',
+          onclick: async function () {
+            toast('جارٍ استخراج وتصدير قاعدة البيانات...');
+            try {
+              var kids = await get('children');
+              var cols = ['الرقم', 'رقم القيد', 'الاسم واللقب', 'تاريخ الميلاد', 'الإعاقة', 'الفرع', 'القسم', 'الهاتف'];
+              var rows = (kids || []).map(function (k, idx) {
+                return [idx + 1, k.membership_no || '', k.full_name || '', k.dob || '', k.disability || '', k.branch_id || '', k.section || '', k.phone || ''];
+              });
+              DE_XLSX.download('قاعدة_بيانات_أطفال_دار_الإحسان.xlsx', 'الأطفال', cols, rows, [6, 12, 28, 14, 20, 16, 18, 16]);
+              toast('تم تنزيل ملف Excel بنجاح!', 'ok');
+            } catch (ex) {
+              toast('تعذر تصدير Excel: ' + ex.message, 'bad');
+            }
+          }
+        }, makeSvgIcon('s-file'), h('span', { text: 'تصدير نسخة احتياطية (Excel)' }))
+      )
+    );
+    v.appendChild(manualDirectCard);
+
     // بطاقات الإحصائيات السريعة
     var lastRunDateTxt = pastRuns.length ? fmt(pastRuns[0].run_date || pastRuns[0].created_at) : 'لم يتم بعد';
     var statsGrid = h('div', { class: 'arch-stats-grid' },
@@ -7772,7 +7828,11 @@
 
       if (C.loggedIn()) {
         var ok = false;
-        try { ok = await C.rpc('can_manage_families'); } catch (eRpc) { ok = isKnownStaff; }
+        try {
+          var rpcP = C.rpc('can_manage_families');
+          var timeP2 = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 3000); });
+          ok = await Promise.race([rpcP, timeP2]);
+        } catch (eRpc) { ok = isKnownStaff; }
         if (ok !== true && !isKnownStaff) {
           var anyAdmin = false;
           try { anyAdmin = await C.rpc('is_admin'); } catch (eAdm) {}
@@ -8016,165 +8076,202 @@
         }
       });
 
-      var lBtn = $('#lBtn');
-      if (lBtn && !$('#installDesktopLoginBtn') && lBtn.parentNode) {
-        var loginInstBtn = h('button', {
-          id: 'installDesktopLoginBtn',
-          class: 'btn light block install-desktop-btn',
-          type: 'button',
-          'data-install': ''
-        }, svgIcon('s-desktop'), h('span', { text: 'تحميل وتثبيت تطبيق الإدارة على الكمبيوتر' }));
-        lBtn.parentNode.insertBefore(loginInstBtn, lBtn.nextSibling);
-      }
-
-      var bar = document.querySelector('header.bar');
-      if (bar && !$('#installDesktopTopBtn')) {
-        var topInstBtn = h('button', {
-          id: 'installDesktopTopBtn',
-          class: 'top-center-pill install-top-pill',
-          type: 'button',
-          'data-install': '',
-          title: 'تحميل وتثبيت موقع الإدارة على الكمبيوتر'
-        }, svgIcon('s-desktop'), h('span', { text: 'تحميل للكمبيوتر' }));
-        var refNode = $('#hubSwitchBtn') || $('#who');
-        if (refNode) bar.insertBefore(topInstBtn, refNode);
-        else bar.appendChild(topInstBtn);
-      }
+      // تم إلغاء حقن أزرار تثبيت تطبيق الكمبيوتر نزولاً عند طلب الإدارة
     } catch (eDom) {}
   }
 
+  // ملتقط أخطاء عام لمنع بقاء الصفحة معلقة على شاشة التحميل إطلاقاً
+  if (typeof window !== 'undefined') {
+    window.addEventListener('error', function (errEv) {
+      var b = document.getElementById('boot');
+      if (b && !b.hidden) {
+        showLogin();
+      }
+    });
+    window.addEventListener('unhandledrejection', function () {
+      var b = document.getElementById('boot');
+      if (b && !b.hidden) {
+        showLogin();
+      }
+    });
+  }
+
   async function init() {
-    ensureManageDomReady();
-    if (!CFG.supabaseUrl || !CFG.supabaseKey) { if ($('#boot')) $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
-    C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
-    $('#loginForm').addEventListener('submit', submitLogin);
-    var qDemo = $('#quickDemoAdminBtn');
-    if (qDemo) {
-      qDemo.addEventListener('click', function () {
-        $('#email').value = '0540817775';
-        $('#password').value = 'DI11051993';
-        $('#loginForm').dispatchEvent(new Event('submit'));
-      });
-    }
-    var ftBtn = $('#firstTimeBtn');
-    if (ftBtn) {
-      ftBtn.addEventListener('click', function () {
-        msg($('#lErr'), ''); msg($('#lOk'), '');
-        $('#invEmail').value = ($('#email').value || '').trim();
-        setMode('invite');
-        $('#invEmail').focus();
-      });
-    }
-    $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot'); $('#fEmail').focus(); });
-    $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
-    $('#logoutBtn').addEventListener('click', function () { logout(); });
-    if ($('#sideLogoutBtn')) $('#sideLogoutBtn').addEventListener('click', function () { logout(); });
-    if ($('#hubSwitchBtn')) $('#hubSwitchBtn').addEventListener('click', function () { if (!S.isEducator) go('hub'); });
-    if ($('#sideCenterCard')) $('#sideCenterCard').addEventListener('click', function () { if (!S.isEducator) go('hub'); });
-    $('#menuBtn').addEventListener('click', function () {
-      if (window.innerWidth <= 860) {
-        $('#app').classList.toggle('nav-toggled');
-      } else {
-        $('#app').classList.toggle('side-collapsed');
-      }
-    });
-    if ($('#sideCloseBtn')) {
-      $('#sideCloseBtn').addEventListener('click', function () {
-        if (window.innerWidth <= 860) {
-          $('#app').classList.remove('nav-toggled');
-        } else {
-          $('#app').classList.toggle('side-collapsed');
-        }
-      });
-    }
-    $('#scrim').addEventListener('click', function () { $('#app').classList.remove('nav-toggled'); });
-    $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });
-    $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
-
-    /* دعم زر الرجوع في الهاتف (Hardware Back Button) للرجوع خطوة للخلف داخل الموقع وعدم الخروج منه */
-    window.addEventListener('popstate', function () {
-      if ($('#login') && !$('#login').hidden && mode !== 'creds') {
-        C.cancelMfa();
-        msg($('#lErr'), '');
-        msg($('#lOk'), '');
-        setMode('creds');
-        try { window.history.pushState({ deLogin: true }, ''); } catch (e) {}
-        return;
-      }
-      if ((!C.loggedIn() && !readStaffSession()) || ($('#app') && $('#app').hidden)) return;
-
-      if ($('#modal') && !$('#modal').hidden) {
-        closeModal();
-        return;
-      }
-      if ($('#app') && $('#app').classList.contains('nav-toggled')) {
-        $('#app').classList.remove('nav-toggled');
-        try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
-        return;
-      }
-      if (S.inSubBuilder) {
-        S.inSubBuilder = false;
-        go(S.sec, { fromHistory: true });
-        try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
-        return;
-      }
-      if (!S.isEducator && S.filterSectionId) {
-        S.filterSectionId = '';
-        go('children', { fromHistory: true });
-        try { window.history.pushState({ deApp: true, sec: 'children', center: S.activeCenter }, ''); } catch (e) {}
-        return;
-      }
-      while (S.navStack.length > 0) {
-        var prev = S.navStack.pop();
-        if (prev && (prev.sec !== S.sec || prev.center !== S.activeCenter || prev.filterSectionId !== S.filterSectionId)) {
-          S.activeCenter = prev.center || S.activeCenter;
-          S.filterSectionId = prev.filterSectionId || '';
-          go(prev.sec, { fromHistory: true });
-          try { window.history.pushState({ deApp: true, sec: prev.sec, center: S.activeCenter }, ''); } catch (e) {}
-          return;
+    // صمام أمان حاسم: إذا بقيت شاشة التحميل ظاهرة لأكثر من ثانيتين، يتم إظهار شاشة الدخول فوراً
+    setTimeout(function () {
+      var b = document.getElementById('boot');
+      if (b && !b.hidden) {
+        var appEl = document.getElementById('app');
+        var loginEl = document.getElementById('login');
+        if ((!appEl || appEl.hidden) && (!loginEl || loginEl.hidden)) {
+          showLogin();
         }
       }
-      var rootSec = S.isEducator ? 'children' : 'hub';
-      if (S.sec !== rootSec) {
-        go(rootSec, { fromHistory: true });
-        try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
-        return;
-      }
-      try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
-    });
+    }, 2000);
 
     try {
-      var sp = new URLSearchParams(window.location.search);
-      if (sp.get('invite_edu') === '1') {
-        var invU = (sp.get('u') || '').trim().toLowerCase();
-        var invPhone = sp.get('phone') || '';
-        var invName = sp.get('name') || '';
-        window.history.replaceState(null, '', window.location.pathname);
-        if (invU) {
-          show('login');
-          if ($('#invEmail')) $('#invEmail').value = invPhone || invU;
-          if ($('#email')) $('#email').value = invPhone || invU;
-          setMode('invite', 'مرحبًا بكِ أستاذة ' + (invName || '') + '! اضغطي الزر أدناه لتفعيل حسابكِ وإنشاء كلمة المرور الخاصة بكِ.');
+      ensureManageDomReady();
+      if (!CFG.supabaseUrl || !CFG.supabaseKey) { if ($('#boot')) $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
+      C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
+
+      if ($('#loginForm')) $('#loginForm').addEventListener('submit', submitLogin);
+      var qDemo = $('#quickDemoAdminBtn');
+      if (qDemo) {
+        qDemo.addEventListener('click', function () {
+          $('#email').value = '0540817775';
+          $('#password').value = 'DI11051993';
+          $('#loginForm').dispatchEvent(new Event('submit'));
+        });
+      }
+      var ftBtn = $('#firstTimeBtn');
+      if (ftBtn) {
+        ftBtn.addEventListener('click', function () {
+          msg($('#lErr'), ''); msg($('#lOk'), '');
+          $('#invEmail').value = ($('#email').value || '').trim();
+          setMode('invite');
+          $('#invEmail').focus();
+        });
+      }
+      if ($('#forgotBtn')) $('#forgotBtn').addEventListener('click', function () { msg($('#lErr'), ''); msg($('#lOk'), ''); $('#fEmail').value = ($('#email').value || '').trim(); setMode('forgot'); $('#fEmail').focus(); });
+      if ($('#backBtn')) $('#backBtn').addEventListener('click', function () { C.cancelMfa(); msg($('#lErr'), ''); msg($('#lOk'), ''); setMode('creds'); });
+      var topLBtn = $('#logoutBtn'); if (topLBtn) topLBtn.addEventListener('click', function () { logout(); });
+      var topArchBtn = $('#topArchiveBtn');
+      if (topArchBtn) {
+        topArchBtn.addEventListener('click', function () {
+          if (!S.isEducator && canAccessGeneralAdmin()) {
+            go('archive');
+          } else {
+            toast('ميزة الأرشيف مخصصة للإدارة العامة.', 'bad');
+          }
+        });
+      }
+      if ($('#sideLogoutBtn')) $('#sideLogoutBtn').addEventListener('click', function () { logout(); });
+      if ($('#hubSwitchBtn')) $('#hubSwitchBtn').addEventListener('click', function () { if (!S.isEducator) go('hub'); });
+      if ($('#sideCenterCard')) $('#sideCenterCard').addEventListener('click', function () { if (!S.isEducator) go('hub'); });
+      if ($('#menuBtn')) {
+        $('#menuBtn').addEventListener('click', function () {
+          if (window.innerWidth <= 860) {
+            $('#app').classList.toggle('nav-toggled');
+          } else {
+            $('#app').classList.toggle('side-collapsed');
+          }
+        });
+      }
+      if ($('#sideCloseBtn')) {
+        $('#sideCloseBtn').addEventListener('click', function () {
+          if (window.innerWidth <= 860) {
+            $('#app').classList.remove('nav-toggled');
+          } else {
+            $('#app').classList.toggle('side-collapsed');
+          }
+        });
+      }
+      if ($('#scrim')) $('#scrim').addEventListener('click', function () { $('#app').classList.remove('nav-toggled'); });
+      if ($('#nav')) $('#nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-sec]'); if (b) go(b.dataset.sec); });
+      if ($('#modal')) $('#modal').addEventListener('click', function (e) { if (e.target === $('#modal')) closeModal(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
+
+      /* دعم زر الرجوع في الهاتف (Hardware Back Button) للرجوع خطوة للخلف داخل الموقع وعدم الخروج منه */
+      window.addEventListener('popstate', function () {
+        if ($('#login') && !$('#login').hidden && mode !== 'creds') {
+          C.cancelMfa();
+          msg($('#lErr'), '');
+          msg($('#lOk'), '');
+          setMode('creds');
+          try { window.history.pushState({ deLogin: true }, ''); } catch (e) {}
           return;
         }
-      }
-    } catch (eInvUrl) {}
+        if ((!C.loggedIn() && !readStaffSession()) || ($('#app') && $('#app').hidden)) return;
 
-    var hash = await C.adoptHash();
-    if (hash && hash.error) { showLogin(hash.error); return; }
-    if (hash && (hash.token || hash.type === 'invite' || hash.type === 'recovery' || hash.type === 'signup')) {
-      show('login');
-      var userEmail = hash.email || '';
-      if (!userEmail) {
-        try { var u = await C.me(); if (u && u.email) userEmail = u.email; } catch (e) {}
+        if ($('#modal') && !$('#modal').hidden) {
+          closeModal();
+          return;
+        }
+        if ($('#app') && $('#app').classList.contains('nav-toggled')) {
+          $('#app').classList.remove('nav-toggled');
+          try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
+          return;
+        }
+        if (S.inSubBuilder) {
+          S.inSubBuilder = false;
+          go(S.sec, { fromHistory: true });
+          try { window.history.pushState({ deApp: true, sec: S.sec, center: S.activeCenter }, ''); } catch (e) {}
+          return;
+        }
+        if (!S.isEducator && S.filterSectionId) {
+          S.filterSectionId = '';
+          go('children', { fromHistory: true });
+          try { window.history.pushState({ deApp: true, sec: 'children', center: S.activeCenter }, ''); } catch (e) {}
+          return;
+        }
+        while (S.navStack.length > 0) {
+          var prev = S.navStack.pop();
+          if (prev && (prev.sec !== S.sec || prev.center !== S.activeCenter || prev.filterSectionId !== S.filterSectionId)) {
+            S.activeCenter = prev.center || S.activeCenter;
+            S.filterSectionId = prev.filterSectionId || '';
+            go(prev.sec, { fromHistory: true });
+            try { window.history.pushState({ deApp: true, sec: prev.sec, center: S.activeCenter }, ''); } catch (e) {}
+            return;
+          }
+        }
+        var rootSec = S.isEducator ? 'children' : 'hub';
+        if (S.sec !== rootSec) {
+          go(rootSec, { fromHistory: true });
+          try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
+          return;
+        }
+        try { window.history.pushState({ deApp: true, sec: rootSec, center: S.activeCenter }, ''); } catch (e) {}
+      });
+
+      try {
+        var sp = new URLSearchParams(window.location.search);
+        if (sp.get('invite_edu') === '1') {
+          var invU = (sp.get('u') || '').trim().toLowerCase();
+          var invPhone = sp.get('phone') || '';
+          var invName = sp.get('name') || '';
+          window.history.replaceState(null, '', window.location.pathname);
+          if (invU) {
+            show('login');
+            if ($('#invEmail')) $('#invEmail').value = invPhone || invU;
+            if ($('#email')) $('#email').value = invPhone || invU;
+            setMode('invite', 'مرحبًا بكِ أستاذة ' + (invName || '') + '! اضغطي الزر أدناه لتفعيل حسابكِ وإنشاء كلمة المرور الخاصة بكِ.');
+            return;
+          }
+        }
+      } catch (eInvUrl) {}
+
+      try {
+        var hash = await C.adoptHash();
+        if (hash && hash.error) { showLogin(hash.error); return; }
+        if (hash && (hash.token || hash.type === 'invite' || hash.type === 'recovery' || hash.type === 'signup')) {
+          show('login');
+          var userEmail = hash.email || '';
+          if (!userEmail) {
+            try { var u = await C.me(); if (u && u.email) userEmail = u.email; } catch (e) {}
+          }
+          if ($('#setEmail')) $('#setEmail').value = userEmail;
+          if ($('#email')) $('#email').value = userEmail;
+          setMode('set', 'مرحبًا بك في لوحة الإدارة! حسابك معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بك وتأكيدها للمتابعة.');
+          return;
+        }
+      } catch (eHash) {}
+
+      if (C.load() || readStaffSession()) {
+        try {
+          var enterTimeout = new Promise(function (_, rej) {
+            setTimeout(function () { rej(new Error('enter_timeout')); }, 3500);
+          });
+          await Promise.race([enter(), enterTimeout]);
+        } catch (eEnter) {
+          showLogin(eEnter && eEnter.message ? eEnter.message : null);
+        }
+      } else {
+        showLogin();
       }
-      if ($('#setEmail')) $('#setEmail').value = userEmail;
-      if ($('#email')) $('#email').value = userEmail;
-      setMode('set', 'مرحبًا بك في لوحة الإدارة! حسابك معروض أدناه. يرجى إنشاء كلمة المرور الخاصة بك وتأكيدها للمتابعة.');
-      return;
+    } catch (eFatal) {
+      console.error('Fatal init error:', eFatal);
+      showLogin(eFatal && eFatal.message);
     }
-    if (C.load() || readStaffSession()) enter(); else showLogin();
   }
 
   init();

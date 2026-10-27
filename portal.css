@@ -130,6 +130,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
   align-items: center; justify-content: center;
   gap: 16px; background: var(--bg);
   color: var(--navy); font-weight: 700; font-size: 16px;
+  animation: bootDismiss 0.35s ease 1.5s forwards;
+  pointer-events: none;
 }
 .boot::before {
   content: '';
@@ -140,6 +142,97 @@ button, input, textarea, select { font: inherit; color: inherit; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bootDismiss {
+  0% { opacity: 1; visibility: visible; }
+  99% { opacity: 0; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; pointer-events: none; display: none; }
+}
+
+.top-archive-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--brand-gold); color: #FFFFFF;
+  border: none; border-radius: 20px; padding: 6px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  margin-inline-end: 6px;
+}
+.top-archive-pill:hover { background: var(--gold-hover); transform: translateY(-1px); }
+.top-archive-pill svg { width: 16px; height: 16px; }
+@media (max-width: 640px) {
+  .top-archive-pill span { display: none; }
+  .top-archive-pill { padding: 6px 10px; }
+}
+
+.arch-manual-direct-card {
+  background: linear-gradient(135deg, #0C2D55 0%, #123E73 100%);
+  color: #FFFFFF;
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(12, 45, 85, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.arch-manual-direct-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.25rem;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.arch-manual-direct-card p {
+  margin: 0;
+  color: #E2E8F0;
+  font-size: 0.92rem;
+  max-width: 620px;
+  line-height: 1.5;
+}
+.arch-manual-btns-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.arch-manual-btn-main {
+  background: #B4873A;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 3px 8px rgba(180, 135, 58, 0.35);
+  transition: all 0.15s ease;
+}
+.arch-manual-btn-main:hover {
+  background: #C4974A;
+  transform: translateY(-1px);
+}
+.arch-manual-btn-sub {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+.arch-manual-btn-sub:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
 
 /* ─── شاشة تسجيل الدخول الموحدة (Login Screen) ─── */
 .login {
