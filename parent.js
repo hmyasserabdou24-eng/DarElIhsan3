@@ -386,6 +386,20 @@
     }
   }
 
+  
+  var VAPID_PUBLIC_KEY = 'BP5NQl5SsJ7Vf43R815QfXeJYgf6vJdAv80YgFPbO8DbKjCXUzrPtd5V0XyNlUAe0uA00DC-tvqaOruwXwUgvKs';
+
+  function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
   async function requestPhoneNotificationPermission() {
     if (typeof Notification === 'undefined') {
       toast('المتصفح لا يدعم إشعارات النظام المباشرة.', 'err');
@@ -395,7 +409,37 @@
       var perm = await Notification.requestPermission();
       if (perm === 'granted') {
         localStorage.setItem('de_phone_notif_enabled', '1');
-        triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'ستصلك الآن تنبيهات ورسائل المركز وتقارير طفلك مباشرة على هاتفك مصحوبة بالرنة الصوتية.', 'test-perm');
+        
+        // تسجيل اشتراك Web Push الرسمي مع خادم Supabase
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          try {
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+              sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+              });
+            }
+            var subJson = sub.toJSON();
+            var kid0 = (S.d && S.d.children && S.d.children[0]) || null;
+            var subBody = {
+              parent_user_id: S.me || null,
+              child_id: kid0 ? kid0.id : null,
+              endpoint: sub.endpoint,
+              p256dh: subJson.keys ? subJson.keys.p256dh : '',
+              auth: subJson.keys ? subJson.keys.auth : '',
+              user_agent: navigator.userAgent,
+              device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+              is_active: true
+            };
+            await C.rest('POST', '/push_subscriptions', subBody, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
+          } catch (eSub) {
+            console.warn('Push registration warning:', eSub);
+          }
+        }
+
+        triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'ستصلك الآن تنبيهات ورسائل المركز مباشرة على الهاتف حتى عندما يكون التطبيق مغلقاً.', './parent.html');
         toast('تم تفعيل إشعارات الهاتف مع الرنة الصوتية بنجاح!', 'ok');
         return true;
       } else {
@@ -2043,6 +2087,79 @@
 
     var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
 
+    // 8. إظهار كافة الجداول التفصيلية للمهارات لكل مجال بيداغوجي مختار
+    var allDomainDetailTables = (ev.domains || []).map(function (dm, dIdx) {
+      var dEarned = 0;
+      var dMax = 0;
+      var skillRows = (dm.ratings || []).map(function (it, sIdx) {
+        var scVal = '—';
+        if (it.score !== '' && it.score != null) {
+          var sc = parseInt(it.score, 10);
+          if (!isNaN(sc)) {
+            dEarned += sc;
+            dMax += 5;
+            scVal = sc + ' / 5';
+          }
+        } else if (it.yn) {
+          if (it.yn === 'نعم') dEarned += 5;
+          dMax += 5;
+          scVal = it.yn;
+        }
+        return h('tr', null,
+          h('td', { style: 'text-align:center;', text: String(sIdx + 1) }),
+          h('td', null, h('strong', { text: it.item || 'مهارة' })),
+          h('td', { style: 'text-align:center;' }, h('span', { class: 'badge ' + (scVal === '—' ? 'gray' : 'ok'), text: scVal })),
+          h('td', { class: 'muted small', text: it.obs || '—' })
+        );
+      });
+      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
+
+      return h('div', { class: 'eval-domain-table-wrap', style: 'margin-top:16px;' },
+        h('div', { class: 'oep-gr-header', style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#EEF2FF;color:#312E81;border:1px solid #C7D2FE;' },
+          h('strong', { text: (dIdx + 1) + '. ' + dm.domain + ' (' + (dm.ratings ? dm.ratings.length : 0) + ' مهارة)' }),
+          h('span', { class: 'badge gold', text: 'النقاط: ' + dEarned + ' / ' + dMax + ' (' + dPct + '%)' })
+        ),
+        h('table', { class: 'oep-scorecard-table', style: 'margin-top:0;width:100%;' },
+          h('thead', null,
+            h('tr', null,
+              h('th', { style: 'width:45px;text-align:center;', text: '#' }),
+              h('th', { text: 'المهارة المقيمة' }),
+              h('th', { style: 'width:130px;text-align:center;', text: 'التقييم / النتيجة' }),
+              h('th', { text: 'الملاحظات والتوجيهات' })
+            )
+          ),
+          h('tbody', null, skillRows.length ? skillRows : h('tr', null, h('td', { colspan: 4, class: 'muted', style: 'text-align:center;', text: 'لا توجد مهارات مسجلة في هذا المجال.' })))
+        )
+      );
+    });
+
+    var detailedSkillsSection = h('div', { class: 'eval-detailed-skills-box', style: 'margin-top:20px;' },
+      h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:16px 0 8px;' }, 'الجداول التفصيلية لكافة المهارات المقيمة في المجالات التربوية'),
+      allDomainDetailTables
+    );
+
+    var topActionsBar = h('div', { class: 'oep-action-bar no-print', style: 'display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;' },
+      h('button', {
+        type: 'button',
+        class: 'btn gold',
+        onclick: async function () {
+          try {
+            toast('جارٍ تجهيز وتحميل الاستمارة بصيغة PDF...', 'ok');
+            var pdfBytes = await DE_PDF.renderEvaluationToPdf(r, childFullName, secName, kd);
+            DE_PDF.downloadPdf(pdfBytes, 'استمارة_تقييم_' + (childFullName || 'طفلك').replace(/\s+/g, '_') + '.pdf');
+            toast('تم تنزيل ملف PDF بنجاح!', 'ok');
+          } catch (e) {
+            toast('تعذر تنزيل PDF: ' + e.message, 'bad');
+          }
+        }
+      }, icon('i-download'), h('span', { text: 'تحميل الاستمارة بصيغة PDF' })),
+      h('button', {
+        type: 'button',
+        class: 'btn',
+        onclick: function () { window.print(); }
+      }, icon('i-print'), h('span', { text: 'طباعة الورقة الرسمية (A4)' }))
+    );
+
     var compactSkillsBox = h('div', { class: 'eval-compact-box' },
       skillsSectionBanner,
       scorecardTable,
@@ -2050,6 +2167,7 @@
     );
 
     return h('div', { class: 'official-eval-paper' },
+      topActionsBar,
       header,
       termBanner,
       infoTable,
@@ -2058,7 +2176,8 @@
       perfGrid,
       summaryBanner,
       recGrid,
-      compactSkillsBox
+      compactSkillsBox,
+      detailedSkillsSection
     );
   }
 

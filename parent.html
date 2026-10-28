@@ -83,12 +83,17 @@
         <svg class="i"><use href="#i-bell"/></svg>
         <span id="notifBadge" class="pm-notif-badge" hidden>0</span>
       </button>
-      </div>
+      <button id="logoutBtn" class="pm-logout-btn" type="button" aria-label="تسجيل الخروج" title="تسجيل الخروج">
+        <svg class="i"><use href="#i-out"/></svg>
+      </button>
+    </div>
   </header>
 
-  <main id="view" class="wrap" tabindex="-1"></main>
+  <div class="wrap pm-desktop-wrap">
+    <nav class="pm-nav-tabs" id="tabs" role="tablist" aria-label="الأقسام"></nav>
+    <main id="view" tabindex="-1"></main>
+  </div>
 
-  <nav class="pm-nav-tabs" id="tabs" role="tablist" aria-label="الأقسام"></nav>
   <nav class="pm-mobile-bottom-nav" id="mobileBottomNav" role="navigation" aria-label="التنقل السريع"></nav>
 </div>
 
@@ -101,6 +106,7 @@
 <script src="qr-gen.js?v=25"></script>
 <script src="icons.js?v=1"></script>
 <script src="navback.js?v=25"></script>
+<script src="pdf-writer.js?v=1"></script>
 <script src="parent.js?v=25"></script>
 </body>
 </html>

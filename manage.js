@@ -825,6 +825,23 @@
     return false;
   }
 
+  
+  /* فحص صلاحية الوصول إلى نظام الأرشيف الشامل (للإداري الخلفاوي حمودة أو من يملك صلاحية جميع المراكز فقط) */
+  function canUserAccessArchive() {
+    if (!S.me) return false;
+    if (S.isEducator) return false;
+    var email = String(S.me.email || '').toLowerCase().trim();
+    var name = String(S.me.full_name || S.me.name || '').trim();
+    var phone = String(S.me.phone || '').trim();
+    var isHammouda = email === 'edu.0550647516@darelihsan.org' ||
+                     email.indexOf('0550647516') >= 0 ||
+                     phone.indexOf('0550647516') >= 0 ||
+                     name.indexOf('حمودة') >= 0 ||
+                     name.indexOf('الخلفاوي') >= 0;
+    var hasAllCenters = S.isOwner || (S.centerAccess === 'all') || (typeof canAccessGeneralAdmin === 'function' && canAccessGeneralAdmin());
+    return isHammouda || hasAllCenters;
+  }
+
   function applyRoleSidebarUI() {
     var isEdu = !!S.isEducator;
     var isFarm = isFarmSession();
@@ -877,6 +894,10 @@
     });
     var navSep = $('#navSep') || document.querySelector('#nav .sep');
     if (navSep) navSep.hidden = isEdu || isWorkOrFarm || isSpec;
+    var archNavBtn = document.querySelector("#nav [data-sec='archive']");
+    if (archNavBtn) {
+      archNavBtn.hidden = !canUserAccessArchive();
+    }
     updateSidebarCenterCard();
   }
 
@@ -1443,11 +1464,12 @@
 
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (validWa) {
-        window.open('https://wa.me/' + validWa, '_blank');
-      } else {
-        openFixWhatsAppPhoneModal(child, raw);
-      }
+      e.preventDefault();
+      var d = normalizeArabicDigits(raw).replace(/\D/g, '');
+      if (d.startsWith('00213')) d = d.slice(5);
+      else if (d.startsWith('213')) d = d.slice(3);
+      else if (d.startsWith('0')) d = d.slice(1);
+      window.open('https://wa.me/213' + d, '_blank');
     });
 
     return btn;
@@ -2169,6 +2191,8 @@
 
         // 2. شريط إجراءات الطفل المنقول بالكامل إلى داخل التفاصيل (البطاقة، الرمز، التعديل، الأرشفة، الحذف)
         var actionsBar = h('div', { class: 'child-details-actions-bar' },
+          rbtn('التقارير', function () { openChildReportsModal(r); }, 'light'),
+          rbtn('التقييمات', function () { openChildEvaluationsModal(r); }, 'gold'),
           rbtn('بطاقة التلميذ', function () { openStudentCard(r); }, 'gold'),
           rbtn('رمز تسجيل الولي', function () { return manageChildCode(r); }),
           rbtn('تعديل البيانات', function () { editChild(r); }),
@@ -2311,10 +2335,7 @@
         { label: 'الحالة', get: function (r) { return badge(r.active ? 'نشط' : 'مؤرشف', r.active ? 'ok' : 'gray'); }, sort: function (r) { return r.active ? 1 : 0; } }
       ],
       actions: function (r) {
-        return [
-          rbtn('التقارير', function () { openChildReportsModal(r); }, 'light'),
-          rbtn('التقييمات', function () { openChildEvaluationsModal(r); }, 'gold')
-        ];
+        return [];
       }
     });
   }
@@ -5371,6 +5392,79 @@
 
     var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
 
+    // 8. إظهار كافة الجداول التفصيلية للمهارات لكل مجال بيداغوجي مختار
+    var allDomainDetailTables = (ev.domains || []).map(function (dm, dIdx) {
+      var dEarned = 0;
+      var dMax = 0;
+      var skillRows = (dm.ratings || []).map(function (it, sIdx) {
+        var scVal = '—';
+        if (it.score !== '' && it.score != null) {
+          var sc = parseInt(it.score, 10);
+          if (!isNaN(sc)) {
+            dEarned += sc;
+            dMax += 5;
+            scVal = sc + ' / 5';
+          }
+        } else if (it.yn) {
+          if (it.yn === 'نعم') dEarned += 5;
+          dMax += 5;
+          scVal = it.yn;
+        }
+        return h('tr', null,
+          h('td', { style: 'text-align:center;', text: String(sIdx + 1) }),
+          h('td', null, h('strong', { text: it.item || 'مهارة' })),
+          h('td', { style: 'text-align:center;' }, h('span', { class: 'badge ' + (scVal === '—' ? 'gray' : 'ok'), text: scVal })),
+          h('td', { class: 'muted small', text: it.obs || '—' })
+        );
+      });
+      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
+
+      return h('div', { class: 'eval-domain-table-wrap', style: 'margin-top:16px;' },
+        h('div', { class: 'oep-gr-header', style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#EEF2FF;color:#312E81;border:1px solid #C7D2FE;' },
+          h('strong', { text: (dIdx + 1) + '. ' + dm.domain + ' (' + (dm.ratings ? dm.ratings.length : 0) + ' مهارة)' }),
+          h('span', { class: 'badge gold', text: 'النقاط: ' + dEarned + ' / ' + dMax + ' (' + dPct + '%)' })
+        ),
+        h('table', { class: 'oep-scorecard-table', style: 'margin-top:0;width:100%;' },
+          h('thead', null,
+            h('tr', null,
+              h('th', { style: 'width:45px;text-align:center;', text: '#' }),
+              h('th', { text: 'المهارة المقيمة' }),
+              h('th', { style: 'width:130px;text-align:center;', text: 'التقييم / النتيجة' }),
+              h('th', { text: 'الملاحظات والتوجيهات' })
+            )
+          ),
+          h('tbody', null, skillRows.length ? skillRows : h('tr', null, h('td', { colspan: 4, class: 'muted', style: 'text-align:center;', text: 'لا توجد مهارات مسجلة في هذا المجال.' })))
+        )
+      );
+    });
+
+    var detailedSkillsSection = h('div', { class: 'eval-detailed-skills-box', style: 'margin-top:20px;' },
+      h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:16px 0 8px;' }, 'الجداول التفصيلية لكافة المهارات المقيمة في المجالات التربوية'),
+      allDomainDetailTables
+    );
+
+    var topActionsBar = h('div', { class: 'oep-action-bar no-print', style: 'display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;' },
+      h('button', {
+        type: 'button',
+        class: 'btn gold',
+        onclick: async function () {
+          try {
+            toast('جارٍ تجهيز وتحميل الاستمارة بصيغة PDF...', 'ok');
+            var pdfBytes = await DE_PDF.renderEvaluationToPdf(r, childFullName, secName, kd);
+            DE_PDF.downloadPdf(pdfBytes, 'استمارة_تقييم_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
+            toast('تم تنزيل ملف PDF بنجاح!', 'ok');
+          } catch (e) {
+            toast('تعذر تنزيل PDF: ' + e.message, 'bad');
+          }
+        }
+      }, makeSvgIcon('s-download'), h('span', { text: 'تحميل الاستمارة بصيغة PDF' })),
+      h('button', {
+        type: 'button',
+        class: 'btn',
+        onclick: function () { window.print(); }
+      }, makeSvgIcon('s-print'), h('span', { text: 'طباعة الورقة الرسمية (A4)' }))
+    );
+
     var compactSkillsBox = h('div', { class: 'eval-compact-box' },
       skillsSectionBanner,
       scorecardTable,
@@ -5378,6 +5472,7 @@
     );
 
     return h('div', { class: 'official-eval-paper' },
+      topActionsBar,
       header,
       termBanner,
       infoTable,
@@ -5386,7 +5481,8 @@
       perfGrid,
       summaryBanner,
       recGrid,
-      compactSkillsBox
+      compactSkillsBox,
+      detailedSkillsSection
     );
   }
 
@@ -7609,10 +7705,16 @@
           var wordFilePath = repFolder + '/' + rDate + ' - ' + rTitle + ' (Word).doc';
           filesToZip.push({ name: wordFilePath, data: wordContent });
 
-          // ب) ملف رسمي جاهز للطباعة والحفظ كـ PDF
-          var htmlContent = generateStandaloneReportHtml(rep, child, secFolder, brFolder);
-          var htmlFilePath = repFolder + '/' + rDate + ' - ' + rTitle + ' (جاهز للطباعة PDF).html';
-          filesToZip.push({ name: htmlFilePath, data: htmlContent });
+          // ب) مستند رسمي بصيغة PDF حقيقية معتمدة للكمبيوتر والهاتف (بدون أي ملفات HTML)
+          var pdfBytes = await DE_PDF.renderReportToPdf(rep, child, secFolder, brFolder);
+          var pdfFilePath = repFolder + '/' + rDate + ' - ' + rTitle + '.pdf';
+          filesToZip.push({ name: pdfFilePath, data: pdfBytes });
+
+          if (isEvaluationReport(rep)) {
+            var evalPdfBytes = await DE_PDF.renderEvaluationToPdf(rep, child.full_name, secFolder, child);
+            var evalPdfPath = repFolder + '/' + rDate + ' - استمارة_تقييم_' + rTitle + '.pdf';
+            filesToZip.push({ name: evalPdfPath, data: evalPdfBytes });
+          }
 
           successCount++;
           csvRows.push([String(processedItems + 1), child.full_name, chMem, brFolder, secFolder, isEvaluationReport(rep) ? 'استمارة تقييم' : 'تقرير تربوي', rTitle + ' (Word).doc', wordFilePath, rDate, 'ناجح', 'تم إنشاء مستند Word']);
@@ -7838,7 +7940,7 @@
     var officeExportsCard = h('div', { class: 'arch-card', style: 'margin-top:24px;border:1px solid #CBD5E1;' },
       h('h3', { style: 'margin-top:0; color:#123E73; display:flex; align-items:center; gap:8px;' },
         makeSvgIcon('s-file'),
-        h('span', { text: 'تنزيل النسخ الاحتياطية المباشرة بصيغ Office المعتمدة (Excel و Word)' })
+        h('span', { text: 'تنزيل النسخ الاحتياطية المباشرة بصيغ Office المعتمدة (Excel و Word و PDF)' })
       ),
       h('p', { class: 'muted small', text: 'تنزيل فوري لملفات البيانات والتقارير بصيغ Microsoft Excel و Word الأصلية لفتحها مباشرة على الكمبيوتر دون أي أكواد برمجية.' }),
       h('div', { class: 'row-actions', style: 'margin-top:14px;flex-wrap:wrap;gap:10px;' },
@@ -7896,6 +7998,10 @@
 
   async function go(sec, navOpts) {
     var opts = navOpts || {};
+    if (sec === 'archive' && !canUserAccessArchive()) {
+      toast('خاصية الأرشيف والنسخ الاحتياطية مخصصة للإدارة العامة المخولة فقط.', 'bad');
+      sec = 'dash';
+    }
     if (isFarmSession() && sec === 'reports') {
       sec = 'children';
     }
