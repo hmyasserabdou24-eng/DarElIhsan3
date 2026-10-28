@@ -10,18 +10,18 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=25">
-<link rel="stylesheet" href="icons.css?v=25">
-<link rel="stylesheet" href="parent-modern.css?v=25">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="portal.css?v=26">
+<link rel="stylesheet" href="icons.css?v=26">
+<link rel="stylesheet" href="parent-modern.css?v=26">
+<link rel="manifest" href="parent.webmanifest">
 <meta name="theme-color" content="#123E73">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="دار الإحسان">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="pwa.css?v=25">
-<script src="pwa.js?v=25" defer></script>
+<link rel="stylesheet" href="pwa.css?v=26">
+<script src="pwa.js?v=26" defer></script>
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -71,6 +71,9 @@
 <div id="app" hidden>
   <header class="parent-modern-bar">
     <div class="pm-brand">
+      <button id="parentMenuBtn" class="pm-menu-btn" type="button" aria-label="القائمة الجانبية" title="القائمة الرئيسية" aria-expanded="false">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <img src="logo-sq.png" alt="شعار دار الإحسان" class="pm-logo">
       <div class="pm-title-block">
         <h1 class="pm-title">دار الإحسان</h1>
@@ -79,6 +82,10 @@
     </div>
     <div class="pm-header-actions">
       <span class="pm-kid-chip" id="who">—</span>
+      <button id="installHeaderBtn" class="pm-install-header-btn" type="button" aria-label="تثبيت التطبيق على الهاتف" title="تثبيت التطبيق على الهاتف">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="pm-ihb-text">تثبيت التطبيق</span>
+      </button>
       <button id="notifBtn" class="pm-notif-btn" type="button" aria-label="الإشعارات والتنبيهات" title="الإشعارات">
         <svg class="i"><use href="#i-bell"/></svg>
         <span id="notifBadge" class="pm-notif-badge" hidden>0</span>
@@ -89,24 +96,69 @@
     </div>
   </header>
 
+  <!-- القائمة الجانبية التي تنزلق من اليمين (Right Slide-in Drawer) -->
+  <div id="parentScrim" class="pm-drawer-scrim" aria-hidden="true"></div>
+  <aside id="parentDrawer" class="pm-drawer" aria-label="القائمة الجانبية" aria-hidden="true">
+    <div class="pm-drawer-header">
+      <div class="pm-drawer-brand">
+        <img src="logo-sq.png" alt="شعار دار الإحسان" class="pm-drawer-logo">
+        <div class="pm-drawer-title-box">
+          <h2 class="pm-drawer-title">دار الإحسان</h2>
+          <span class="pm-drawer-sub">فضاء الأولياء الرسمي</span>
+        </div>
+      </div>
+      <button id="drawerCloseBtn" class="pm-drawer-close-btn" type="button" aria-label="إغلاق القائمة">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="pm-drawer-child-card" id="drawerChildInfo">
+      <div class="pm-dcc-greet">الملف المتابع حالياً:</div>
+      <div class="pm-dcc-name" id="drawerChildName">—</div>
+      <div class="pm-dcc-badges" id="drawerChildBadges"></div>
+    </div>
+
+    <!-- زر تثبيت فضاء الأولياء على الهاتف المحمول -->
+    <div class="pm-drawer-install-card">
+      <button id="drawerInstallBtn" class="pm-drawer-install-btn" type="button">
+        <div class="pm-dib-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M12 7v6m-3-3l3 3 3-3"/></svg>
+        </div>
+        <div class="pm-dib-info">
+          <span class="pm-dib-title">تثبيت فضاء الأولياء</span>
+          <span class="pm-dib-desc">تنزيل التطبيق على هاتفك المحمول</span>
+        </div>
+        <span class="pm-dib-badge">تثبيت</span>
+      </button>
+    </div>
+
+    <div class="pm-drawer-nav-label">الأقسام والخدمات</div>
+    <nav class="pm-drawer-nav" id="drawerTabs" role="tablist" aria-label="أقسام فضاء الأولياء"></nav>
+
+    <div class="pm-drawer-footer">
+      <button id="drawerLogoutBtn" class="pm-drawer-logout-btn" type="button">
+        <svg class="i"><use href="#i-out"/></svg>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+  </aside>
+
   <div class="wrap pm-desktop-wrap">
-    <nav class="pm-nav-tabs" id="tabs" role="tablist" aria-label="الأقسام"></nav>
+    <nav class="pm-nav-tabs pm-desktop-tabs" id="tabs" role="tablist" aria-label="الأقسام"></nav>
     <main id="view" tabindex="-1"></main>
   </div>
-
-  <nav class="pm-mobile-bottom-nav" id="mobileBottomNav" role="navigation" aria-label="التنقل السريع"></nav>
 </div>
 
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true"><div id="modalCard" class="modal-card"></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="cms-config.js?v=25"></script>
-<script src="de-core.js?v=25"></script>
-<script src="username.js?v=25"></script>
-<script src="qr-gen.js?v=25"></script>
+<script src="cms-config.js?v=26"></script>
+<script src="de-core.js?v=26"></script>
+<script src="username.js?v=26"></script>
+<script src="qr-gen.js?v=26"></script>
 <script src="icons.js?v=1"></script>
-<script src="navback.js?v=25"></script>
+<script src="navback.js?v=26"></script>
 <script src="pdf-writer.js?v=1"></script>
-<script src="parent.js?v=25"></script>
+<script src="parent.js?v=26"></script>
 </body>
 </html>

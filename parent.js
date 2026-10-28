@@ -888,6 +888,133 @@
     return s;
   }
 
+  /* ── إدارة القائمة الجانبية المنزلقة من اليمين (Right Slide-in Drawer) ── */
+  function openDrawer() {
+    var drawer = $('#parentDrawer');
+    var scrim = $('#parentScrim');
+    var btn = $('#parentMenuBtn');
+    if (drawer) drawer.classList.add('open');
+    if (scrim) scrim.classList.add('open');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    var drawer = $('#parentDrawer');
+    var scrim = $('#parentScrim');
+    var btn = $('#parentMenuBtn');
+    if (drawer) drawer.classList.remove('open');
+    if (scrim) scrim.classList.remove('open');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  function toggleDrawer() {
+    var drawer = $('#parentDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  }
+
+  /* ── نافذة تثبيت وتنزيل التطبيق على الهاتف (PWA Install Modal) ── */
+  function openInstallAppModal() {
+    if (window.deferredPwaPrompt) {
+      window.deferredPwaPrompt.prompt();
+      window.deferredPwaPrompt.userChoice.then(function (choice) {
+        if (choice.outcome === 'accepted') {
+          toast('تم تثبيت تطبيق فضاء الأولياء بنجاح على هاتفك!', 'ok');
+        }
+        window.deferredPwaPrompt = null;
+      });
+      return;
+    }
+
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+
+    if (isStandalone) {
+      toast('تطبيق فضاء الأولياء مثبت مسبقاً ويعمل في وضع التطبيق المستقل.', 'ok');
+      return;
+    }
+
+    var body = h('div', { class: 'pm-install-modal' });
+    body.appendChild(h('div', { class: 'pm-im-header' },
+      h('img', { src: 'logo-sq.png', class: 'pm-im-logo', alt: 'دار الإحسان' }),
+      h('div', null,
+        h('h3', { class: 'pm-im-title', text: 'تثبيت فضاء الأولياء على هاتفك' }),
+        h('p', { class: 'pm-im-sub', text: 'وصول مباشر وسريع بضغطة واحدة مع تفعيل الإشعارات الفورية' })
+      )
+    ));
+
+    if (isIOS) {
+      body.appendChild(h('div', { class: 'pm-im-steps' },
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '1' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اضغط على زر المشاركة (Share)' }),
+            h('span', { text: 'في الشريط السفلي لمتصفح Safari على جهاز iPhone / iPad.' })
+          )
+        ),
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '2' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اختر «إضافة إلى الشاشة الرئيسية»' }),
+            h('span', { text: '(Sur l’écran d’accueil أو Add to Home Screen).' })
+          )
+        ),
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '3' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اضغط «إضافة» (Ajouter) في الزاوية العلوية' }),
+            h('span', { text: 'ستظهر أيقونة فضاء الأولياء على شاشة هاتفك وتعمل كتطبيق أصلي.' })
+          )
+        )
+      ));
+    } else {
+      // Android / Chrome / Edge
+      body.appendChild(h('div', { class: 'pm-im-steps' },
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '1' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اضغط على قائمة المتصفح (⋮)' }),
+            h('span', { text: 'أيقونة النقاط الثلاث في أعلى أو أسفل شاشة المتصفح.' })
+          )
+        ),
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '2' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اختر «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية»' }),
+            h('span', { text: '(Install app / Add to Home screen).' })
+          )
+        ),
+        h('div', { class: 'pm-im-step' },
+          h('span', { class: 'pm-im-step-num', text: '3' }),
+          h('div', { class: 'pm-im-step-text' },
+            h('b', { text: 'اضغط تأكيد التثبيت' }),
+            h('span', { text: 'سيعمل فضاء الأولياء كتطبيق مستقل وسريع على جهازك.' })
+          )
+        )
+      ));
+    }
+
+    body.appendChild(h('div', { class: 'modal-actions' },
+      h('button', { class: 'btn gold', type: 'button', text: 'تم وفهمت الطريقة', onclick: closeModal })
+    ));
+
+    openModal(body);
+  }
+
+  // التقاط حدث التثبيت المبكر PWA
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.deferredPwaPrompt = e;
+  });
+  window.addEventListener('appinstalled', function () {
+    window.deferredPwaPrompt = null;
+  });
+
   function renderTabs() {
     updateNotifBadge();
 
@@ -898,7 +1025,26 @@
       notifBtn.addEventListener('click', openNotificationsModal);
     }
 
-    // 1. شريط التنقل العلوي/المكتبي
+    // تحديث بيانات بطاقة الطفل في القائمة الجانبية
+    var c = (S.d && S.d.children && S.d.children[0]) || null;
+    var drawerChildName = $('#drawerChildName');
+    if (drawerChildName) {
+      drawerChildName.textContent = c ? c.full_name : (S.name || 'ولي الأمر الكريم');
+    }
+    var drawerChildBadges = $('#drawerChildBadges');
+    if (drawerChildBadges && c) {
+      drawerChildBadges.textContent = '';
+      var centerTag = h('span', { class: 'pm-meta-pill gold', text: t('center_' + c.center) || c.center });
+      drawerChildBadges.appendChild(centerTag);
+      if (c.membership_no) {
+        drawerChildBadges.appendChild(h('span', { class: 'pm-meta-pill', text: 'N° ' + c.membership_no }));
+      }
+      if (c.section) {
+        drawerChildBadges.appendChild(h('span', { class: 'pm-meta-pill', text: c.section }));
+      }
+    }
+
+    // 1. شريط التنقل الأفقي لسطح المكتب (Desktop Horizontal Tab Bar)
     var nav = $('#tabs');
     if (nav) {
       nav.textContent = '';
@@ -923,33 +1069,33 @@
       });
     }
 
-    // 2. شريط التنقل السفلي للهواتف (Mobile Bottom Bar)
-    var mobNav = $('#mobileBottomNav');
-    if (mobNav) {
-      mobNav.textContent = '';
-      var mobileTabs = [
-        ['children', 'tabChildren', 'i-child'],
-        ['evaluations', 'tabEvaluations', 'i-eval'],
-        ['reports', 'tabReports', 'i-report'],
-        ['msgs', 'tabMsgs', 'i-mail'],
-        ['docs', 'tabDocs', 'i-file']
-      ];
-      mobileTabs.forEach(function (tb) {
+    // 2. قائمة التنقل الجانبية التي تنزلق من اليمين للهواتف (Right Side Drawer Navigation)
+    var drawerNav = $('#drawerTabs');
+    if (drawerNav) {
+      drawerNav.textContent = '';
+      TABS.forEach(function (tb) {
         var unread = 0;
         if (tb[0] === 'msgs') unread = unreadCount();
         if (tb[0] === 'reports') unread = getNewReportsCount();
         if (tb[0] === 'evaluations') unread = getNewEvaluationsCount();
 
-        var mb = h('button', {
+        var db = h('button', {
           type: 'button',
-          class: 'pm-mob-tab-btn' + (S.tab === tb[0] ? ' active' : ''),
-          onclick: function () { S.tab = tb[0]; render(); window.scrollTo(0, 0); }
+          role: 'tab',
+          class: 'pm-drawer-tab-btn' + (S.tab === tb[0] ? ' active' : ''),
+          'aria-selected': S.tab === tb[0] ? 'true' : 'false',
+          onclick: function () {
+            closeDrawer();
+            S.tab = tb[0];
+            render();
+            window.scrollTo(0, 0);
+          }
         }, icon(tb[2]), h('span', { text: t(tb[1]) }));
 
         if (unread > 0) {
-          mb.appendChild(h('span', { class: 'tab-dot', text: String(unread) }));
+          db.appendChild(h('span', { class: 'tab-dot', text: String(unread) }));
         }
-        mobNav.appendChild(mb);
+        drawerNav.appendChild(db);
       });
     }
   }
@@ -2468,7 +2614,11 @@
     if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
     renderTabs();
     var v = $('#view'); v.textContent = '';
-    v.appendChild(renderParentHeroCard());
+    // الواجهة الترحيبية والبطاقة العلوية تظهر فقط في تبويب معلومات الطفل
+    // وفي باقي الأقسام (التقارير، التقييم، الرسائل، الوثائق...) يتم نزع الواجهة والدخول مباشرة للمحتوى
+    if (S.tab === 'children') {
+      v.appendChild(renderParentHeroCard());
+    }
     var handlers = {
       children: vChildren,
       evaluations: vEvaluations,
@@ -2590,12 +2740,40 @@ async function init() {
     var btnLoginLang = $('#loginLangBtn'); if (btnLoginLang) btnLoginLang.addEventListener('click', toggleLang);
     var btnBarLang = $('#barLangBtn'); if (btnBarLang) btnBarLang.addEventListener('click', toggleLang);
 
+    // ربط عناصر القائمة الجانبية وتثبيت التطبيق
+    var menuBtn = $('#parentMenuBtn');
+    if (menuBtn) menuBtn.addEventListener('click', toggleDrawer);
+
+    var closeBtn = $('#drawerCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+    var scrim = $('#parentScrim');
+    if (scrim) scrim.addEventListener('click', closeDrawer);
+
+    var drawerLogout = $('#drawerLogoutBtn');
+    if (drawerLogout) drawerLogout.addEventListener('click', function () {
+      closeDrawer();
+      logout();
+    });
+
+    var drawerInstall = $('#drawerInstallBtn');
+    if (drawerInstall) drawerInstall.addEventListener('click', function () {
+      closeDrawer();
+      openInstallAppModal();
+    });
+
+    var headerInstall = $('#installHeaderBtn');
+    if (headerInstall) headerInstall.addEventListener('click', openInstallAppModal);
+
     var m = $('#modal');
     if (m) {
       m.addEventListener('click', function (e) { if (e.target === m) closeModal(); });
     }
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && m && !m.hidden) closeModal();
+      if (e.key === 'Escape') {
+        if (m && !m.hidden) closeModal();
+        closeDrawer();
+      }
     });
 
     try {
