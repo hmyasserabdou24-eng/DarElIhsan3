@@ -434,13 +434,16 @@
       var dMax = 0;
 
       (dm.ratings || []).forEach(function (it) {
+        var sc = 0;
         if (it.score !== '' && it.score != null) {
-          var sc = parseInt(it.score, 10);
-          if (!isNaN(sc)) { dEarned += sc; dMax += 5; totalSkills++; }
+          var parsed = parseInt(it.score, 10);
+          if (!isNaN(parsed)) sc = parsed;
         } else if (it.yn) {
-          if (it.yn === 'نعم') dEarned += 5;
-          dMax += 5; totalSkills++;
+          if (it.yn === 'نعم') sc = 5;
         }
+        dEarned += sc;
+        dMax += 5;
+        totalSkills++;
       });
       totalEarned += dEarned;
       totalMax += dMax;
@@ -477,11 +480,12 @@
         ctx2.textAlign = 'right';
         ctx2.fillStyle = '#0F172A';
         ctx2.font = '15px "IBM Plex Sans Arabic", "Cairo", sans-serif';
-        var itemTxt = (rIdx + 1) + '. ' + (rt.item || 'مهارة');
+        var skillTitle = rt.skill || rt.item || ('مهارة ' + (rIdx + 1));
+        var itemTxt = (rIdx + 1) + '. ' + skillTitle;
         ctx2.fillText(itemTxt.slice(0, 75), 1240 - 100, y2 + 21);
 
         ctx2.textAlign = 'left';
-        var scoreVal = rt.score != null ? (rt.score + ' / 5') : (rt.yn || '—');
+        var scoreVal = (rt.score != null && rt.score !== '') ? (rt.score + ' / 5') : (rt.yn || '0 / 5');
         ctx2.fillStyle = '#1D4ED8';
         ctx2.font = 'bold 15px "IBM Plex Sans Arabic", "Cairo", sans-serif';
         ctx2.fillText(scoreVal, 100, y2 + 21);

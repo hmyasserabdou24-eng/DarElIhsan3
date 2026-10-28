@@ -118,23 +118,56 @@
   }
 
   /* ---------- عميل Supabase (Auth + REST + Storage + Functions) عبر fetch ---------- */
-  function Client(cfg, storeKey) {
+  function Client(cfg, storeKey, persistent) {
     var base = String(cfg.supabaseUrl || '').replace(/\/+$/, '');
     var key = cfg.supabaseKey || '';
     var session = null, refreshing = null, pending = null, expireCb = function () {};
     var api = {};
+    var isPersistent = !!persistent || (storeKey === 'de_parent_session');
 
-    function store() { try { return root.sessionStorage; } catch (e) { return null; } }   // جلسة التبويب فقط، لا تبقى بعد الإغلاق
+    function store() {
+      try {
+        if (isPersistent && root.localStorage) return root.localStorage;
+        return root.sessionStorage || root.localStorage;
+      } catch (e) {
+        try { return root.localStorage || root.sessionStorage; } catch (e2) { return null; }
+      }
+    }
     function load() {
-      var st = store(); if (!st) return null;
-      try { var s = JSON.parse(st.getItem(storeKey) || 'null'); return s && s.refresh_token ? s : null; } catch (e) { return null; }
+      var s = null;
+      try {
+        if (root.localStorage) {
+          try { s = JSON.parse(root.localStorage.getItem(storeKey) || 'null'); } catch (e1) {}
+        }
+        if ((!s || !s.refresh_token) && root.sessionStorage) {
+          try { s = JSON.parse(root.sessionStorage.getItem(storeKey) || 'null'); } catch (e2) {}
+        }
+        if (s && s.refresh_token) {
+          session = s;
+          return s;
+        }
+      } catch (e) {}
+      return null;
     }
     function save(tok) {
       session = { access_token: tok.access_token, refresh_token: tok.refresh_token,
         expires_at: Math.floor(Date.now() / 1000) + (tok.expires_in || 3600), user: tok.user || (session && session.user) || null };
-      var st = store(); if (st) st.setItem(storeKey, JSON.stringify(session));
+      try {
+        if (root.localStorage && (isPersistent || storeKey === 'de_parent_session')) {
+          root.localStorage.setItem(storeKey, JSON.stringify(session));
+        }
+      } catch (e1) {}
+      try {
+        if (root.sessionStorage) {
+          root.sessionStorage.setItem(storeKey, JSON.stringify(session));
+        }
+      } catch (e2) {}
     }
-    function clear() { session = null; var st = store(); if (st) st.removeItem(storeKey); }
+    function clear() {
+      session = null;
+      try { if (root.sessionStorage) root.sessionStorage.removeItem(storeKey); } catch (e1) {}
+      try { if (root.localStorage) root.localStorage.removeItem(storeKey); } catch (e2) {}
+    }
     function hdrs(token, extra) {
       var hd = { apikey: key };
       var t = token || (/^eyJ/.test(key) ? key : null);       // المفتاح الجديد sb_publishable_ ليس JWT فلا يُرسل كترويسة Authorization
